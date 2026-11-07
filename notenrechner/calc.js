@@ -68,31 +68,54 @@
         return group.tendency ? Math.max(1, noteDecimalFromPoints(v)) : v;
     }
 
-    // extra: { catId, grade } = zusätzliche (gedachte) Note
-    function calcSek1(group, student, extra) {
-        const cats = group.categories.map(cat => {
-            const raw = (student.grades && student.grades[cat.id]) || [];
-            const vals = [];
-            raw.forEach(g => { if (g) vals.push(gradeValue(group, g)); });
-            if (extra && extra.catId === cat.id) vals.push(gradeValue(group, extra.grade));
-            const n = vals.length;
-            const mean = n ? vals.reduce((a, b) => a + b, 0) / n : null;
-            return {
-                id: cat.id, name: cat.name, weight: cat.weight, n: n, mean: mean,
-                note: mean == null ? null : scaleToNote(group, mean)
-            };
-        });
+    // Mittelwert (in Punkten bzw. Noten) und Anzahl der Noten einer Spalte ohne Unterkategorien
+    function leafStats(group, student, leaf, extra) {
+        const raw = (student.grades && student.grades[leaf.id]) || [];
+        const vals = [];
+        raw.forEach(g => { if (g) vals.push(gradeValue(group, g)); });
+        if (extra && extra.catId === leaf.id) vals.push(gradeValue(group, extra.grade));
+        const n = vals.length;
+        return { n: n, mean: n ? vals.reduce((a, b) => a + b, 0) / n : null };
+    }
+
+    // Gewichteter Mittelwert; ohne positive Gewichte wird gleichmäßig gemittelt
+    function weightedMean(items) {
         let wsum = 0, acc = 0;
-        cats.forEach(c => { if (c.mean != null && c.weight > 0) { wsum += c.weight; acc += c.weight * c.mean; } });
-        let total = null;
-        if (wsum > 0) total = scaleToNote(group, acc / wsum);
-        else {
-            // Nur Kategorien ohne Gewicht, aber mit Noten: gleichmäßig mitteln
-            const present = cats.filter(c => c.mean != null);
-            if (present.length) total = scaleToNote(group, present.reduce((a, c) => a + c.mean, 0) / present.length);
-        }
+        items.forEach(c => { if (c.mean != null && c.weight > 0) { wsum += c.weight; acc += c.weight * c.mean; } });
+        if (wsum > 0) return acc / wsum;
+        const present = items.filter(c => c.mean != null);
+        return present.length ? present.reduce((a, c) => a + c.mean, 0) / present.length : null;
+    }
+
+    function entry(group, c, stats, subs) {
+        return {
+            id: c.id, name: c.name, weight: c.weight, n: stats.n, mean: stats.mean,
+            note: stats.mean == null ? null : scaleToNote(group, stats.mean), subs: subs || []
+        };
+    }
+
+    // extra: { catId, grade } = zusätzliche (gedachte) Note in einer Spalte (Hauptkategorie ohne Unterkategorien oder Unterkategorie)
+    function calcSek1(group, student, extra) {
+        const byId = {};
+        const cats = group.categories.map(cat => {
+            if (cat.subs && cat.subs.length) {
+                const subs = cat.subs.map(s => {
+                    const e = entry(group, s, leafStats(group, student, s, extra));
+                    byId[s.id] = e;
+                    return e;
+                });
+                const e = entry(group, cat, { n: subs.reduce((a, s) => a + s.n, 0), mean: weightedMean(subs) }, subs);
+                byId[cat.id] = e;
+                return e;
+            }
+            const e = entry(group, cat, leafStats(group, student, cat, extra));
+            byId[cat.id] = e;
+            return e;
+        });
+        const m = weightedMean(cats);
+        const total = m == null ? null : scaleToNote(group, m);
         const grade = total == null ? null : gradeFromAvg(total, ROUND_LIMIT);
-        return { cats: cats, total: total, grade: grade };
+        return { cats: cats, byId: byId, total: total, grade: grade };
     }
 
     // Wählbare Endnoten: rechnerische Note und, falls aufgerundet wurde, die bessere
@@ -121,14 +144,20 @@
         const cands = group.tendency
             ? TEND.slice().reverse().map(g => g)           // von schlecht (6) nach gut (1+)
             : PLAIN.slice().reverse();
-        const rows = group.categories.filter(c => c.weight > 0).map(cat => {
+        const leaves = [];
+        group.categories.forEach(cat => {
+            if (cat.weight <= 0) return;
+            if (cat.subs && cat.subs.length) cat.subs.forEach(s => { if (s.weight > 0) leaves.push({ id: s.id, name: cat.name + ' › ' + s.name }); });
+            else leaves.push({ id: cat.id, name: cat.name });
+        });
+        const rows = leaves.map(leaf => {
             for (let i = 0; i < cands.length; i++) {
-                const t = calcSek1(group, student, { catId: cat.id, grade: cands[i] });
+                const t = calcSek1(group, student, { catId: leaf.id, grade: cands[i] });
                 if (t.total != null && t.total < limit - 1e-9) {
-                    return { catId: cat.id, name: cat.name, needed: cands[i], resultAvg: t.total };
+                    return { catId: leaf.id, name: leaf.name, needed: cands[i], resultAvg: t.total };
                 }
             }
-            return { catId: cat.id, name: cat.name, needed: null };
+            return { catId: leaf.id, name: leaf.name, needed: null };
         });
         return { status: 'ok', calc: calc, targetGrade: targetGrade, maxAvg: maxAvg, rows: rows };
     }

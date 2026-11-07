@@ -26,7 +26,7 @@
     /* ---------- Spalten und Werte je Lerngruppe ---------- */
 
     function catList(g) {
-        if (g.stufe === 'sek1') return g.categories;
+        if (g.stufe === 'sek1') { const out = []; g.categories.forEach(c => { if (c.subs && c.subs.length) c.subs.forEach(s => out.push(s)); else out.push(c); }); return out; }
         return [
             { id: 'm', name: 'Mündlich', slots: g.slots.m },
             { id: 's', name: 'Sonstige', slots: g.slots.s },
@@ -70,12 +70,19 @@
         }
 
         if (sek1) {
+            const pct = (list, c) => {
+                const sm = list.reduce((a, x) => a + (x.weight > 0 ? x.weight : 0), 0);
+                return sm > 0 && c.weight > 0 ? Math.round(c.weight / sm * 100) : 0;
+            };
+            const meanOf = id => (st, ctx) => {
+                const x = ctx.calc.byId[id];
+                return x && x.note != null ? fmt2(x.note) : '';
+            };
             g.categories.forEach(c => {
-                const pct = sum > 0 && c.weight > 0 ? Math.round(c.weight / sum * 100) : 0;
-                addCat(c, c.name + ' · ' + pct + ' %', true, (st, ctx) => {
-                    const x = ctx.calc.cats.find(k => k.id === c.id);
-                    return x && x.note != null ? fmt2(x.note) : '';
-                });
+                if (c.subs && c.subs.length) {
+                    c.subs.forEach(s => addCat(s, c.name + ' › ' + s.name + ' · ' + pct(c.subs, s) + ' %', true, meanOf(s.id)));
+                    addSingle('Ø ' + c.name, 2.6, false, meanOf(c.id));
+                } else addCat(c, c.name + ' · ' + pct(g.categories, c) + ' %', true, meanOf(c.id));
             });
             addSingle('Ø', 1.7, false, (st, ctx) => ctx.calc.total == null ? '' : fmt2(ctx.calc.total));
             addSingle('Rechn.', 1.5, false, (st, ctx) => ctx.calc.grade == null ? '' : String(ctx.calc.grade));

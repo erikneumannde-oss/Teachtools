@@ -339,3 +339,11 @@ table.nt { border-spacing: 4px; }
 .nt tr.sel td.calc.final { background: var(--green); }
 .nt tr.sel td.calc.final:empty { background: #cfe3f5; }
 .nt tr.sel td.calc.pending { background: #ffe3a8; }
+
+/* ===== Unterkategorien ===== */
+.nt thead tr:nth-child(3) th { top: 80px; background: #46627d; color: #e8eef4; font-weight: 600; font-size: 0.82rem; }
+.nt thead th.cat.main { background: #1f6aa5; }
+.nt thead th.cat.sub { background: var(--blue); }
+.catrow.sub { margin-left: 18px; grid-template-columns: minmax(0, 1fr) 70px 44px; }
+.catrow.sub .field { background: #f3f9ff; }
+.subadd { margin: 0 0 12px 18px; min-height: 36px; font-size: 0.85rem; }

@@ -2,7 +2,7 @@
     'use strict';
 
     const NR = window.NR;
-    const MAX_NAME = 60, MAX_GROUPS = 40, MAX_STUDENTS = 200, MAX_CATS = 12, MAX_SLOTS = 20;
+    const MAX_NAME = 60, MAX_GROUPS = 40, MAX_STUDENTS = 200, MAX_CATS = 12, MAX_SUBS = 8, MAX_SLOTS = 20;
     const LS_KEY = 'notenrechner.v1', LS_AUTO = 'notenrechner.auto';
 
     let groups = [];
@@ -121,9 +121,27 @@
         };
     }
 
+    // Spalten mit Noten: Kategorien ohne Unterkategorien und alle Unterkategorien
+    function leaves(g) {
+        const out = [];
+        g.categories.forEach(c => { if (c.subs && c.subs.length) c.subs.forEach(s => out.push(s)); else out.push(c); });
+        return out;
+    }
+
+    function fullName(g, id) {
+        if (g.stufe === 'sek1') {
+            for (const c of g.categories) {
+                if (c.id === id) return c.name;
+                for (const s of (c.subs || [])) if (s.id === id) return c.name + ' › ' + s.name;
+            }
+        }
+        const x = catList(g).find(k => k.id === id);
+        return x ? x.name : '';
+    }
+
     // Alle Notenspalten einer Gruppe als Liste { id, name, slots }
     function catList(g) {
-        if (g.stufe === 'sek1') return g.categories;
+        if (g.stufe === 'sek1') return leaves(g);
         return [
             { id: 'm', name: 'Mündlich', slots: g.slots.m },
             { id: 's', name: 'Sonstige', slots: g.slots.s },
@@ -173,16 +191,21 @@
                 g.grenze = 0.5;
                 if (Array.isArray(src.categories) && src.categories.length) {
                     const used = new Set();
-                    g.categories = src.categories.slice(0, MAX_CATS).map((c, i) => {
+                    const mk = (c, i, fallback) => {
                         c = c && typeof c === 'object' ? c : {};
-                        let id = typeof c.id === 'string' && /^[A-Za-z0-9]{1,24}$/.test(c.id) && !used.has(c.id) ? c.id : 'c' + uid().slice(1, 8);
+                        const id = typeof c.id === 'string' && /^[A-Za-z0-9]{1,24}$/.test(c.id) && !used.has(c.id) ? c.id : 'c' + uid().slice(1, 8);
                         used.add(id);
                         return {
                             id: id,
-                            name: cleanStr(c.name, 30) || 'Kategorie ' + (i + 1),
+                            name: cleanStr(c.name, 30) || fallback + ' ' + (i + 1),
                             weight: typeof c.weight === 'number' && isFinite(c.weight) ? clamp(Math.round(c.weight * 10) / 10, 0, 100) : 0,
                             slots: clamp(isInt(c.slots) ? c.slots : 3, 1, MAX_SLOTS)
                         };
+                    };
+                    g.categories = src.categories.slice(0, MAX_CATS).map((c, i) => {
+                        const cat = mk(c, i, 'Kategorie');
+                        if (c && Array.isArray(c.subs) && c.subs.length) cat.subs = c.subs.slice(0, MAX_SUBS).map((s, j) => mk(s, j, 'Unterkategorie'));
+                        return cat;
                     });
                 }
             } else {
@@ -476,8 +499,12 @@
 
         box.append(el('div', { class: 'section-title', text: 'Kategorien und Wertung' }));
         box.append(el('div', { class: 'cathead' }, [el('span', { text: 'Name' }), el('span', { text: 'Wertung' }), el('span')]));
-        g.categories.forEach(c => {
-            const name = el('input', { type: 'text', class: 'field', maxlength: '30', value: c.name, 'aria-label': 'Name der Kategorie' });
+
+        const hasGradesIn = c => leavesOf(c).some(l => g.students.some(st => (st.grades[l.id] || []).some(v => v)));
+        const leavesOf = c => (c.subs && c.subs.length ? c.subs : [c]);
+
+        const row = (c, list, isSub, parent) => {
+            const name = el('input', { type: 'text', class: 'field', maxlength: '30', value: c.name, 'aria-label': (isSub ? 'Name der Unterkategorie' : 'Name der Kategorie') });
             name.addEventListener('change', () => {
                 const v = name.value.replace(/\s+/g, ' ').trim();
                 if (v) { c.name = v; markDirty(); renderTable(); renderAdvice(); } else name.value = c.name;
@@ -485,17 +512,41 @@
             const w = numField(c.weight, 0, 100, 'Wertung von ' + c.name, v => { c.weight = Math.round(v * 10) / 10; markDirty(); renderRating(); renderTable(); renderAdvice(); });
             const del = el('button', { type: 'button', class: 'btn icon danger', 'aria-label': c.name + ' entfernen', text: '×' });
             del.addEventListener('click', async () => {
-                if (g.categories.length <= 1) { infoDialog('Nicht möglich', 'Es muss mindestens eine Kategorie bleiben.'); return; }
-                const used = g.students.some(st => (st.grades[c.id] || []).some(v => v));
-                if (used && !(await confirmDialog('Kategorie entfernen?', 'Die Noten in „' + c.name + '“ gehen verloren.', 'Entfernen'))) return;
-                g.categories = g.categories.filter(x => x !== c);
+                if (!isSub && g.categories.length <= 1) { infoDialog('Nicht möglich', 'Es muss mindestens eine Kategorie bleiben.'); return; }
+                if (hasGradesIn(c) && !(await confirmDialog((isSub ? 'Unterkategorie' : 'Kategorie') + ' entfernen?', 'Die Noten in „' + c.name + '“ gehen verloren.', 'Entfernen'))) return;
+                const doomed = leavesOf(c).map(l => l.id);
+                g.students.forEach(st => doomed.forEach(id => { delete st.grades[id]; }));
+                const idx = list.indexOf(c);
+                list.splice(idx, 1);
+                if (isSub && !list.length) { delete parent.subs; parent.slots = 3; }
                 markDirty();
                 renderAll();
             });
-            box.append(el('div', { class: 'catrow' }, [name, w, del]));
+            return el('div', { class: 'catrow' + (isSub ? ' sub' : '') }, [name, w, del]);
+        };
+
+        g.categories.forEach(c => {
+            box.append(row(c, g.categories, false, null));
+            (c.subs || []).forEach(s => box.append(row(s, c.subs, true, c)));
+            const addSub = el('button', { type: 'button', class: 'btn small subadd', text: '+ Unterkategorie in „' + c.name + '“' });
+            addSub.addEventListener('click', () => {
+                if (c.subs && c.subs.length >= MAX_SUBS) return;
+                if (!c.subs || !c.subs.length) {
+                    // Die bisherigen Noten der Kategorie wandern in die erste Unterkategorie
+                    const first = { id: 'c' + uid().slice(1, 8), name: 'Teil 1', weight: 50, slots: c.slots };
+                    g.students.forEach(st => { if (st.grades[c.id]) { st.grades[first.id] = st.grades[c.id]; delete st.grades[c.id]; } });
+                    c.subs = [first];
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 3 });
+                } else {
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), weight: 0, slots: 3 });
+                }
+                markDirty();
+                renderAll();
+            });
+            box.append(addSub);
         });
         const sum = g.categories.reduce((a, c) => a + c.weight, 0);
-        box.append(el('p', { class: 'small-text', text: 'Summe der Wertungen: ' + fmtT(sum) + '. Die Wertungen werden automatisch auf 100 % umgerechnet. Eine Wertung von 0 nimmt die Kategorie aus der Berechnung.' }));
+        box.append(el('p', { class: 'small-text', text: 'Summe der Hauptkategorien: ' + fmtT(sum) + '. Wertungen werden je Ebene automatisch auf 100 % umgerechnet. Eine Hauptkategorie mit Unterkategorien berechnet sich aus deren Noten. Eine Wertung von 0 nimmt den Eintrag aus der Berechnung.' }));
         const add = el('button', { type: 'button', class: 'btn small', text: 'Kategorie hinzufügen' });
         add.addEventListener('click', () => {
             if (g.categories.length >= MAX_CATS) return;
@@ -619,7 +670,12 @@
     function buildSegs(g) {
         const segs = [];
         if (g.stufe === 'sek1') {
-            g.categories.forEach(c => { segs.push({ t: 'cat', cat: c }); segs.push({ t: 'mean', cat: c }); });
+            g.categories.forEach(c => {
+                if (c.subs && c.subs.length) {
+                    c.subs.forEach(s => { segs.push({ t: 'cat', cat: s }); segs.push({ t: 'mean', cat: s }); });
+                    segs.push({ t: 'mean', cat: c, main: true });
+                } else { segs.push({ t: 'cat', cat: c }); segs.push({ t: 'mean', cat: c }); }
+            });
             segs.push({ t: 'tot' }, { t: 'calc' }, { t: 'fin' });
         } else {
             const cl = catList(g);
@@ -652,35 +708,71 @@
         const coarse = isCoarse();
         const mode = gradeMode(g);
 
-        const r1 = el('tr'), r2 = el('tr');
-        r1.append(el('th', { class: 'name', rowspan: '2', text: 'Name' }));
-        segs.forEach((s, i) => {
-            if (s.t === 'cat') {
-                const hasMean = segs[i + 1] && segs[i + 1].t === 'mean';
-                const th = el('th', { class: 'cat', colspan: String(s.cat.slots + (hasMean ? 1 : 0)) });
-                th.append(document.createTextNode(catHeadLabel(g, s.cat)));
-                const fixed = g.stufe === 'sek2' && g.course === 'lk13' && s.cat.id === 'k';
-                if (!fixed) {
-                    const ctl = el('span', { class: 'ctl' });
-                    const minus = el('button', { type: 'button', 'aria-label': 'Eine Spalte weniger in ' + s.cat.name, text: '−' });
-                    const plus = el('button', { type: 'button', 'aria-label': 'Eine Spalte mehr in ' + s.cat.name, text: '+' });
-                    minus.addEventListener('click', () => changeSlots(s.cat.id, -1));
-                    plus.addEventListener('click', () => changeSlots(s.cat.id, 1));
-                    ctl.append(minus, ' ', plus);
-                    th.append(ctl);
+        const sek1 = g.stufe === 'sek1';
+        const hasSubs = sek1 && g.categories.some(c => c.subs && c.subs.length);
+        const nRows = hasSubs ? 3 : 2;
+        const rows = [];
+        for (let i = 0; i < nRows; i++) rows.push(el('tr'));
+        rows[0].append(el('th', { class: 'name', rowspan: String(nRows), text: 'Name' }));
+
+        const pctOf = (list, c) => {
+            const sum = list.reduce((a, x) => a + (x.weight > 0 ? x.weight : 0), 0);
+            return sum > 0 && c.weight > 0 ? Math.round(c.weight / sum * 100) : 0;
+        };
+        const slotCtl = c => {
+            const ctl = el('span', { class: 'ctl' });
+            const minus = el('button', { type: 'button', 'aria-label': 'Eine Spalte weniger in ' + c.name, text: '−' });
+            const plus = el('button', { type: 'button', 'aria-label': 'Eine Spalte mehr in ' + c.name, text: '+' });
+            minus.addEventListener('click', () => changeSlots(c.id, -1));
+            plus.addEventListener('click', () => changeSlots(c.id, 1));
+            ctl.append(minus, ' ', plus);
+            return ctl;
+        };
+        const numbers = (c, row, withMean) => {
+            for (let k = 1; k <= c.slots; k++) row.append(el('th', { text: String(k) }));
+            if (withMean) row.append(el('th', { text: 'Ø' }));
+        };
+        const calcHead = s => {
+            let label = CALC_LABEL[s.t];
+            if (s.t === 'kl' && g.course === 'lk13') label = 'Σ Klausuren';
+            const th = el('th', { rowspan: String(nRows), text: label });
+            if (s.t === 'tot' || s.t === 'at' || s.t === 'kl' || s.t === 'pts') th.className = 'sep';
+            rows[0].append(th);
+        };
+
+        if (sek1) {
+            g.categories.forEach(c => {
+                if (c.subs && c.subs.length) {
+                    const width = c.subs.reduce((a, s) => a + s.slots + 1, 0) + 1;
+                    rows[0].append(el('th', { class: 'cat main', colspan: String(width), text: c.name + ' · ' + pctOf(g.categories, c) + ' %' }));
+                    c.subs.forEach(s => {
+                        const th = el('th', { class: 'cat sub', colspan: String(s.slots + 1) });
+                        th.append(document.createTextNode(s.name + ' · ' + pctOf(c.subs, s) + ' %'), slotCtl(s));
+                        rows[1].append(th);
+                        numbers(s, rows[2], true);
+                    });
+                    rows[1].append(el('th', { class: 'cat main', rowspan: '2', text: 'Ø' }));
+                } else {
+                    const th = el('th', { class: 'cat', colspan: String(c.slots + 1), rowspan: String(nRows - 1) });
+                    th.append(document.createTextNode(c.name + ' · ' + pctOf(g.categories, c) + ' %'), slotCtl(c));
+                    rows[0].append(th);
+                    numbers(c, rows[nRows - 1], true);
                 }
-                r1.append(th);
-                for (let k = 1; k <= s.cat.slots; k++) r2.append(el('th', { text: String(k) }));
-                if (hasMean) r2.append(el('th', { text: 'Ø' }));
-            } else if (s.t !== 'mean') {
-                let label = CALC_LABEL[s.t];
-                if (s.t === 'kl' && g.course === 'lk13') label = 'Σ Klausuren';
-                const th = el('th', { rowspan: '2', text: label });
-                if (s.t === 'tot' || s.t === 'at' || s.t === 'kl' || s.t === 'pts') th.className = 'sep';
-                r1.append(th);
-            }
-        });
-        const table = el('table', { class: 'nt' }, [el('thead', {}, [r1, r2])]);
+            });
+            segs.forEach(s => { if (s.t !== 'cat' && s.t !== 'mean') calcHead(s); });
+        } else {
+            segs.forEach((s, i) => {
+                if (s.t === 'cat') {
+                    const hasMean = segs[i + 1] && segs[i + 1].t === 'mean';
+                    const th = el('th', { class: 'cat', colspan: String(s.cat.slots + (hasMean ? 1 : 0)) });
+                    th.append(document.createTextNode(catHeadLabel(g, s.cat)));
+                    if (!(g.course === 'lk13' && s.cat.id === 'k')) th.append(slotCtl(s.cat));
+                    rows[0].append(th);
+                    numbers(s.cat, rows[1], hasMean);
+                } else if (s.t !== 'mean') calcHead(s);
+            });
+        }
+        const table = el('table', { class: 'nt' }, [el('thead', {}, rows)]);
         const tb = el('tbody');
         g.students.forEach(st => tb.append(buildRow(g, st, segs, coarse, mode)));
         table.append(tb);
@@ -744,7 +836,7 @@
                 const k = td.dataset.k;
                 td.textContent = '';
                 if (k.indexOf('mean:') === 0) {
-                    const cc = c.cats.find(x => x.id === k.slice(5));
+                    const cc = c.byId[k.slice(5)];
                     td.textContent = cc && cc.note != null ? fmt2(cc.note) : '';
                 } else if (k === 'tot') td.textContent = c.total == null ? '' : fmt2(c.total);
                 else if (k === 'calc') td.textContent = c.grade == null ? '' : String(c.grade);
@@ -911,8 +1003,8 @@
         const kp = $('keypad');
         kp.textContent = '';
         const st = findStudent(inp.dataset.sid);
-        const c = catList(g).find(x => x.id === inp.dataset.cat);
-        kp.append(el('div', { class: 'kp-who', text: (st ? st.name : '') + ' · ' + (c ? c.name : '') + ' ' + (parseInt(inp.dataset.i, 10) + 1) }));
+        const cname = fullName(g, inp.dataset.cat);
+        kp.append(el('div', { class: 'kp-who', text: (st ? st.name : '') + ' · ' + cname + ' ' + (parseInt(inp.dataset.i, 10) + 1) }));
         const cols = mode === 'points' ? 8 : 6;
         const grid = el('div', { class: 'kp-grid' });
         grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
