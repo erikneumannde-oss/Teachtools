@@ -112,7 +112,7 @@
             };
         }
         return {
-            id: uid(), name: name, stufe: 'sek1', tendency: true, grenze: 0.45,
+            id: uid(), name: name, stufe: 'sek1', tendency: true, grenze: 0.5,
             categories: [
                 { id: 'c' + uid().slice(1, 7), name: 'Schriftlich', weight: 50, slots: 3 },
                 { id: 'c' + uid().slice(1, 7), name: 'Mündlich', weight: 50, slots: 3 }
@@ -170,7 +170,7 @@
             const g = newGroup(cleanStr(src.name, MAX_NAME) || 'Gruppe ' + (idx + 1), stufe);
             if (stufe === 'sek1') {
                 g.tendency = src.tendency !== false;
-                g.grenze = 0.45;
+                g.grenze = 0.5;
                 if (Array.isArray(src.categories) && src.categories.length) {
                     const used = new Set();
                     g.categories = src.categories.slice(0, MAX_CATS).map((c, i) => {
@@ -366,9 +366,15 @@
         selId = null;
         markDirty();
         renderAll();
-        $('det-group').open = true;
         $('det-names').open = true;
+        $('det-rating').open = true;
     }
+
+    $('edit-rating').addEventListener('click', () => {
+        const d = $('det-rating');
+        d.open = true;
+        d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 
     $('tab-add').addEventListener('click', addGroup);
     $('empty-add').addEventListener('click', addGroup);
@@ -710,6 +716,7 @@
                 const td = el('td', { class: 'calc', 'data-k': s.t + (s.cat ? ':' + s.cat.id : '') });
                 if (s.t === 'tot' || s.t === 'at' || s.t === 'kl' || s.t === 'pts') td.classList.add('sep');
                 if (s.t === 'fin' || s.t === 'note' || s.t === 'pts') td.classList.add('strong');
+                if (s.t === 'fin' || s.t === 'note') td.classList.add('final');
                 tr.append(td);
             }
         });

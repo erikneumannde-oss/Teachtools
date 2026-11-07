@@ -47,6 +47,10 @@
 
     /* ---------- Rundung ---------- */
 
+    // Rechnerische Note: ab x,5 zählt die schlechtere Note. Beratung: Ziel ist ein Durchschnitt bis x,44.
+    const ROUND_LIMIT = 0.5;
+    const ADVICE_LIMIT = 0.45;
+
     // Ganze Note aus einem Durchschnitt: ab (n + grenze) zählt die schlechtere Note
     function gradeFromAvg(avg, grenze) {
         return Math.max(1, Math.min(6, Math.floor(avg + (1 - grenze) + 1e-9)));
@@ -87,7 +91,7 @@
             const present = cats.filter(c => c.mean != null);
             if (present.length) total = scaleToNote(group, present.reduce((a, c) => a + c.mean, 0) / present.length);
         }
-        const grade = total == null ? null : gradeFromAvg(total, group.grenze);
+        const grade = total == null ? null : gradeFromAvg(total, ROUND_LIMIT);
         return { cats: cats, total: total, grade: grade };
     }
 
@@ -112,7 +116,7 @@
         if (calc.grade == null) return { status: 'empty' };
         if (calc.grade === 1) return { status: 'best', calc: calc };
         const targetGrade = calc.grade - 1;
-        const limit = targetGrade + group.grenze;          // Durchschnitt muss darunter liegen
+        const limit = targetGrade + ADVICE_LIMIT;          // Durchschnitt muss darunter liegen
         const maxAvg = Math.round((limit - 0.01) * 100) / 100;
         const cands = group.tendency
             ? TEND.slice().reverse().map(g => g)           // von schlecht (6) nach gut (1+)
