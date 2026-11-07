@@ -170,7 +170,7 @@
             const g = newGroup(cleanStr(src.name, MAX_NAME) || 'Gruppe ' + (idx + 1), stufe);
             if (stufe === 'sek1') {
                 g.tendency = src.tendency !== false;
-                g.grenze = src.grenze === 0.5 ? 0.5 : 0.45;
+                g.grenze = 0.45;
                 if (Array.isArray(src.categories) && src.categories.length) {
                     const used = new Set();
                     g.categories = src.categories.slice(0, MAX_CATS).map((c, i) => {
@@ -467,15 +467,6 @@
         };
         box.append(radio('tend', '1', 'Mit Tendenz (1+, 1, 1-, 2+ …)', g.tendency, () => setTend(true)));
         box.append(radio('tend', '0', 'Ohne Tendenz (1 bis 6)', !g.tendency, () => setTend(false)));
-
-        box.append(el('div', { class: 'section-title', text: 'Rundung' }));
-        const sel = el('select', { class: 'field', 'aria-label': 'Rundung' }, [
-            el('option', { value: '0.45', text: 'Ab x,45 zählt die schlechtere Note' }),
-            el('option', { value: '0.5', text: 'Ab x,5 zählt die schlechtere Note' })
-        ]);
-        sel.value = String(g.grenze);
-        sel.addEventListener('change', () => { g.grenze = parseFloat(sel.value); markDirty(); renderTable(); renderAdvice(); });
-        box.append(sel);
 
         box.append(el('div', { class: 'section-title', text: 'Kategorien und Wertung' }));
         box.append(el('div', { class: 'cathead' }, [el('span', { text: 'Name' }), el('span', { text: 'Wertung' }), el('span')]));

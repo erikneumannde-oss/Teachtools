@@ -44,8 +44,7 @@
     function groupWeights(g) {
         if (g.stufe === 'sek2') return 'Allgemeiner Teil: mündlich ' + g.atWeights.m + ' %, sonstige ' + g.atWeights.s + ' %';
         const sum = g.categories.reduce((a, c) => a + (c.weight > 0 ? c.weight : 0), 0);
-        return 'Wertung: ' + g.categories.map(c => c.name + ' ' + (sum > 0 && c.weight > 0 ? Math.round(c.weight / sum * 100) : 0) + ' %').join(' · ') +
-            ' · Rundung ab x,' + (g.grenze === 0.5 ? '5' : '45');
+        return 'Wertung: ' + g.categories.map(c => c.name + ' ' + (sum > 0 && c.weight > 0 ? Math.round(c.weight / sum * 100) : 0) + ' %').join(' · ');
     }
 
     // Liefert { groups: [{label, span}], heads: [..], w: [Gewichte], bold: [Spalte fett?], rows: [[Texte]] }
