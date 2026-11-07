@@ -1,8 +1,9 @@
 {
+  "id": "./?app=teachtools",
   "name": "Tools für Lehrkräfte",
   "short_name": "Lehrkräfte-Tools",
   "description": "Kleine Werkzeuge für den Schulalltag, die im Browser laufen und keine Daten übertragen",
-  "start_url": "./index.html",
+  "start_url": "./?source=app",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
@@ -10,8 +11,8 @@
   "theme_color": "#2c3e50",
   "lang": "de",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

@@ -245,3 +245,12 @@ body[data-stufe="oberstufe"] .note::before { background: radial-gradient(circle 
 /* Gedrehte Zettel dürfen nie über den Bildschirmrand hinausragen (sonst zoomt Safari auf dem iPad heraus) */
 html, body { overflow-x: hidden; }
 .stage { overflow-x: clip; max-width: 100%; }
+
+/* Installieren-Knopf auf dem Blatt der Startseite */
+.install-btn {
+  display: inline-block; margin-top: .4em; padding: .7em 1.2em; border: 0; border-radius: .6em;
+  background: var(--akzent); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+  min-height: 44px; touch-action: manipulation;
+}
+.install-btn[hidden] { display: none; }
+.install-btn:hover { filter: brightness(1.15); }
