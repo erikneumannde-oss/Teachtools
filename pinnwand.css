@@ -1,0 +1,247 @@
+/* Gemeinsames Aussehen der Pinnwand-Seiten (Beschreibung auf dem Blatt, Zettel auf dem Kork) */
+
+html, body { margin: 0; padding: 0; background: #2b1d12; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+
+/* Bühne mit festem Seitenverhältnis des Bildes, damit Blatt und Zettel auf jedem Gerät passen */
+.stage {
+  --w: min(100vw, calc(100vh * 2576 / 1438));
+  position: relative;
+  width: var(--w);
+  aspect-ratio: 2576 / 1438;
+  margin: 0 auto;
+  font-size: max(10px, calc(var(--w) * 0.0135));
+  color: #1f2937;
+}
+.board { display: block; width: 100%; height: 100%; }
+
+/* Das weiße Blatt links (im Bild leer) */
+.paper {
+  position: absolute;
+  left: 7.5%; top: 11%;
+  width: 30.9%; height: 79.1%;
+  box-sizing: border-box;
+  padding: 3em 1.8em 1em;
+  overflow: hidden;
+}
+.paper h1 { margin: 0 0 .5em; font-size: 1.55em; line-height: 1.2; color: #0f766e; }
+.paper h2 { margin: .9em 0 .3em; font-size: 1em; color: #0f766e; }
+.paper p { margin: 0 0 .8em; line-height: 1.45; }
+.paper ul { margin: 0; padding-left: 1.2em; line-height: 1.5; }
+.paper .hinweis { margin-top: 1em; font-size: .9em; color: #475569; font-style: italic; }
+
+/* Zettel auf dem Kork */
+.notes {
+  position: absolute;
+  left: 41.5%; top: 9%;
+  width: 55%; height: 82%;
+  box-sizing: border-box;
+  padding: 1em;
+  display: flex; flex-wrap: wrap; align-content: flex-start;
+  gap: 2.6em 2em;
+}
+.note {
+  --rot: -2deg;
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: calc(var(--w) * 0.152);
+  min-height: calc(var(--w) * 0.105);
+  padding: 1.9em 1.1em 1.1em;
+  background: #fff59d;
+  color: #1f2937;
+  text-decoration: none;
+  box-shadow: 0 .35em .8em rgba(0, 0, 0, .35);
+  transform: rotate(var(--rot));
+  transition: transform .2s ease, box-shadow .2s ease;
+  animation: anpinnen .4s ease;
+}
+.note[hidden] { display: none !important; }
+.note b { display: block; font-size: 1.12em; line-height: 1.2; overflow-wrap: break-word; }
+.note::after {
+  content: attr(data-tag);
+  display: block;
+  margin-top: .6em;
+  font-size: .75em;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, .55);
+}
+.note::before {
+  content: "";
+  position: absolute;
+  top: -.55em; left: calc(50% - .8em);
+  width: 1.6em; height: 1.6em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a80 0, #d32f2f 55%, #7f0000 100%);
+  box-shadow: 0 .3em .45em rgba(0, 0, 0, .5);
+}
+.note:hover, .note:focus-visible {
+  transform: rotate(0deg) translateY(-.4em) scale(1.05);
+  box-shadow: 0 .8em 1.4em rgba(0, 0, 0, .45);
+  z-index: 2;
+  outline: none;
+}
+
+/* Abwechslung: Farbe, Neigung und Nadel je Zettel */
+.note:nth-child(1) { --rot: -2deg; }
+.note:nth-child(2) { --rot: 1.6deg; background: #b3e5fc; margin-top: 1.4em; }
+.note:nth-child(2)::before { background: radial-gradient(circle at 35% 30%, #90caf9 0, #1976d2 55%, #0d3c78 100%); }
+.note:nth-child(3) { --rot: -1deg; background: #c8e6c9; }
+.note:nth-child(3)::before { background: radial-gradient(circle at 35% 30%, #fff59d 0, #fbc02d 55%, #8a6200 100%); }
+.note:nth-child(4) { --rot: 2.2deg; background: #f8bbd0; margin-top: 1.2em; }
+.note:nth-child(4)::before { background: radial-gradient(circle at 35% 30%, #a5d6a7 0, #388e3c 55%, #1b5e20 100%); }
+.note:nth-child(5) { --rot: -1.6deg; background: #ffe0b2; }
+.note:nth-child(5)::before { background: radial-gradient(circle at 35% 30%, #90caf9 0, #1976d2 55%, #0d3c78 100%); }
+.note:nth-child(n+6) { --rot: 1.2deg; background: #e1bee7; }
+
+@keyframes anpinnen {
+  from { opacity: 0; transform: translateY(-1.2em) rotate(calc(var(--rot) * 3)) scale(1.1); }
+  to   { opacity: 1; transform: rotate(var(--rot)); }
+}
+@media (prefers-reduced-motion: reduce) { .note { animation: none; transition: none; } }
+
+/* Hinweis, solange noch keine Zettel hängen */
+.leer {
+  position: absolute;
+  left: 41.5%; top: 42%;
+  width: 55%;
+  margin: 0;
+  text-align: center;
+  font-size: 1.5em;
+  font-weight: 600;
+  color: #fff8e1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+}
+.leer[hidden] { display: none; }
+
+.back-link {
+  position: absolute;
+  left: 7.5%; bottom: 2.4%;
+  color: white;
+  text-decoration: none;
+  background: rgba(0, 0, 0, .55);
+  padding: .5em 1em;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: max(11px, calc(var(--w) * 0.0105));
+}
+.back-link:hover { background: rgba(0, 0, 0, .85); }
+
+/* Hochkant (Handy): Pinnwand als Hintergrund, Blatt und Zettel untereinander */
+@media (max-aspect-ratio: 1/1) {
+  body { justify-content: flex-start; }
+  .stage {
+    --w: 100vw;
+    width: 100%;
+    aspect-ratio: auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 14px 0 70px;
+    display: flex; flex-direction: column;
+    font-size: 16px;
+    background: #c6925d url("pinnwand.jpg") 92% 50% / cover no-repeat;
+  }
+  .board { display: none; }
+  .back-link { position: static; order: -1; align-self: flex-start; margin: 0 14px; font-size: 14px; }
+  .paper {
+    position: relative; left: auto; top: auto;
+    width: auto; height: auto;
+    margin: 18px 14px 8px;
+    padding: 2.4em 1.3em 1.3em;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+    overflow: visible;
+  }
+  .paper::before {
+    content: "";
+    position: absolute; top: .55em; left: calc(50% - .8em);
+    width: 1.6em; height: 1.6em; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff8a80 0, #d32f2f 55%, #7f0000 100%);
+    box-shadow: 0 .3em .45em rgba(0, 0, 0, .5);
+  }
+  .notes {
+    position: static; width: auto; height: auto;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 18px;
+    padding: 18px 14px;
+    font-size: 15px;
+  }
+  .note { width: auto; min-height: 96px; }
+  .leer { position: static; width: auto; margin: 20px 14px; font-size: 1.1em; }
+}
+
+/* Kurzbeschreibung auf dem Zettel */
+.note small { display: block; margin-top: .55em; font-size: .8em; font-weight: 400; line-height: 1.3; color: #374151; }
+.note:has(small)::after { margin-top: .5em; }
+
+/* Links unten (Zurück, Startseite, Impressum) */
+.topbar { position: absolute; left: 7.5%; bottom: 2.4%; display: flex; gap: .8em; }
+.topbar .back-link { position: static; }
+.impressum-link {
+  position: fixed; bottom: 10px; right: 10px; z-index: 9999;
+  background: rgba(0,0,0,.6); color: #fff; padding: 5px 10px; border-radius: 5px;
+  font-size: 12px; text-decoration: none;
+}
+.impressum-link:hover { background: rgba(0,0,0,.85); }
+
+/* Mehr als sechs Zettel: etwas enger hängen, damit alle auf die Pinnwand passen */
+.notes.viele { gap: 1.8em 1.6em; }
+.notes.viele .note { min-height: calc(var(--w) * 0.088); padding: 1.7em 1em .9em; }
+.notes.viele .note b { font-size: 1.02em; hyphens: auto; }
+.notes.viele .note:nth-child(n) { margin-top: 0; }
+.note b { hyphens: auto; }
+
+@media (max-aspect-ratio: 1/1) {
+  .topbar { position: static; order: -1; flex-wrap: wrap; margin: 0 14px; }
+  .notes.viele { gap: 28px 18px; }
+  .notes.viele .note { min-height: 96px; padding: 1.9em 1.1em 1.1em; }
+}
+
+/* ===== Farben je Bereich: Rahmen, Titel, Logo ===== */
+body { --board: url("pinnwand.jpg"); --akzent: #2c3e50; }
+body[data-fach="geschichte"] { --board: url("pinnwand-geschichte.jpg"); --akzent: #7a2626; }
+body[data-fach="politik"]    { --board: url("pinnwand-politik.jpg");    --akzent: #2c5c96; }
+body[data-fach="sonstiges"]  { --board: url("pinnwand-sonstiges.jpg");  --akzent: #2f7a50; }
+.paper h1, .paper h2 { color: var(--akzent); }
+@media (max-aspect-ratio: 1/1) { .stage { background-image: var(--board); } }
+
+/* Logo-Stempel unten auf dem Blatt */
+.stempel {
+  position: absolute; left: 0; right: 0; bottom: 1.3em;
+  display: flex; align-items: center; justify-content: center; gap: .7em;
+  color: var(--akzent); font-size: .85em; font-weight: 700; line-height: 1.15; letter-spacing: .02em;
+  opacity: .95;
+}
+.stempel img { width: 3.6em; height: 3.6em; display: block; }
+@media (max-aspect-ratio: 1/1) { .paper { padding-bottom: 6.2em; } .stempel { font-size: 14px; } }
+
+/* ===== Klasse 7/8: bunt und verspielt ===== */
+body[data-stufe="7-8"] .stage { font-family: "Trebuchet MS", "Segoe UI", "Arial Rounded MT Bold", system-ui, sans-serif; }
+body[data-stufe="7-8"] .paper { border-radius: 1.2em; border: .35em dashed var(--akzent); padding-top: 3.2em; }
+body[data-stufe="7-8"] .paper h1 { font-size: 1.75em; padding-bottom: .3em; border-bottom: .16em dotted #ffb300; }
+body[data-stufe="7-8"] .note { border-radius: 1.1em .4em 1.1em .4em; font-weight: 700; box-shadow: 0 .35em .8em rgba(0,0,0,.35), inset 0 0 0 .22em rgba(255,255,255,.55); }
+body[data-stufe="7-8"] .note b { font-size: 1.2em; }
+body[data-stufe="7-8"] .note .ico { font-size: 1.6em; display: block; line-height: 1; margin-bottom: .2em; }
+body[data-stufe="7-8"] .note::after { display: inline-block; margin-top: .5em; padding: .15em .7em; border-radius: 2em; background: rgba(255,255,255,.7); color: #374151; font-weight: 700; }
+body[data-stufe="7-8"] .note:nth-child(odd) { --rot: -3deg; }
+body[data-stufe="7-8"] .note:nth-child(even) { --rot: 2.6deg; }
+
+/* ===== Klasse 9/10: kariertes Schulheft-Papier ===== */
+body[data-stufe="9-10"] .paper { background-image: linear-gradient(rgba(44,92,150,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(44,92,150,.13) 1px, transparent 1px); background-size: 1.1em 1.1em; border-left: .5em solid var(--akzent); }
+body[data-stufe="9-10"] .note { border-radius: .15em; background-image: linear-gradient(rgba(0,0,0,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px); background-size: .95em .95em; }
+body[data-stufe="9-10"] .note:nth-child(n) { --rot: -.8deg; }
+body[data-stufe="9-10"] .note:nth-child(even) { --rot: .9deg; }
+
+/* ===== Oberstufe: Karteikarten, ruhig und seriös ===== */
+body[data-stufe="oberstufe"] .stage { font-family: Georgia, "Times New Roman", serif; }
+body[data-stufe="oberstufe"] .paper { border: 1px solid #cfc7b4; box-shadow: inset 0 0 0 .45em #fffdf6, inset 0 0 0 .5em #cfc7b4; background: #fffdf6; padding-top: 3.4em; }
+body[data-stufe="oberstufe"] .paper h1 { font-weight: 700; letter-spacing: .01em; }
+body[data-stufe="oberstufe"] .note:nth-child(n) { --rot: 0deg; background-color: #fffdf6; border-radius: .1em; background-image: linear-gradient(transparent calc(100% - 1px), rgba(44,92,150,.25) 1px); background-size: 100% 1.5em; border-top: .35em solid var(--akzent); }
+body[data-stufe="oberstufe"] .note:nth-child(even) { --rot: .6deg; }
+body[data-stufe="oberstufe"] .note:nth-child(odd) { --rot: -.5deg; }
+body[data-stufe="oberstufe"] .note::before { background: radial-gradient(circle at 35% 30%, #e9d8a6 0, #b08d3c 55%, #5c4513 100%); }
+
+/* Gedrehte Zettel dürfen nie über den Bildschirmrand hinausragen (sonst zoomt Safari auf dem iPad heraus) */
+html, body { overflow-x: hidden; }
+.stage { overflow-x: clip; max-width: 100%; }

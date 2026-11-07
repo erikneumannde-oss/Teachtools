@@ -1,122 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tools für Lehrkräfte</title>
-    <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#2c3e50">
-    <link rel="icon" type="image/png" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
-    <style>
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        header {
-            background-color: #2c3e50;
-            color: white;
-            width: 100%;
-            text-align: center;
-            padding: 2rem 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-        }
-        h1 { margin: 0; font-size: 2.2rem; }
-        p.subtitle { margin-top: 10px; font-size: 1.1rem; color: #bdc3c7; }
-
-        main {
-            width: 100%;
-            max-width: 720px;
-            padding: 3rem 20px;
-            box-sizing: border-box;
-            line-height: 1.6;
-        }
-        .tool-card {
-            display: block;
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 1.5rem;
-            text-decoration: none;
-            color: #333;
-            border-top: 5px solid #27ae60;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .tool-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
-        .tool-card h2 { margin: 0 0 0.5rem; font-size: 1.4rem; }
-        .tool-card p { margin: 0; color: #666; }
-        .hinweis {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem 2rem;
-            border-top: 5px solid #3498db;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 20px 0;
-            width: 100%;
-            text-align: center;
-        }
-        footer a {
-            color: #7f8c8d;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        footer a:hover {
-            color: #3498db;
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools für Lehrkräfte</title>
+  <link rel="stylesheet" href="pinnwand.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2c3e50">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
 </head>
-<body>
+<body data-fach="start">
 
-    <header>
-        <h1>Tools für Lehrkräfte</h1>
-        <p class="subtitle">Kleine Werkzeuge für den Schulalltag – ohne Anmeldung, ohne Datenübertragung</p>
-    </header>
+  <div class="stage">
+    <img class="board" src="pinnwand.jpg" alt="">
 
-    <main>
-        <a href="pdf-werkzeuge/" class="tool-card">
-            <h2>PDF- und Bildwerkzeuge</h2>
-            <p>PDFs und Bilder zusammenfügen, Seiten sortieren und löschen, Fotos und Scans verkleinern. Alle Dateien bleiben auf dem Gerät.</p>
-        </a>
+    <section class="paper">
+      <h1>Tools für Lehrkräfte</h1>
+      <p>Kleine Werkzeuge für den Schulalltag, ohne Anmeldung und ohne Datenübertragung. Alle Eingaben werden ausschließlich im Browser verarbeitet.</p>
+      <p class="hinweis">Zum Öffnen einen Zettel antippen.</p>
+      <div class="stempel"><img src="logo-start.svg" alt=""><span>Tools für<br>Lehrkräfte</span></div>
+    </section>
 
-        <a href="sitzplan/" class="tool-card">
-            <h2>Sitzplanersteller</h2>
-            <p>Sitzpläne für mehrere Klassen anlegen, Namen verschieben, Pläne sichern und ausdrucken. Funktioniert auch auf Handy und iPad.</p>
-        </a>
+    <div class="notes">
+      <a class="note" data-tag="Werkzeug" href="./notenrechner/" title="Noten für Sek I und Sek II berechnen"><b>Notenrechner</b><small>Sek I und Sek II, mit Beratung und PDF-Export</small></a>
+      <a class="note" data-tag="Werkzeug" href="./sitzplan/" title="Sitzpläne erstellen und drucken"><b>Sitzplanersteller</b><small>Sitzpläne anlegen, sichern und ausdrucken</small></a>
+      <a class="note" data-tag="Werkzeug" href="./pdf-werkzeuge/" title="PDFs und Bilder bearbeiten"><b>PDF- und Bildwerkzeuge</b><small>Zusammenfügen, sortieren, verkleinern</small></a>
+    </div>
+  </div>
 
-        <a href="notenrechner/" class="tool-card">
-            <h2>Notenrechner</h2>
-            <p>Noten für Sek I (mit oder ohne Tendenz) und Sek II (AT und Klausuren, Zeugnisnoten nach Tabelle) berechnen, mit Beratung und PDF-Export je Lerngruppe.</p>
-        </a>
-
-        <div class="hinweis">
-            <p>Weitere Werkzeuge folgen. Alle Eingaben werden ausschließlich im Browser verarbeitet.</p>
-        </div>
-    </main>
-
-    <footer>
-        <a href="impressum.html">Impressum und Datenschutz</a>
-    </footer>
-
-    <script src="sw-register.js"></script>
+  <a href="impressum.html" class="impressum-link">Impressum &amp; Datenschutz</a>
+  <script src="sw-register.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // Netzwerk zuerst, damit Änderungen sofort ankommen; ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v3';
+const CACHE = 'teachtools-v4';
 const START = [
-  './', './index.html', './impressum.html', './manifest.webmanifest', './icons/icon-192.png',
+  './', './index.html', './pinnwand.css', './pinnwand.jpg', './logo-start.svg', './impressum.html', './manifest.webmanifest', './icons/icon-192.png',
   './pdf-werkzeuge/', './pdf-werkzeuge/index.html', './pdf-werkzeuge/app.js', './sw-register.js',
   './sitzplan/', './sitzplan/index.html', './sitzplan/app.js', './sitzplan/style.css',
   './notenrechner/', './notenrechner/index.html', './notenrechner/app.js', './notenrechner/calc.js', './notenrechner/export.js', './notenrechner/style.css',
