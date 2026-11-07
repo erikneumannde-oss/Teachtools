@@ -262,6 +262,7 @@
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChipClick(item.id); }
         });
         chip.addEventListener('pointerdown', e => onChipPointerDown(e, item, chip));
+        chip.addEventListener('contextmenu', e => e.preventDefault());
         return chip;
     }
 
@@ -393,41 +394,64 @@
         }
     });
 
-    // Ziehen nur mit der Maus. Auf Touch-Geräten bleibt das Scrollen frei, dort gilt Antippen.
+    // Ziehen: mit der Maus sofort, auf Touch-Geräten nach kurzem Gedrückthalten (sonst bleibt das Scrollen frei).
+    let touchDragging = false;
+    document.addEventListener('touchmove', ev => { if (touchDragging && ev.cancelable) ev.preventDefault(); }, { passive: false });
+
     function onChipPointerDown(e, item, chip) {
-        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        const touch = e.pointerType !== 'mouse';
+        if (!touch && e.button !== 0) return;
         const sx = e.clientX, sy = e.clientY;
-        let ghost = null, dragging = false, hover = null;
+        let lastX = sx, lastY = sy;
+        let ghost = null, dragging = false, hover = null, timer = null;
 
         function target(ev) {
             const t = document.elementFromPoint(ev.clientX, ev.clientY);
             return t && t.closest ? t : null;
         }
-        function move(ev) {
-            if (!dragging) {
-                if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
-                dragging = true;
-                suppressClick = true;
-                ghost = chip.cloneNode(true);
-                ghost.classList.add('ghost');
-                ghost.classList.remove('selected');
-                ghost.style.width = chip.offsetWidth + 'px';
-                ghost.style.height = chip.offsetHeight + 'px';
-                document.body.append(ghost);
-                chip.classList.add('dragging');
-            }
-            ghost.style.left = (ev.clientX - chip.offsetWidth / 2) + 'px';
-            ghost.style.top = (ev.clientY - chip.offsetHeight / 2) + 'px';
-            const t = target(ev);
-            const cell = t ? t.closest('.cell') : null;
+        function hoverAt(x, y) {
+            ghost.style.left = (x - chip.offsetWidth / 2) + 'px';
+            ghost.style.top = (y - chip.offsetHeight / 2) + 'px';
+            const t = document.elementFromPoint(x, y);
+            const cell = t && t.closest ? t.closest('.cell') : null;
             if (hover && hover !== cell) hover.classList.remove('drop');
             if (cell) cell.classList.add('drop');
             hover = cell;
         }
-        function end(ev) {
+        function begin() {
+            dragging = true;
+            suppressClick = true;
+            ghost = chip.cloneNode(true);
+            ghost.classList.add('ghost');
+            ghost.classList.remove('selected');
+            ghost.style.width = chip.offsetWidth + 'px';
+            ghost.style.height = chip.offsetHeight + 'px';
+            document.body.append(ghost);
+            chip.classList.add('dragging');
+            hoverAt(lastX, lastY);
+        }
+        function stopListening() {
+            clearTimeout(timer);
             document.removeEventListener('pointermove', move);
             document.removeEventListener('pointerup', end);
             document.removeEventListener('pointercancel', end);
+        }
+        function move(ev) {
+            if (ev.pointerId !== e.pointerId) return;
+            lastX = ev.clientX; lastY = ev.clientY;
+            if (!dragging) {
+                const d = Math.hypot(lastX - sx, lastY - sy);
+                if (touch) { if (d > 10) stopListening(); return; }   // Finger bewegt sich vor dem Halten: Scrollen
+                if (d < 6) return;
+                begin();
+                return;
+            }
+            hoverAt(lastX, lastY);
+        }
+        function end(ev) {
+            if (ev.pointerId !== e.pointerId) return;
+            stopListening();
+            touchDragging = false;
             if (!dragging) return;
             if (hover) hover.classList.remove('drop');
             ghost.remove();
@@ -447,6 +471,13 @@
         document.addEventListener('pointermove', move);
         document.addEventListener('pointerup', end);
         document.addEventListener('pointercancel', end);
+        if (touch) {
+            timer = setTimeout(() => {
+                touchDragging = true;
+                if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* nichts */ } }
+                begin();
+            }, 300);
+        }
     }
 
     document.addEventListener('pointerdown', () => { suppressClick = false; }, true);
