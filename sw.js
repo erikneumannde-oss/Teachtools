@@ -1,8 +1,9 @@
 // Netzwerk zuerst, damit Änderungen sofort ankommen; ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v1';
+const CACHE = 'teachtools-v2';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest', './icons/icon-192.png',
   './pdf-werkzeuge/', './pdf-werkzeuge/index.html', './pdf-werkzeuge/app.js', './sw-register.js',
+  './sitzplan/', './sitzplan/index.html', './sitzplan/app.js', './sitzplan/style.css',
   './lib/pdf-lib.min.js', './lib/pdf.min.js', './lib/pdf.worker.min.js', './lib/fflate.js'
 ];
 self.addEventListener('install', e => {

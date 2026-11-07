@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Sitzplanersteller</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Sitzplanersteller</h1>
+        <p>Namen bleiben auf Ihrem Gerät. Es wird nichts gespeichert oder übertragen.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="work" aria-label="Sitzplan">
+
+        <div class="plans-bar">
+            <div id="tabs" class="tabs" role="tablist" aria-label="Pläne"></div>
+            <button type="button" id="tab-add" class="btn icon" aria-label="Neuen Plan anlegen" title="Neuen Plan anlegen">+</button>
+        </div>
+
+        <div class="sticky">
+            <div id="pool-wrap" class="pool-wrap">
+                <div class="pool-head"><strong>Noch nicht platziert</strong> <span id="pool-count"></span></div>
+                <div id="pool" class="pool"></div>
+            </div>
+            <div id="selbar" class="selbar" hidden>
+                <span class="sel-label">Ausgewählt: <strong id="sel-name"></strong></span>
+                <span class="sel-actions">
+                    <button type="button" id="sel-rename" class="btn small">Umbenennen</button>
+                    <button type="button" id="sel-pool" class="btn small">Zurück in die Liste</button>
+                    <button type="button" id="sel-del" class="btn small danger">Entfernen</button>
+                    <button type="button" id="sel-cancel" class="btn small">Abbrechen</button>
+                </span>
+            </div>
+        </div>
+
+        <div class="gridtools">
+            <button type="button" id="undo" class="btn small" disabled>↶ Rückgängig</button>
+            <span class="zoom">
+                <button type="button" id="zoom-out" class="btn small icon" aria-label="Verkleinern">−</button>
+                <span id="zoom-label" class="zoom-label">100 %</span>
+                <button type="button" id="zoom-in" class="btn small icon" aria-label="Vergrößern">+</button>
+                <button type="button" id="zoom-fit" class="btn small">Anpassen</button>
+            </span>
+            <button type="button" id="print-top" class="btn small primary">Drucken</button>
+        </div>
+
+        <div id="gridscroll" class="gridscroll">
+            <div id="grid" class="grid"></div>
+        </div>
+        <p class="hint">Namen antippen und dann einen freien Platz antippen. Antippen eines besetzten Platzes tauscht die Namen. Mit der Maus lassen sich Namen auch ziehen.</p>
+    </section>
+
+    <aside class="side" aria-label="Einstellungen">
+
+        <details class="card" id="det-plan">
+            <summary>Plan</summary>
+            <div class="card-body">
+                <div class="row">
+                    <label>Klasse<input type="text" id="klasse" class="field" maxlength="30" placeholder="z. B. 7b" autocomplete="off"></label>
+                    <label>Raum<input type="text" id="raum" class="field" maxlength="30" placeholder="z. B. A102" autocomplete="off"></label>
+                </div>
+                <div class="row">
+                    <label>Spalten<input type="number" id="cols" class="field" min="4" max="16" inputmode="numeric"></label>
+                    <label>Reihen<input type="number" id="rows" class="field" min="3" max="20" inputmode="numeric"></label>
+                </div>
+                <div class="btn-row">
+                    <button type="button" id="plan-rename" class="btn small">Plan umbenennen</button>
+                    <button type="button" id="plan-dup" class="btn small">Duplizieren</button>
+                    <button type="button" id="plan-del" class="btn small danger">Plan löschen</button>
+                </div>
+            </div>
+        </details>
+
+        <details class="card" id="det-names">
+            <summary>Namen hinzufügen</summary>
+            <div class="card-body">
+                <label>Ein Name pro Zeile
+                    <textarea id="names-input" class="field" rows="4" placeholder="Anna Müller&#10;Ben Schmidt"></textarea>
+                </label>
+                <div class="btn-row">
+                    <button type="button" id="names-add" class="btn primary">Hinzufügen</button>
+                    <button type="button" id="teacher-add" class="btn">Lehrertisch</button>
+                    <button type="button" id="names-file" class="btn">Datei importieren</button>
+                    <input type="file" id="names-file-input" accept=".csv,.txt,text/plain,text/csv" hidden>
+                </div>
+                <div class="btn-row">
+                    <button type="button" id="names-sort" class="btn small">Liste A–Z sortieren</button>
+                    <button type="button" id="names-reset" class="btn small">Alle zurück in die Liste</button>
+                    <button type="button" id="plan-clear" class="btn small danger">Plan leeren</button>
+                </div>
+            </div>
+        </details>
+
+        <details class="card" id="det-save">
+            <summary>Pläne sichern und laden</summary>
+            <div class="card-body">
+                <p class="small-text">Der Sitzplan wird nirgends automatisch gespeichert. Mit „Sichern“ entsteht eine Datei auf diesem Gerät, die Sie später wieder laden können. Die Datei enthält die Namen.</p>
+                <div class="btn-row">
+                    <button type="button" id="save-json" class="btn primary">Alle Pläne sichern</button>
+                    <button type="button" id="load-json" class="btn">Laden</button>
+                    <input type="file" id="load-json-input" accept=".json,application/json" hidden>
+                </div>
+            </div>
+        </details>
+
+        <button type="button" id="print-side" class="btn primary wide">Aktuellen Plan drucken</button>
+    </aside>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="print-wrapper">
+    <div id="print-header">
+        <h1 id="print-title"></h1>
+        <h3 id="print-date"></h3>
+    </div>
+    <div id="print-area"></div>
+</div>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="app.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>
