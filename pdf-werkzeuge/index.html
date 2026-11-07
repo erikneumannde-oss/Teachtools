@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' blob: data:; base-uri 'none'; form-action 'none'">
+    <link rel="icon" href="data:,">
+    <title>PDF- und Bildwerkzeuge</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            line-height: 1.5;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 1.8rem; }
+        header p { margin: 8px 0 0; color: #bdc3c7; }
+        main { max-width: 900px; margin: 0 auto; padding: 1rem; }
+
+        .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
+        .tabs button {
+            flex: 1 1 150px;
+            min-height: 44px;
+            border: 0;
+            border-radius: 8px;
+            background: #dfe4ea;
+            color: #2c3e50;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .tabs button.active { background: #3498db; color: white; }
+
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border-top: 5px solid #3498db;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .panel.active { display: block; }
+        .panel h2 { margin-top: 0; font-size: 1.3rem; }
+        .hint { color: #666; font-size: 0.95rem; }
+
+        .drop {
+            display: block;
+            border: 2px dashed #9aa5b1;
+            border-radius: 10px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: #555;
+            cursor: pointer;
+            margin: 1rem 0;
+        }
+        .drop.over { background: #eaf4fc; border-color: #3498db; }
+        .drop input { display: none; }
+
+        .btn {
+            min-height: 44px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 8px;
+            background: #dfe4ea;
+            color: #2c3e50;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn.primary { background: #27ae60; color: white; }
+        .btn:disabled { opacity: 0.45; cursor: default; }
+        .btn.small { min-height: 40px; min-width: 40px; padding: 0 10px; }
+
+        .opts { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 1rem 0; }
+        .opts label { display: flex; flex-direction: column; font-size: 0.9rem; color: #555; gap: 4px; }
+        .opts select { min-height: 40px; font: inherit; padding: 0 8px; }
+
+        .filelist { list-style: none; padding: 0; margin: 0 0 1rem; }
+        .filelist li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .filelist .name { flex: 1; overflow-wrap: anywhere; }
+        .filelist .size { color: #888; font-size: 0.85rem; white-space: nowrap; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 1rem 0; }
+        .card { border: 1px solid #dde1e6; border-radius: 10px; padding: 8px; text-align: center; background: #fafbfc; }
+        .card.sel { border-color: #3498db; background: #eaf4fc; }
+        .card .thumb { height: 170px; display: flex; align-items: center; justify-content: center; }
+        .card canvas { max-width: 100%; max-height: 170px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); background: white; }
+        .card .label { font-size: 0.85rem; margin: 6px 0; color: #555; }
+        .card .ctrl { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; }
+        .card .pick { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.9rem; }
+        .card .pick input { width: 22px; height: 22px; }
+
+        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
+        .status { min-height: 1.5em; margin: 0.75rem 0 0; color: #2c3e50; }
+        .status.error { color: #c0392b; }
+
+        .note { background: #fff8e1; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin: 1rem 0; }
+
+        footer { text-align: center; padding: 20px 0 30px; font-size: 0.9rem; }
+        footer a { color: #7f8c8d; text-decoration: none; margin: 0 10px; }
+        footer a:hover { color: #3498db; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>PDF- und Bildwerkzeuge</h1>
+    <p>Alle Dateien bleiben auf Ihrem Gerät und werden nicht hochgeladen.</p>
+</header>
+
+<main>
+    <div class="tabs" role="tablist">
+        <button type="button" data-tab="merge" class="active">Zusammenfügen</button>
+        <button type="button" data-tab="pages">Seiten bearbeiten</button>
+        <button type="button" data-tab="imgs">Bilder verkleinern</button>
+        <button type="button" data-tab="shrink">PDF verkleinern</button>
+    </div>
+
+    <!-- 1. Zusammenfügen -->
+    <section id="tab-merge" class="panel active">
+        <h2>PDFs und Bilder zu einer PDF zusammenfügen</h2>
+        <p class="hint">Mehrere PDFs, Fotos oder Scans auswählen, mit den Pfeilen in die gewünschte Reihenfolge bringen und als eine Datei speichern.</p>
+        <label class="drop" id="merge-drop">
+            <input type="file" id="merge-input" multiple accept="application/pdf,image/*">
+            <span>Dateien auswählen (oder hierher ziehen)</span>
+        </label>
+        <ul class="filelist" id="merge-list"></ul>
+        <div class="opts">
+            <label>Seitengröße für Bilder
+                <select id="merge-pagemode">
+                    <option value="a4">A4 (Bild einpassen)</option>
+                    <option value="img">An das Bild anpassen</option>
+                </select>
+            </label>
+            <label>Größe der Bilder
+                <select id="merge-maxside">
+                    <option value="1600">Klein (gut für Uploads)</option>
+                    <option value="2400" selected>Mittel</option>
+                    <option value="4000">Groß (Original, bis 4000 px)</option>
+                </select>
+            </label>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn primary" id="merge-go" disabled>Zusammenfügen und speichern</button>
+            <button type="button" class="btn" id="merge-clear" disabled>Liste leeren</button>
+        </div>
+        <p class="status" id="merge-status" role="status"></p>
+    </section>
+
+    <!-- 2. Seiten bearbeiten -->
+    <section id="tab-pages" class="panel">
+        <h2>Seiten sortieren, drehen, löschen und teilen</h2>
+        <p class="hint">Eine PDF auswählen. Mit den Knöpfen unter jeder Seite verschieben, drehen oder löschen. Mit dem Häkchen lassen sich einzelne Seiten für „Nur gewählte speichern“ markieren.</p>
+        <label class="drop" id="pages-drop">
+            <input type="file" id="pages-input" accept="application/pdf">
+            <span>PDF auswählen (oder hierher ziehen)</span>
+        </label>
+        <p id="pages-info" class="hint"></p>
+        <div class="grid" id="pages-grid"></div>
+        <div class="actions">
+            <button type="button" class="btn primary" id="pages-save" disabled>Alle Seiten als PDF speichern</button>
+            <button type="button" class="btn" id="pages-save-sel" disabled>Nur gewählte speichern</button>
+            <button type="button" class="btn" id="pages-zip" disabled>Jede Seite einzeln (ZIP)</button>
+            <button type="button" class="btn" id="pages-reset" disabled>Zurücksetzen</button>
+        </div>
+        <p class="status" id="pages-status" role="status"></p>
+    </section>
+
+    <!-- 3. Bilder verkleinern -->
+    <section id="tab-imgs" class="panel">
+        <h2>Fotos und Scans verkleinern</h2>
+        <p class="hint">Bilder werden neu als JPEG gespeichert. Das spart Platz für E-Mails und Uploads, zum Beispiel auf itslearning.</p>
+        <label class="drop" id="imgs-drop">
+            <input type="file" id="imgs-input" multiple accept="image/*">
+            <span>Bilder auswählen (oder hierher ziehen)</span>
+        </label>
+        <div class="opts">
+            <label>Längste Seite
+                <select id="imgs-maxside">
+                    <option value="1000">1000 px (sehr klein)</option>
+                    <option value="1600" selected>1600 px (Bildschirm, Uploads)</option>
+                    <option value="2400">2400 px (Ausdruck)</option>
+                </select>
+            </label>
+            <label>Qualität
+                <select id="imgs-quality">
+                    <option value="0.6">Niedrig</option>
+                    <option value="0.8" selected>Mittel</option>
+                    <option value="0.92">Hoch</option>
+                </select>
+            </label>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn primary" id="imgs-go" disabled>Verkleinern</button>
+            <button type="button" class="btn" id="imgs-zip" disabled>Alle als ZIP speichern</button>
+        </div>
+        <ul class="filelist" id="imgs-list"></ul>
+        <p class="status" id="imgs-status" role="status"></p>
+    </section>
+
+    <!-- 4. PDF verkleinern -->
+    <section id="tab-shrink" class="panel">
+        <h2>PDF-Datei verkleinern</h2>
+        <p class="hint">Für große Scans. Die Seiten werden dabei als Bilder neu gespeichert.</p>
+        <div class="note">Danach lässt sich der Text in der PDF nicht mehr markieren oder durchsuchen. Für Scans ist das meist unwichtig, für Arbeitsblätter mit Text eher nicht.</div>
+        <label class="drop" id="shrink-drop">
+            <input type="file" id="shrink-input" accept="application/pdf">
+            <span>PDF auswählen (oder hierher ziehen)</span>
+        </label>
+        <p id="shrink-info" class="hint"></p>
+        <div class="opts">
+            <label>Auflösung
+                <select id="shrink-scale">
+                    <option value="1.75">Hoch (ca. 125 dpi)</option>
+                    <option value="1.25" selected>Mittel (ca. 90 dpi)</option>
+                    <option value="1">Niedrig (ca. 72 dpi)</option>
+                </select>
+            </label>
+            <label>Qualität
+                <select id="shrink-quality">
+                    <option value="0.6">Niedrig</option>
+                    <option value="0.75" selected>Mittel</option>
+                    <option value="0.9">Hoch</option>
+                </select>
+            </label>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn primary" id="shrink-go" disabled>Verkleinern und speichern</button>
+        </div>
+        <p class="status" id="shrink-status" role="status"></p>
+    </section>
+</main>
+
+<footer>
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+    <p class="hint">Technik: pdf-lib, PDF.js und fflate (freie Lizenzen, lokal eingebunden).</p>
+</footer>
+
+<script src="../lib/pdf-lib.min.js"></script>
+<script src="../lib/pdf.min.js"></script>
+<script src="../lib/fflate.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

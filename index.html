@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <title>Tools für Lehrkräfte</title>
     <style>
         body {
@@ -35,6 +36,24 @@
             box-sizing: border-box;
             line-height: 1.6;
         }
+        .tool-card {
+            display: block;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            text-decoration: none;
+            color: #333;
+            border-top: 5px solid #27ae60;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .tool-card h2 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+        .tool-card p { margin: 0; color: #666; }
         .hinweis {
             background: white;
             border-radius: 12px;
@@ -68,8 +87,13 @@
     </header>
 
     <main>
+        <a href="pdf-werkzeuge/" class="tool-card">
+            <h2>PDF- und Bildwerkzeuge</h2>
+            <p>PDFs und Bilder zusammenfügen, Seiten sortieren und löschen, Fotos und Scans verkleinern. Alle Dateien bleiben auf dem Gerät.</p>
+        </a>
+
         <div class="hinweis">
-            <p>Hier entstehen Werkzeuge für Lehrkräfte. Alle Eingaben werden ausschließlich im Browser verarbeitet.</p>
+            <p>Weitere Werkzeuge folgen. Alle Eingaben werden ausschließlich im Browser verarbeitet.</p>
         </div>
     </main>
 
