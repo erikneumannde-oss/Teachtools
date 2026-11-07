@@ -1,0 +1,4 @@
+@pdf-lib/fontkit (Fork von fontkit von Devon Govett), MIT-Lizenz.
+Quelle: https://github.com/Hopding/fontkit
+Die Software wird ohne jede Gewährleistung bereitgestellt. Die MIT-Lizenz erlaubt die freie Nutzung,
+Vervielfältigung und Weitergabe, sofern dieser Hinweis erhalten bleibt.

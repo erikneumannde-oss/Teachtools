@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Notenrechner</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Notenrechner</h1>
+        <p>Alle Daten bleiben auf Ihrem Gerät. Gespeichert wird nur, wenn Sie es ausdrücklich auslösen.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="work" aria-label="Noten">
+
+        <div class="plans-bar">
+            <div id="tabs" class="tabs" role="tablist" aria-label="Lerngruppen"></div>
+            <button type="button" id="tab-add" class="btn icon" aria-label="Neue Lerngruppe anlegen" title="Neue Lerngruppe anlegen">+</button>
+        </div>
+
+        <div id="empty" class="empty" hidden>
+            <p>Noch keine Lerngruppe angelegt.</p>
+            <button type="button" id="empty-add" class="btn primary">Lerngruppe anlegen</button>
+        </div>
+
+        <div id="main" hidden>
+            <details class="card advice" id="advice-card" open>
+                <summary>Beratung <span id="advice-who" class="who"></span></summary>
+                <div id="advice" class="card-body"></div>
+            </details>
+
+            <div class="gridtools">
+                <span id="status" class="status"></span>
+                <span class="btn-row inline">
+                    <button type="button" id="save-local" class="btn small primary">Im Browser speichern</button>
+                    <button type="button" id="pdf-group" class="btn small">PDF dieser Gruppe</button>
+                    <button type="button" id="pdf-all" class="btn small">PDF Gesamtübersicht</button>
+                </span>
+            </div>
+
+            <div id="tablewrap" class="tablewrap"></div>
+            <p id="hint" class="hint"></p>
+        </div>
+    </section>
+
+    <aside class="side" aria-label="Einstellungen">
+
+        <details class="card" id="det-group">
+            <summary>Lerngruppe</summary>
+            <div class="card-body" id="group-settings"></div>
+        </details>
+
+        <details class="card" id="det-rating">
+            <summary>Bewertung</summary>
+            <div class="card-body" id="rating-settings"></div>
+        </details>
+
+        <details class="card" id="det-names">
+            <summary>Namen hinzufügen</summary>
+            <div class="card-body">
+                <label>Ein Name pro Zeile
+                    <textarea id="names-input" class="field" rows="4" placeholder="Anna Müller&#10;Ben Schmidt"></textarea>
+                </label>
+                <div class="btn-row">
+                    <button type="button" id="names-add" class="btn primary">Hinzufügen</button>
+                    <button type="button" id="names-file" class="btn">CSV/TXT importieren</button>
+                    <input type="file" id="names-file-input" accept=".csv,.txt,text/plain,text/csv" hidden>
+                </div>
+                <div class="btn-row">
+                    <button type="button" id="names-sort" class="btn small">A–Z sortieren</button>
+                </div>
+            </div>
+        </details>
+
+        <details class="card" id="det-save">
+            <summary>Speichern und laden</summary>
+            <div class="card-body">
+                <p class="small-text">Mit „Im Browser speichern“ bleiben die Daten auf diesem Gerät im Browser erhalten und werden beim nächsten Öffnen wieder geladen. Alternativ lässt sich eine Datei sichern. Die Daten enthalten Namen und Noten.</p>
+                <label class="check"><input type="checkbox" id="auto-save"> Nach dem ersten Speichern automatisch mitspeichern</label>
+                <div class="btn-row">
+                    <button type="button" id="save-local2" class="btn primary">Im Browser speichern</button>
+                    <button type="button" id="forget-local" class="btn danger">Gespeicherte Daten löschen</button>
+                </div>
+                <div class="btn-row">
+                    <button type="button" id="save-json" class="btn">Als Datei sichern</button>
+                    <button type="button" id="load-json" class="btn">Datei laden</button>
+                    <input type="file" id="load-json-input" accept=".json,application/json" hidden>
+                </div>
+            </div>
+        </details>
+    </aside>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="keypad" class="keypad" hidden></div>
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="calc.js"></script>
+<script src="app.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>
