@@ -592,7 +592,7 @@
         head.append(el('th', { 'aria-label': 'Zeile entfernen' }));
         const sub = el('tr', { class: 'subhead' }, [el('th')]);
         if (!a.useNumbers) sub.append(el('th'));
-        if (be) sub.append(el('th', { text: 'Punkte' }));
+        if (be) sub.append(el('th'));
         else a.afbNames.forEach(() => sub.append(el('th', { text: 'NP' })));
         sub.append(el('th', { text: 'NP' }), el('th', { text: 'NP' }), el('th', { text: 'NP' }));
         sub.append(el('th'));
