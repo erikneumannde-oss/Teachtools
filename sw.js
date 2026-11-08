@@ -1,6 +1,6 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v6';
+const CACHE = 'teachtools-v7';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
   './pinnwand.css', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
@@ -11,6 +11,8 @@ const START = [
   './notenrechner/export.js', './notenrechner/style.css',
   './klassenarbeit/', './klassenarbeit/index.html', './klassenarbeit/app.js', './klassenarbeit/calc.js',
   './klassenarbeit/export.js', './klassenarbeit/style.css',
+  './gruppen/', './gruppen/index.html', './gruppen/app.js', './gruppen/style.css',
+  './timer/', './timer/index.html', './timer/app.js', './timer/style.css',
   './lib/pdf-lib.min.js', './lib/pdf.min.js', './lib/pdf.worker.min.js', './lib/fflate.js',
   './lib/fontkit.umd.min.js', './lib/fonts/DejaVuSans.ttf', './lib/fonts/DejaVuSans-Bold.ttf'
 ];

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Gruppen und Zufall</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Gruppen und Zufall</h1>
+        <p>Die Namen bleiben nur im geöffneten Fenster. Beim Schließen oder Neuladen sind sie weg.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="work" aria-label="Auswahl">
+        <div class="plans-bar">
+            <div class="tabs" role="tablist" aria-label="Funktion">
+                <button type="button" class="tab" role="tab" id="tab-gruppen" aria-selected="true" aria-controls="panel-gruppen">Gruppen einteilen</button>
+                <button type="button" class="tab" role="tab" id="tab-zufall" aria-selected="false" aria-controls="panel-zufall">Zufallsauswahl</button>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-gruppen" role="tabpanel" aria-labelledby="tab-gruppen">
+            <h2 class="noprint">Gruppen einteilen</h2>
+            <div class="ctrl">
+                <label>Festlegen nach
+                    <select id="g-mode" class="field">
+                        <option value="count">Anzahl der Gruppen</option>
+                        <option value="size">Personen pro Gruppe</option>
+                    </select>
+                </label>
+                <label><span id="g-num-label">Gruppen</span>
+                    <input id="g-num" class="field" type="number" min="1" max="50" value="4" inputmode="numeric">
+                </label>
+                <button type="button" id="g-run" class="btn primary">Einteilen</button>
+                <button type="button" id="g-again" class="btn" disabled>Neu mischen</button>
+                <button type="button" id="g-print" class="btn" disabled>Drucken</button>
+            </div>
+            <h2 class="printtitle">Gruppeneinteilung</h2>
+            <div id="groups" class="groups" aria-live="polite"></div>
+            <p id="g-hint" class="hint">Fehlende Personen lassen sich in der Namensliste durch Antippen abwählen. Sie werden nicht eingeteilt.</p>
+        </div>
+
+        <div class="panel" id="panel-zufall" role="tabpanel" aria-labelledby="tab-zufall" hidden>
+            <h2>Zufallsauswahl</h2>
+            <div class="ctrl">
+                <label>Wie viele Personen
+                    <input id="z-num" class="field" type="number" min="1" max="50" value="1" inputmode="numeric">
+                </label>
+                <label class="check"><input type="checkbox" id="z-norepeat" checked> Niemanden doppelt ziehen</label>
+                <button type="button" id="z-run" class="btn primary">Ziehen</button>
+                <button type="button" id="z-reset" class="btn">Zurücksetzen</button>
+            </div>
+            <div id="drawn" class="drawn" aria-live="polite"><span class="placeholder">Noch niemand gezogen.</span></div>
+            <p id="z-history" class="history"></p>
+        </div>
+    </section>
+
+    <aside class="side" aria-label="Namen">
+        <details class="card" id="det-names" open>
+            <summary>Namen</summary>
+            <div class="card-body">
+                <label>Ein Name pro Zeile
+                    <textarea id="names-input" class="field" rows="5" placeholder="Anna Müller&#10;Ben Schmidt"></textarea>
+                </label>
+                <div class="btn-row">
+                    <button type="button" id="names-add" class="btn primary">Hinzufügen</button>
+                    <button type="button" id="names-file" class="btn">CSV/TXT importieren</button>
+                    <input type="file" id="names-file-input" accept=".csv,.txt,text/plain,text/csv" hidden>
+                </div>
+                <p id="count" class="count"></p>
+                <div id="chips" class="chips"></div>
+                <div class="btn-row">
+                    <button type="button" id="names-clear" class="btn small danger" disabled>Alle entfernen</button>
+                </div>
+            </div>
+        </details>
+    </aside>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="app.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>

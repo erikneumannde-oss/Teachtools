@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Timer, Stoppuhr und Ampel</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Timer, Stoppuhr und Ampel</h1>
+        <p>Läuft komplett im Browser. Es wird nichts gespeichert.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <div class="plans-bar">
+        <div class="tabs" role="tablist" aria-label="Funktion">
+            <button type="button" class="tab" role="tab" id="tab-timer" aria-selected="true" aria-controls="panel-timer">Timer</button>
+            <button type="button" class="tab" role="tab" id="tab-stopp" aria-selected="false" aria-controls="panel-stopp">Stoppuhr</button>
+            <button type="button" class="tab" role="tab" id="tab-ampel" aria-selected="false" aria-controls="panel-ampel">Ampel</button>
+        </div>
+    </div>
+
+    <!-- Timer -->
+    <section class="panel" id="panel-timer" role="tabpanel" aria-labelledby="tab-timer">
+        <div class="fsbar"><button type="button" class="btn small fs" data-target="panel-timer">Vollbild</button></div>
+        <div id="t-display" class="display" role="timer" aria-live="off">05:00</div>
+        <div class="presets" id="t-presets" aria-label="Schnellwahl"></div>
+        <div class="ctrl center">
+            <label>Minuten <input id="t-min" class="field" type="number" min="0" max="999" value="5" inputmode="numeric"></label>
+            <span class="sep" aria-hidden="true">:</span>
+            <label>Sekunden <input id="t-sec" class="field" type="number" min="0" max="59" value="0" inputmode="numeric"></label>
+        </div>
+        <div class="ctrl center">
+            <button type="button" id="t-start" class="btn primary bigbtn">Start</button>
+            <button type="button" id="t-reset" class="btn bigbtn">Zurücksetzen</button>
+        </div>
+        <div class="ctrl center">
+            <label class="check"><input type="checkbox" id="t-sound" checked> Ton am Ende</label>
+        </div>
+    </section>
+
+    <!-- Stoppuhr -->
+    <section class="panel" id="panel-stopp" role="tabpanel" aria-labelledby="tab-stopp" hidden>
+        <div class="fsbar"><button type="button" class="btn small fs" data-target="panel-stopp">Vollbild</button></div>
+        <div id="s-display" class="display" role="timer" aria-live="off">00:00<small>,00</small></div>
+        <div class="ctrl center">
+            <button type="button" id="s-start" class="btn primary bigbtn">Start</button>
+            <button type="button" id="s-lap" class="btn bigbtn" disabled>Runde</button>
+            <button type="button" id="s-reset" class="btn bigbtn" disabled>Zurücksetzen</button>
+        </div>
+        <table id="s-laps" class="laps" hidden>
+            <thead><tr><th>Runde</th><th>Rundenzeit</th><th>Gesamt</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <!-- Ampel -->
+    <section class="panel" id="panel-ampel" role="tabpanel" aria-labelledby="tab-ampel" hidden>
+        <div class="fsbar"><button type="button" class="btn small fs" data-target="panel-ampel">Vollbild</button></div>
+        <div class="ampel-wrap">
+            <div class="ampel" role="group" aria-label="Ampel">
+                <button type="button" class="lamp red" id="lamp-red" aria-label="Rot" aria-pressed="false"></button>
+                <button type="button" class="lamp yellow" id="lamp-yellow" aria-label="Gelb" aria-pressed="false"></button>
+                <button type="button" class="lamp green" id="lamp-green" aria-label="Grün" aria-pressed="true"></button>
+            </div>
+            <div class="ampel-side">
+                <p id="a-text" class="ampel-text"></p>
+                <div id="a-time" class="ampel-time" hidden role="timer" aria-live="off"></div>
+            </div>
+        </div>
+        <div class="ctrl center">
+            <label>Hinweis zur Ampel <input id="a-note" class="field wide" type="text" maxlength="60" placeholder="zum Beispiel: Leise arbeiten"></label>
+        </div>
+        <div class="ctrl center">
+            <label>Dauer in Minuten <input id="a-min" class="field" type="number" min="1" max="999" value="10" inputmode="numeric"></label>
+            <label>Gelb in den letzten Minuten <input id="a-warn" class="field" type="number" min="0" max="999" value="2" inputmode="numeric"></label>
+            <button type="button" id="a-start" class="btn primary bigbtn">Mit Zeit starten</button>
+        </div>
+        <p class="note">Ein Tipp auf eine Lampe schaltet die Ampel von Hand. „Mit Zeit starten“ beginnt bei Grün, schaltet in den letzten Minuten auf Gelb und am Ende auf Rot.</p>
+    </section>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="app.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>
