@@ -456,6 +456,11 @@
             if (hover) hover.classList.remove('drop');
             ghost.remove();
             chip.classList.remove('dragging');
+            if (touch && ev.type === 'pointerup' && Math.hypot(lastX - sx, lastY - sy) <= 10) {
+                // Nur lange gedrückt, nicht gezogen: wie ein Antippen behandeln
+                suppressClick = false;
+                return;
+            }
             const p = P();
             const t = ev.type === 'pointerup' ? target(ev) : null;
             const cell = t ? t.closest('.cell') : null;
@@ -476,7 +481,7 @@
                 touchDragging = true;
                 if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* nichts */ } }
                 begin();
-            }, 300);
+            }, 400);
         }
     }
 
