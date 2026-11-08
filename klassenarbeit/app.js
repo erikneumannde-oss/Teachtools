@@ -109,7 +109,7 @@
             a.useNumbers = src.useNumbers === true;
             a.type = src.type === 'klausur' ? 'klausur' : 'arbeit';
             a.variant = src.variant === 'ab' ? 'ab' : 'be';
-            a.beMax = num(src.beMax) ? clamp(KA.round2(src.beMax), 1, 1000) : 100;
+            a.beMax = num(src.beMax) ? clamp(Math.round(src.beMax), 1, 1000) : 100;
             a.wSpr = num(src.wSpr) ? clamp(KA.round2(src.wSpr), 0, 100) : 20;
             if (Array.isArray(src.afbNames) && src.afbNames.length === 3) a.afbNames = src.afbNames.map((n, k) => cleanStr(n, 30) || AFB_DEFAULT[k]);
             if (Array.isArray(src.afbW) && src.afbW.length === 3 && src.afbW.every(num)) a.afbW = src.afbW.map(v => clamp(KA.round2(v), 0, 100));
@@ -124,7 +124,7 @@
                 a.students.push({
                     id: uid(), name: cleanStr(s.name, MAX_NAME),
                     pts: num(s.pts) && s.pts >= 0 && s.pts <= 9999 ? KA.round2(s.pts) : null,
-                    be: num(s.be) && s.be >= 0 && s.be <= 9999 ? KA.round2(s.be) : null,
+                    be: num(s.be) && s.be >= 0 && s.be <= 9999 ? Math.round(s.be) : null,
                     spr: np(s.spr),
                     afb: Array.isArray(s.afb) && s.afb.length === 3 ? s.afb.map(np) : [null, null, null]
                 });
@@ -352,7 +352,7 @@
         if (a.variant === 'be') {
             const max = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(a.beMax), 'aria-label': 'Gesamt-BE' });
             max.addEventListener('change', () => {
-                const v = KA.parsePoints(max.value);
+                const v = KA.parseBE(max.value);
                 if (v === '' || v === null || v < 1) { max.value = fmtT(a.beMax); return; }
                 a.beMax = v;
                 markDirty();
@@ -636,7 +636,7 @@
                 return el('td', { class: 'g pc-in' }, [inp]);
             };
             const npShow = v => String(v);
-            if (be) tr.append(field('BE', 'be', () => s.be, v => { s.be = v; }, KA.parsePoints, fmtT, 7));
+            if (be) tr.append(field('BE', 'be', () => s.be, v => { s.be = v; }, KA.parseBE, String, 4));
             else a.afbNames.forEach((n, k) => tr.append(field(n, 'afb' + k, () => s.afb[k], v => { s.afb[k] = v; }, KA.parseNP, npShow, 2)));
             tr.append(el('td', { class: 'calc strong k-fach' }));
             tr.append(field('Sprachliche Notenpunkte', 'spr', () => s.spr, v => { s.spr = v; }, KA.parseNP, npShow, 2));
@@ -660,7 +660,7 @@
         });
         wrap.append(el('table', { class: 'nt nt-k' }, [el('thead', {}, [head, sub]), tb]));
         $('hint').textContent = a.students.length
-            ? (be ? 'BE mit Komma oder Punkt eintragen, Notenpunkte als ganze Zahl von 0 bis 15. Eine Zeile zählt, sobald fachlicher und sprachlicher Teil eingetragen sind. „BE?“ zeigt, wie viele BE für welche Gesamt-Notenpunkte nötig gewesen wären.'
+            ? (be ? 'BE und Notenpunkte als ganze Zahlen eintragen, Notenpunkte von 0 bis 15. Eine Zeile zählt, sobald fachlicher und sprachlicher Teil eingetragen sind. „BE?“ zeigt, wie viele BE für welche Gesamt-Notenpunkte nötig gewesen wären.'
                 : 'Notenpunkte als ganze Zahl von 0 bis 15 eintragen. Eine Zeile zählt, sobald alle drei Bereiche und der sprachliche Teil eingetragen sind.')
             : 'Noch keine Zeilen. Rechts unter „Schülerinnen und Schüler“ Namen eintragen, eine CSV- oder TXT-Datei importieren oder leere Zeilen für Nummern hinzufügen.';
     }

@@ -105,10 +105,10 @@
         return 0;
     }
 
-    // Kleinste BE-Zahl (in halben Schritten), die für die Fachpunkte reicht
+    // Kleinste ganze BE-Zahl, die für die Fachpunkte reicht (es gibt keine halben BE)
     function beNeeded(np, max) {
         if (np <= 0) return 0;
-        return Math.ceil(BE_PCT[15 - np] * max / 100 * 2 - 1e-9) / 2;
+        return Math.ceil(BE_PCT[15 - np] * max / 100 - 1e-9);
     }
 
     // Gewichte (Fach, Sprache) der Variante mit BE
@@ -162,6 +162,12 @@
     // Notenpunkte als Note (15 = 1+, 0 = 6)
     function npLabel(p) { return TEND[15 - p]; }
     function npBase(p) { return p >= 13 ? 1 : p >= 10 ? 2 : p >= 7 ? 3 : p >= 4 ? 4 : p >= 1 ? 5 : 6; }
+    // Eingabe von BE: ganze Zahl; '' = leer, null = ungültig
+    function parseBE(input) {
+        const s = String(input == null ? '' : input).trim();
+        if (s === '') return '';
+        return /^\d{1,4}$/.test(s) ? parseInt(s, 10) : null;
+    }
     // Eingabe von Notenpunkten: ganze Zahl von 0 bis 15; '' = leer, null = ungültig
     function parseNP(input) {
         const s = String(input == null ? '' : input).trim();
@@ -173,7 +179,7 @@
 
     return {
         BE_PCT: BE_PCT, roundHalfUp: roundHalfUp, beToNP: beToNP, beNeeded: beNeeded, klausurRow: klausurRow,
-        evaluateKlausur: evaluateKlausur, needTable: needTable, npLabel: npLabel, npBase: npBase, parseNP: parseNP,
+        evaluateKlausur: evaluateKlausur, needTable: needTable, npLabel: npLabel, parseBE: parseBE, npBase: npBase, parseNP: parseNP,
         TEND: TEND, PLAIN: PLAIN, PTS: PTS, DEFAULT_PLAIN: DEFAULT_PLAIN,
         labels: labels, baseNote: baseNote, noteFromPoints: noteFromPoints, tendFromPlain: tendFromPlain,
         thresholdsInPoints: thresholdsInPoints, gradeFor: gradeFor, evaluate: evaluate,
