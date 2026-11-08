@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Briefgenerator</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Briefgenerator</h1>
+        <p>Briefe im Briefkopf der Schule. Alles bleibt auf Ihrem Gerät, es wird nichts gespeichert oder übertragen.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="card" aria-labelledby="h-kind">
+        <h2 id="h-kind">Was möchten Sie schreiben?</h2>
+        <div class="card-body">
+            <div class="kinds" id="kinds">
+                <button type="button" class="kind" data-kind="eltern" aria-pressed="false">Elternbrief<small>An eine Klasse oder einen Jahrgang</small></button>
+                <button type="button" class="kind" data-kind="sonstig" aria-pressed="false">Sonstiger Brief<small>An Personen, Familien oder Institutionen</small></button>
+                <button type="button" class="kind" disabled>Information über einen mündlichen Tadel<small>folgt</small></button>
+                <button type="button" class="kind" disabled>Information über eine ungenügende Leistung<small>folgt</small></button>
+            </div>
+        </div>
+    </section>
+
+    <div id="form" hidden>
+
+        <section class="card" aria-labelledby="h-addr">
+            <h2 id="h-addr">Adressfeld</h2>
+            <div class="card-body stack">
+
+                <div id="box-eltern" class="stack" hidden>
+                    <div class="grid2">
+                        <label>Der Brief geht an
+                            <select id="e-art" class="field">
+                                <option value="klasse">eine Klasse</option>
+                                <option value="jahrgang">eine Jahrgangsstufe</option>
+                            </select>
+                        </label>
+                        <label><span id="e-label">Klasse</span>
+                            <input id="e-wert" class="field" type="text" maxlength="20" autocomplete="off" placeholder="zum Beispiel 7a">
+                        </label>
+                    </div>
+                    <p class="fieldhint">Das Adressfeld lautet „An die Eltern und Erziehungsberechtigten der …“, die Anrede wird automatisch passend gesetzt.</p>
+                </div>
+
+                <div id="box-sonstig" class="stack" hidden>
+                    <div>
+                        <span class="fieldhint nomargin">Der Brief geht an</span>
+                        <div class="radios" id="s-typ">
+                            <label><input type="radio" name="typ" value="einzel" checked> eine Person</label>
+                            <label><input type="radio" name="typ" value="zwei"> zwei Personen</label>
+                            <label><input type="radio" name="typ" value="familie"> eine Familie</label>
+                            <label><input type="radio" name="typ" value="institution"> eine Institution</label>
+                        </div>
+                    </div>
+
+                    <div id="s-persons" class="persons"></div>
+
+                    <div id="s-familie" hidden>
+                        <label>Familienname
+                            <input id="s-familie-in" class="field" type="text" maxlength="60" autocomplete="off" placeholder="zum Beispiel Müller">
+                        </label>
+                    </div>
+                    <div id="s-institution" hidden>
+                        <label>Name der Institution
+                            <input id="s-institution-in" class="field" type="text" maxlength="100" autocomplete="off" placeholder="zum Beispiel Bezirksamt Spandau">
+                        </label>
+                    </div>
+
+                    <div class="grid2">
+                        <label>Straße und Hausnummer
+                            <input id="s-strasse" class="field" type="text" maxlength="80" autocomplete="off">
+                        </label>
+                        <div class="grid-zip">
+                            <label>PLZ
+                                <input id="s-plz" class="field" type="text" maxlength="10" inputmode="numeric" autocomplete="off">
+                            </label>
+                            <label>Ort
+                                <input id="s-ort" class="field" type="text" maxlength="60" autocomplete="off">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="fieldhint nomargin">Anrede im Brief</span>
+                        <div class="radios" id="s-anrede">
+                            <label><input type="radio" name="anrede" value="neutral" checked> Sehr geehrte Damen und Herren</label>
+                            <label><input type="radio" name="anrede" value="adresse"> passend zur Adresse</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-abs">
+            <h2 id="h-abs">Absender</h2>
+            <div class="card-body">
+                <div class="grid2">
+                    <label>Ihr Name
+                        <input id="f-names" class="field" type="text" maxlength="200" autocomplete="off" placeholder="zum Beispiel Max Mustermann">
+                        <span class="fieldhint">Mehrere Namen mit Komma trennen. Dazwischen steht dann „und“. Der Name steht unter dem Gruß.</span>
+                    </label>
+                    <label>Kürzel (Ansprechpartner)
+                        <input id="f-kuerzel" class="field" type="text" maxlength="30" autocomplete="off" placeholder="zum Beispiel Mus">
+                        <span class="fieldhint">Mehrere Kürzel mit Komma trennen. Das Kürzel steht neben „Ihr Ansprechpartner“, das Datum setzt sich automatisch.</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-txt">
+            <h2 id="h-txt">Betreff und Text</h2>
+            <div class="card-body stack">
+                <label>Betreff
+                    <input id="f-subject" class="field" type="text" maxlength="150" autocomplete="off">
+                </label>
+                <label>Text des Briefes
+                    <textarea id="f-text" class="field big" placeholder="Hier steht der Text. Eine leere Zeile erzeugt einen Absatz."></textarea>
+                    <span class="fieldhint">Anrede und Gruß setzt der Generator selbst. Der Text steht so im Brief, wie Sie ihn hier mit Zeilenumbrüchen schreiben.</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-chk">
+            <h2 id="h-chk">Kontrolle</h2>
+            <div class="card-body"><div id="check" class="check-box" aria-live="polite"></div></div>
+        </section>
+
+        <div class="actions">
+            <button type="button" id="btn-preview" class="btn">Vorschau</button>
+            <button type="button" id="btn-docx" class="btn primary">Als Word-Datei (.docx)</button>
+            <button type="button" id="btn-pdf" class="btn primary">Als PDF</button>
+        </div>
+
+        <section class="card" id="preview-card" aria-labelledby="h-prev" hidden>
+            <h2 id="h-prev">Vorschau</h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">So sieht der Brief aus. Die Word-Datei hat dasselbe Layout. Nach Änderungen im Formular „Vorschau“ erneut wählen.</p>
+                <div id="preview" class="preview"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="letter.js"></script>
+<script src="app.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>

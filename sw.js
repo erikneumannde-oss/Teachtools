@@ -1,6 +1,6 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v7';
+const CACHE = 'teachtools-v9';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
   './pinnwand.css', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
@@ -13,6 +13,9 @@ const START = [
   './klassenarbeit/export.js', './klassenarbeit/style.css',
   './gruppen/', './gruppen/index.html', './gruppen/app.js', './gruppen/style.css',
   './timer/', './timer/index.html', './timer/app.js', './timer/style.css',
+  './brief/', './brief/index.html', './brief/app.js', './brief/letter.js', './brief/layout.js', './brief/docx.js', './brief/pdf.js',
+  './brief/style.css', './brief/vorlage.docx',
+  './lib/fonts/Carlito-Regular.ttf', './lib/fonts/Carlito-Bold.ttf', './lib/fonts/LiberationSans-Regular.ttf',
   './lib/pdf-lib.min.js', './lib/pdf.min.js', './lib/pdf.worker.min.js', './lib/fflate.js',
   './lib/fontkit.umd.min.js', './lib/fonts/DejaVuSans.ttf', './lib/fonts/DejaVuSans-Bold.ttf'
 ];
