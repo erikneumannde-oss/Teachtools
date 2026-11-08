@@ -1,6 +1,6 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v14';
+const CACHE = 'teachtools-v16';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
   './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',

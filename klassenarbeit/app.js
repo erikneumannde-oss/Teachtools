@@ -16,6 +16,7 @@
     const uid = () => 'i' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
     const cleanStr = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
     const num = v => typeof v === 'number' && isFinite(v);
+    const isInt = v => typeof v === 'number' && Number.isInteger(v);
     const fmt = (x, d) => x.toFixed(d).replace('.', ',');
     const fmtT = x => String(Math.round(x * 100) / 100).replace('.', ',');
 
@@ -49,6 +50,7 @@
             const cancel = opts.cancel === false ? null : el('button', { type: 'button', class: 'btn', text: 'Abbrechen' });
             const box = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': opts.title }, [el('h2', { text: opts.title })]);
             if (opts.text) box.append(el('p', { text: opts.text }));
+            if (opts.body) box.append(opts.body);
             if (input) box.append(input);
             box.append(el('div', { class: 'modal-actions' }, cancel ? [cancel, ok] : [ok]));
             function close(val) {
@@ -59,7 +61,7 @@
                 resolve(val);
             }
             function accept() {
-                if (input) { const v = input.value.replace(/\s+/g, ' ').trim(); close(v || null); } else close(true);
+                if (input) { const v = input.value.replace(/\s+/g, ' ').trim(); close(v ? (opts.collect ? opts.collect(v) : v) : null); } else close(true);
             }
             function onKey(e) {
                 if (e.key === 'Escape') { e.preventDefault(); close(input ? null : false); }
@@ -81,9 +83,15 @@
 
     /* ---------- Datenmodell ---------- */
 
-    function newWork(name) {
+    const isK = a => !!a && a.type === 'klausur';
+    const AFB_DEFAULT = ['Anforderungsbereich I', 'Anforderungsbereich II', 'Anforderungsbereich III'];
+    const newStudent = (name) => ({ id: uid(), name: name, pts: null, be: null, spr: null, afb: [null, null, null] });
+
+    function newWork(name, type) {
         return {
             id: uid(), name: name, max: 30, tend: true, useNumbers: false, unit: 'percent', tendEdited: false,
+            type: type === 'klausur' ? 'klausur' : 'arbeit',
+            variant: 'be', beMax: 100, wSpr: 20, afbNames: AFB_DEFAULT.slice(), afbW: [20, 40, 20],
             thr: { plain: KA.DEFAULT_PLAIN.slice(), tend: KA.tendFromPlain(KA.DEFAULT_PLAIN) },
             students: []
         };
@@ -99,6 +107,12 @@
             a.max = num(src.max) ? clamp(KA.round2(src.max), 1, 1000) : 30;
             a.tend = src.tend !== false;
             a.useNumbers = src.useNumbers === true;
+            a.type = src.type === 'klausur' ? 'klausur' : 'arbeit';
+            a.variant = src.variant === 'ab' ? 'ab' : 'be';
+            a.beMax = num(src.beMax) ? clamp(KA.round2(src.beMax), 1, 1000) : 100;
+            a.wSpr = num(src.wSpr) ? clamp(KA.round2(src.wSpr), 0, 100) : 20;
+            if (Array.isArray(src.afbNames) && src.afbNames.length === 3) a.afbNames = src.afbNames.map((n, k) => cleanStr(n, 30) || AFB_DEFAULT[k]);
+            if (Array.isArray(src.afbW) && src.afbW.length === 3 && src.afbW.every(num)) a.afbW = src.afbW.map(v => clamp(KA.round2(v), 0, 100));
             a.unit = src.unit === 'points' ? 'points' : 'percent';
             a.tendEdited = src.tendEdited === true;
             const okArr = (arr, n) => Array.isArray(arr) && arr.length === n && arr.every(v => num(v) && v >= 0 && v <= 10000);
@@ -106,7 +120,14 @@
             if (src.thr && okArr(src.thr.tend, 15)) a.thr.tend = src.thr.tend.map(KA.round2);
             (Array.isArray(src.students) ? src.students : []).slice(0, MAX_STUDENTS).forEach(s => {
                 if (!s || typeof s !== 'object') return;
-                a.students.push({ id: uid(), name: cleanStr(s.name, MAX_NAME), pts: num(s.pts) && s.pts >= 0 && s.pts <= 9999 ? KA.round2(s.pts) : null });
+                const np = v => (isInt(v) && v >= 0 && v <= 15 ? v : null);
+                a.students.push({
+                    id: uid(), name: cleanStr(s.name, MAX_NAME),
+                    pts: num(s.pts) && s.pts >= 0 && s.pts <= 9999 ? KA.round2(s.pts) : null,
+                    be: num(s.be) && s.be >= 0 && s.be <= 9999 ? KA.round2(s.be) : null,
+                    spr: np(s.spr),
+                    afb: Array.isArray(s.afb) && s.afb.length === 3 ? s.afb.map(np) : [null, null, null]
+                });
             });
             out.push(a);
         });
@@ -220,14 +241,19 @@
 
     async function addWork() {
         if (works.length >= MAX_WORKS) { infoDialog('Höchstgrenze erreicht', 'Es sind höchstens ' + MAX_WORKS + ' Arbeiten möglich.'); return; }
-        const name = await promptDialog('Neue Arbeit', '');
-        if (!name) return;
-        works.push(newWork(name.slice(0, MAX_NAME)));
+        let kind = 'arbeit';
+        const body = el('div', { class: 'kind-pick' }, [
+            radio('kind', 'a', 'Klassenarbeit (Sek I, Noten 1 bis 6)', true, () => { kind = 'arbeit'; }),
+            radio('kind', 'k', 'Klausur (Oberstufe, Notenpunkte)', false, () => { kind = 'klausur'; })
+        ]);
+        const picked = await modal({ title: 'Neue Arbeit', input: '', body: body, ok: 'Anlegen', collect: v => ({ name: v, kind: kind }) });
+        if (!picked) return;
+        works.push(newWork(picked.name.slice(0, MAX_NAME), picked.kind));
         cur = works.length - 1;
         markDirty();
         renderAll();
         $('det-arbeit').open = true;
-        $('det-key').open = true;
+        $('det-key').open = !(isK(A()) && A().variant === 'ab');
         $('det-names').open = true;
     }
     $('tab-add').addEventListener('click', addWork);
@@ -253,6 +279,8 @@
             if (v) { a.name = v; markDirty(); renderTabs(); renderResult(); } else name.value = a.name;
         });
         box.append(el('label', { text: 'Name der Arbeit' }, [name]));
+
+        if (isK(a)) { renderArbeitK(box, a); return; }
 
         const max = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(a.max), 'aria-label': 'Gesamtpunktzahl' });
         max.addEventListener('change', () => {
@@ -303,11 +331,115 @@
         box.append(el('div', { class: 'btn-row' }, [dup, del]));
     }
 
+    function pctInput(label, get, set, extra) {
+        const inp = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(get()), 'aria-label': label });
+        inp.addEventListener('change', () => {
+            const v = KA.parsePoints(inp.value);
+            if (v === '' || v === null || v > 100) { inp.value = fmtT(get()); return; }
+            set(v);
+            markDirty();
+            renderAll();
+        });
+        return el('label', { text: label }, [inp]);
+    }
+
+    function renderArbeitK(box, a) {
+        box.append(el('div', { class: 'section-title', text: 'Fachlicher Teil' }));
+        const setVar = v => { if (a.variant !== v) { a.variant = v; markDirty(); renderAll(); } };
+        box.append(radio('variant', 'be', 'BE vergeben (Notenpunkte aus dem BE-Anteil)', a.variant === 'be', () => setVar('be')));
+        box.append(radio('variant', 'ab', 'Notenpunkte je Anforderungsbereich', a.variant === 'ab', () => setVar('ab')));
+
+        if (a.variant === 'be') {
+            const max = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(a.beMax), 'aria-label': 'Gesamt-BE' });
+            max.addEventListener('change', () => {
+                const v = KA.parsePoints(max.value);
+                if (v === '' || v === null || v < 1) { max.value = fmtT(a.beMax); return; }
+                a.beMax = v;
+                markDirty();
+                renderAll();
+            });
+            box.append(el('label', { text: 'Gesamt-BE der Klausur' }, [max]));
+            box.append(pctInput('Anteil sprachlicher Teil in Prozent', () => a.wSpr, v => { a.wSpr = v; }));
+            box.append(el('p', { class: 'small-text', text: 'Fachlicher Teil: ' + fmtT(100 - a.wSpr) + ' %. Aus den BE werden Notenpunkte nach dem Schlüssel der VOGO berechnet, danach mit den sprachlichen Notenpunkten verrechnet. Ab ,5 wird aufgerundet.' }));
+        } else {
+            box.append(el('div', { class: 'section-title', text: 'Anteile in Prozent' }));
+            a.afbNames.forEach((n, k) => {
+                const name = el('input', { type: 'text', class: 'field afb-name', maxlength: '30', value: n, 'aria-label': 'Name Anforderungsbereich ' + (k + 1) });
+                name.addEventListener('change', () => {
+                    const v = name.value.replace(/\s+/g, ' ').trim();
+                    a.afbNames[k] = v || AFB_DEFAULT[k];
+                    markDirty();
+                    renderAll();
+                });
+                const w = el('input', { type: 'text', class: 'field afb-w', inputmode: 'decimal', value: fmtT(a.afbW[k]), 'aria-label': 'Anteil ' + a.afbNames[k] });
+                w.addEventListener('change', () => {
+                    const v = KA.parsePoints(w.value);
+                    if (v === '' || v === null || v > 100) { w.value = fmtT(a.afbW[k]); return; }
+                    a.afbW[k] = v;
+                    markDirty();
+                    renderAll();
+                });
+                box.append(el('div', { class: 'afb-row' }, [name, w, el('span', { class: 'info', text: '%' })]));
+            });
+            const spr = el('input', { type: 'text', class: 'field afb-w', inputmode: 'decimal', value: fmtT(a.wSpr), 'aria-label': 'Anteil sprachlicher Teil' });
+            spr.addEventListener('change', () => {
+                const v = KA.parsePoints(spr.value);
+                if (v === '' || v === null || v > 100) { spr.value = fmtT(a.wSpr); return; }
+                a.wSpr = v;
+                markDirty();
+                renderAll();
+            });
+            box.append(el('div', { class: 'afb-row' }, [el('span', { class: 'afb-fix', text: 'Sprachlicher Teil' }), spr, el('span', { class: 'info', text: '%' })]));
+            const sum = KA.round2(a.afbW.reduce((x, y) => x + y, 0) + a.wSpr);
+            box.append(el('p', { class: 'small-text' + (sum !== 100 ? ' warn-text' : ''), text: sum === 100
+                ? 'Die Notenpunkte der Bereiche werden gewichtet gemittelt und ab ,5 aufgerundet. Danach werden sie mit dem sprachlichen Teil verrechnet.'
+                : 'Die Anteile ergeben zusammen ' + fmtT(sum) + ' %. Sie werden im Verhältnis zueinander verrechnet.' }));
+        }
+
+        box.append(el('div', { class: 'section-title', text: 'Anzeige' }));
+        box.append(radio('disp', 'n', 'Namen', !a.useNumbers, () => { a.useNumbers = false; markDirty(); renderTable(); }));
+        box.append(radio('disp', 'z', 'Nummern statt Namen', a.useNumbers, () => { a.useNumbers = true; markDirty(); renderTable(); }));
+        box.append(workButtons(a));
+    }
+
+    function workButtons(a) {
+        const dup = el('button', { type: 'button', class: 'btn small', text: 'Duplizieren' });
+        const del = el('button', { type: 'button', class: 'btn small danger', text: 'Arbeit löschen' });
+        dup.addEventListener('click', () => {
+            if (works.length >= MAX_WORKS) return;
+            const copy = JSON.parse(JSON.stringify(a));
+            copy.id = uid();
+            copy.name = (a.name + ' (Kopie)').slice(0, MAX_NAME);
+            copy.students.forEach(s => { s.id = uid(); });
+            works.splice(cur + 1, 0, copy);
+            cur++;
+            markDirty();
+            renderAll();
+        });
+        del.addEventListener('click', async () => {
+            if (!(await confirmDialog('Arbeit löschen?', '„' + a.name + '“ wird mit allen Namen und Punkten entfernt.', 'Löschen'))) return;
+            works.splice(cur, 1);
+            cur = clamp(cur, 0, works.length - 1);
+            markDirty();
+            renderAll();
+        });
+        return el('div', { class: 'btn-row' }, [dup, del]);
+    }
+
     function renderKey() {
         const box = $('key-settings');
         box.textContent = '';
         const a = A();
         if (!a) return;
+        if (isK(a)) {
+            box.append(el('p', { class: 'small-text', text: 'Notenpunkte aus dem Anteil der erreichten BE (VOGO, gültig ab 2019/2020).' }));
+            for (let p = 15; p >= 1; p--) {
+                const need = KA.beNeeded(p, a.beMax);
+                box.append(el('div', { class: 'keyrow' }, [el('span', { class: 'kn', text: String(p) }), el('span', { class: 'info', text: 'ab ' + KA.BE_PCT[15 - p] + ' %' }), el('span', { class: 'info', text: fmtT(need) + ' BE' })]));
+            }
+            box.append(el('div', { class: 'keyrow' }, [el('span', { class: 'kn', text: '0' }), el('span', { class: 'info', text: 'darunter' }), el('span')]));
+            return;
+        }
         const vals = a.tend ? a.thr.tend : a.thr.plain;
         const lab = KA.labels(a.tend);
 
@@ -374,7 +506,7 @@
         if (!a || !names.length) return;
         let added = 0;
         names.forEach(n => {
-            if (a.students.length < MAX_STUDENTS) { a.students.push({ id: uid(), name: n, pts: null }); added++; }
+            if (a.students.length < MAX_STUDENTS) { a.students.push(newStudent(n)); added++; }
         });
         markDirty();
         renderTable();
@@ -434,11 +566,136 @@
         inp.classList.toggle('over', s.pts != null && s.pts > a.max + 1e-9);
     }
 
+    const npColor = p => NOTE_COLORS[KA.npBase(p)];
+
+    function fillRowK(tr, s) {
+        const a = A();
+        const r = KA.klausurRow(a, s);
+        const f = tr.querySelector('.k-fach'), g = tr.querySelector('.k-ges');
+        if (f) f.textContent = r.fach == null ? '' : String(r.fach);
+        g.textContent = r.gesamt == null ? '' : String(r.gesamt);
+        g.style.background = r.gesamt == null ? '' : npColor(r.gesamt);
+        g.style.color = r.gesamt == null ? '' : '#fff';
+        const be = tr.querySelector('input[data-f="be"]');
+        if (be) be.classList.toggle('over', s.be != null && s.be > a.beMax + 1e-9);
+    }
+
+    function renderTableK(a) {
+        const wrap = $('tablewrap');
+        const be = a.variant === 'be';
+        const head = el('tr', {}, [el('th', { text: 'Nr.' })]);
+        if (!a.useNumbers) head.append(el('th', { class: 'name', text: 'Name' }));
+        if (be) head.append(el('th', { text: 'BE (von ' + fmtT(a.beMax) + ')' }));
+        else a.afbNames.forEach(n => head.append(el('th', { class: 'afbh', text: n })));
+        head.append(el('th', { text: 'Fachlich' }), el('th', { text: 'Sprachlich' }), el('th', { text: 'Gesamt' }));
+        if (be) head.append(el('th', { 'aria-label': 'BE-Bedarf' }));
+        head.append(el('th', { 'aria-label': 'Zeile entfernen' }));
+        const sub = el('tr', { class: 'subhead' }, [el('th')]);
+        if (!a.useNumbers) sub.append(el('th'));
+        if (be) sub.append(el('th', { text: 'Punkte' }));
+        else a.afbNames.forEach(() => sub.append(el('th', { text: 'NP' })));
+        sub.append(el('th', { text: 'NP' }), el('th', { text: 'NP' }), el('th', { text: 'NP' }));
+        sub.append(el('th'));
+        if (be) sub.append(el('th'));
+        const tb = el('tbody');
+        a.students.forEach((s, i) => {
+            const tr = el('tr', { 'data-sid': s.id });
+            const who = () => (a.useNumbers ? 'Nr. ' + (i + 1) : (s.name || 'Nr. ' + (i + 1)));
+            tr.append(el('td', { class: 'num', text: String(i + 1) }));
+            if (!a.useNumbers) {
+                const ni = el('input', { type: 'text', class: 'ni', maxlength: String(MAX_NAME), value: s.name, 'aria-label': 'Name ' + (i + 1), autocomplete: 'off' });
+                ni.addEventListener('input', () => { s.name = ni.value.slice(0, MAX_NAME); markDirty(); });
+                ni.addEventListener('change', () => { s.name = ni.value.replace(/\s+/g, ' ').trim(); ni.value = s.name; });
+                tr.append(el('td', { class: 'name-in' }, [ni]));
+            }
+            const field = (label, f, get, set, parse, show, ml) => {
+                const inp = el('input', { type: 'text', class: 'pi', 'data-f': f, inputmode: 'decimal', autocomplete: 'off', maxlength: String(ml), 'aria-label': label + ' ' + who() });
+                inp.value = get() == null ? '' : show(get());
+                inp.addEventListener('input', () => {
+                    const v = parse(inp.value);
+                    if (v === null) return;
+                    set(v === '' ? null : v);
+                    markDirty();
+                    fillRowK(tr, s);
+                    renderResult();
+                });
+                inp.addEventListener('change', () => {
+                    const v = parse(inp.value);
+                    if (v === null) {
+                        inp.classList.add('bad');
+                        setTimeout(() => inp.classList.remove('bad'), 900);
+                        inp.value = get() == null ? '' : show(get());
+                        announce('Ungültige Eingabe');
+                    } else inp.value = v === '' ? '' : show(v);
+                });
+                inp.addEventListener('focus', () => inp.select());
+                inp.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); moveFocus(tr, 1); }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(tr, -1); }
+                });
+                return el('td', { class: 'g pc-in' }, [inp]);
+            };
+            const npShow = v => String(v);
+            if (be) tr.append(field('BE', 'be', () => s.be, v => { s.be = v; }, KA.parsePoints, fmtT, 7));
+            else a.afbNames.forEach((n, k) => tr.append(field(n, 'afb' + k, () => s.afb[k], v => { s.afb[k] = v; }, KA.parseNP, npShow, 2)));
+            tr.append(el('td', { class: 'calc strong k-fach' }));
+            tr.append(field('Sprachliche Notenpunkte', 'spr', () => s.spr, v => { s.spr = v; }, KA.parseNP, npShow, 2));
+            tr.append(el('td', { class: 'calc strong k-ges' }));
+            if (be) {
+                const nb = el('button', { type: 'button', class: 'need-btn', 'aria-label': 'Benötigte BE für ' + who(), title: 'Benötigte BE anzeigen', text: 'BE?' });
+                nb.addEventListener('click', () => showNeed(a, s));
+                tr.append(el('td', { class: 'rm' }, [nb]));
+            }
+            const rm = el('button', { type: 'button', 'aria-label': 'Zeile ' + (i + 1) + ' entfernen', text: '×' });
+            rm.addEventListener('click', async () => {
+                if ((s.name || s.be != null || s.spr != null) && !(await confirmDialog('Zeile entfernen?', 'Die Zeile ' + (i + 1) + (s.name ? ' („' + s.name + '“)' : '') + ' wird mit ihren Punkten entfernt.', 'Entfernen'))) return;
+                a.students = a.students.filter(x => x !== s);
+                markDirty();
+                renderTable();
+                renderResult();
+            });
+            tr.append(el('td', { class: 'rm' }, [rm]));
+            fillRowK(tr, s);
+            tb.append(tr);
+        });
+        wrap.append(el('table', { class: 'nt nt-k' }, [el('thead', {}, [head, sub]), tb]));
+        $('hint').textContent = a.students.length
+            ? (be ? 'BE mit Komma oder Punkt eintragen, Notenpunkte als ganze Zahl von 0 bis 15. Eine Zeile zählt, sobald fachlicher und sprachlicher Teil eingetragen sind. „BE?“ zeigt, wie viele BE für welche Gesamt-Notenpunkte nötig gewesen wären.'
+                : 'Notenpunkte als ganze Zahl von 0 bis 15 eintragen. Eine Zeile zählt, sobald alle drei Bereiche und der sprachliche Teil eingetragen sind.')
+            : 'Noch keine Zeilen. Rechts unter „Schülerinnen und Schüler“ Namen eintragen, eine CSV- oder TXT-Datei importieren oder leere Zeilen für Nummern hinzufügen.';
+    }
+
+    // Was wäre im fachlichen Teil nötig gewesen? Abhängig von der sprachlichen Leistung der Person.
+    function showNeed(a, s) {
+        if (s.spr == null) { infoDialog('Sprachliche Notenpunkte fehlen', 'Bitte zuerst die sprachlichen Notenpunkte eintragen.'); return; }
+        const t = KA.needTable(a, s.spr);
+        const cur = KA.klausurRow(a, s).gesamt;
+        const rows = [];
+        for (let p = 15; p >= 1; p--) {
+            const r = t[p];
+            const tr = el('tr', { class: cur === p ? 'now' : '' }, [
+                el('td', { text: String(p) }),
+                el('td', { text: r ? String(r.fach) : '–' }),
+                el('td', { text: r ? fmtT(r.be) : 'nicht erreichbar' })
+            ]);
+            rows.push(tr);
+        }
+        const body = el('div', { class: 'need-box' }, [
+            el('p', { class: 'small-text', text: (s.name ? s.name + ': ' : '') + 'sprachlich ' + s.spr + ' Notenpunkte, fachlicher Anteil ' + fmtT(100 - a.wSpr) + ' % von ' + fmtT(a.beMax) + ' BE.' + (cur != null ? ' Erreicht: ' + cur + ' Gesamt-Notenpunkte.' : '') }),
+            el('table', { class: 'need-table' }, [
+                el('thead', {}, [el('tr', {}, [el('th', { text: 'Gesamt' }), el('th', { text: 'Fachlich (NP)' }), el('th', { text: 'Mindestens BE' })])]),
+                el('tbody', {}, rows)
+            ])
+        ]);
+        modal({ title: 'Benötigte BE', body: body, ok: 'Schließen', cancel: false });
+    }
+
     function renderTable() {
         const wrap = $('tablewrap');
         wrap.textContent = '';
         const a = A();
         if (!a) return;
+        if (isK(a)) { renderTableK(a); return; }
         const head = el('tr', {}, [el('th', { text: 'Nr.' })]);
         if (!a.useNumbers) head.append(el('th', { class: 'name', text: 'Name' }));
         head.append(el('th', { text: 'Punkte (von ' + fmtT(a.max) + ')' }), el('th', { text: '%' }), el('th', { text: 'Note' }), el('th', { 'aria-label': 'Zeile entfernen' }));
@@ -499,38 +756,46 @@
 
     function moveFocus(tr, d) {
         const nb = d > 0 ? tr.nextElementSibling : tr.previousElementSibling;
-        if (nb) { const i = nb.querySelector('input.pi'); if (i) i.focus(); }
+        if (!nb) return;
+        const idx = Array.prototype.indexOf.call(tr.querySelectorAll('input.pi'), document.activeElement);
+        const i = nb.querySelectorAll('input.pi')[Math.max(0, idx)];
+        if (i) i.focus();
     }
 
     /* ---------- Auswertung ---------- */
+
+    const evalA = a => (isK(a) ? KA.evaluateKlausur(a) : KA.evaluate(a));
 
     function renderResult() {
         const box = $('result');
         box.textContent = '';
         const a = A();
         if (!a) return;
-        const ev = KA.evaluate(a);
+        const ev = evalA(a);
+        const K = isK(a);
         const grid = el('div', { class: 'result-grid' });
-        const sp = el('div', { class: 'spiegel' });
+        const sp = el('div', { class: 'spiegel' + (K ? ' spiegel-k' : '') });
         const mx = Math.max(1, ...Object.values(ev.counts));
-        for (let n = 1; n <= 6; n++) {
+        const keys = K ? [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0] : [1, 2, 3, 4, 5, 6];
+        for (const n of keys) {
             const c = ev.counts[n];
             const pct = ev.n ? Math.round(c / ev.n * 100) : 0;
+            const col = K ? npColor(n) : NOTE_COLORS[n];
             const fill = el('div', { class: 'sp-fill' });
             fill.style.width = (c / mx * 100) + '%';
-            fill.style.background = NOTE_COLORS[n];
+            fill.style.background = col;
             const badge = el('div', { class: 'sp-note', text: String(n) });
-            badge.style.background = NOTE_COLORS[n];
+            badge.style.background = col;
             const val = el('div', { class: 'sp-val', text: String(c) });
             val.append(el('small', { text: ' · ' + pct + ' %' }));
             sp.append(el('div', { class: 'sp-row' }, [badge, el('div', { class: 'sp-bar' }, [fill]), val]));
         }
-        const left = el('div', {}, [el('h2', { text: 'Notenspiegel · ' + a.name }), sp]);
-        if (a.tend) left.append(el('p', { class: 'small-text', text: 'Im Notenspiegel zählen Tendenzen zur ganzen Note (aus 2+ und 2- wird 2).' }));
+        const left = el('div', {}, [el('h2', { text: (K ? 'Notenpunkte · ' : 'Notenspiegel · ') + a.name }), sp]);
+        if (a.tend && !K) left.append(el('p', { class: 'small-text', text: 'Im Notenspiegel zählen Tendenzen zur ganzen Note (aus 2+ und 2- wird 2).' }));
         const avg = el('div', { class: 'avgbox' }, [
             el('div', { class: 'big', text: ev.avg == null ? '–' : fmt(ev.avg, 2) }),
-            el('div', { class: 'lbl', text: 'Notendurchschnitt' }),
-            el('div', { class: 'meta', text: ev.n + ' von ' + a.students.length + ' bewertet' + (ev.avgPts == null ? '' : ' · Ø ' + fmt(ev.avgPts, 1) + ' von ' + fmtT(a.max) + ' Punkten') })
+            el('div', { class: 'lbl', text: K ? 'Notenpunkte-Durchschnitt' : 'Notendurchschnitt' }),
+            el('div', { class: 'meta', text: ev.n + ' von ' + a.students.length + ' bewertet' + (K || ev.avgPts == null ? '' : ' · Ø ' + fmt(ev.avgPts, 1) + ' von ' + fmtT(a.max) + ' Punkten') })
         ]);
         grid.append(left, avg);
         box.append(grid);
@@ -539,7 +804,11 @@
     /* ---------- JPEG ---------- */
 
     function drawSpiegel(a, ev) {
-        const W = 1200, H = 800, S = 2;
+        const K = isK(a);
+        const keys = K ? [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0] : [1, 2, 3, 4, 5, 6];
+        const rowH = K ? 38 : 74, rowBox = K ? 30 : 56, y0 = 160;
+        const by = y0 + keys.length * rowH + 16;
+        const W = 1200, H = by + 124 + 56, S = 2;
         const cv = document.createElement('canvas');
         cv.width = W * S; cv.height = H * S;
         const c = cv.getContext('2d');
@@ -554,38 +823,39 @@
         if (title !== a.name) title += '…';
         c.fillText(title, 50, 82);
         c.fillStyle = '#6b7885'; c.font = font('400', 22);
-        c.fillText('Notenspiegel · ' + new Date().toLocaleDateString('de-DE') + (a.tend ? ' · Tendenzen zählen zur ganzen Note' : ''), 50, 118);
+        c.fillText((K ? 'Notenpunkte · ' : 'Notenspiegel · ') + new Date().toLocaleDateString('de-DE') + (a.tend && !K ? ' · Tendenzen zählen zur ganzen Note' : ''), 50, 118);
 
         const mx = Math.max(1, ...Object.values(ev.counts));
-        const x0 = 50, barX = 130, barW = 720, rowH = 74, y0 = 160;
-        for (let n = 1; n <= 6; n++) {
-            const y = y0 + (n - 1) * rowH;
-            c.fillStyle = NOTE_COLORS[n];
-            roundRect(c, x0, y, 62, 56, 12); c.fill();
-            c.fillStyle = '#fff'; c.font = font('700', 32); c.textAlign = 'center';
-            c.fillText(String(n), x0 + 31, y + 40);
+        const x0 = 50, barX = 130, barW = 720;
+        const fs1 = K ? 22 : 32, fs2 = K ? 20 : 30, fs3 = K ? 17 : 22, ty = K ? 22 : 40;
+        keys.forEach((n, idx) => {
+            const y = y0 + idx * rowH;
+            const col = K ? npColor(n) : NOTE_COLORS[n];
+            c.fillStyle = col;
+            roundRect(c, x0, y, 62, rowBox, K ? 8 : 12); c.fill();
+            c.fillStyle = '#fff'; c.font = font('700', fs1); c.textAlign = 'center';
+            c.fillText(String(n), x0 + 31, y + ty);
             c.textAlign = 'left';
-            c.fillStyle = '#e4e9ee'; roundRect(c, barX + 20, y, barW, 56, 12); c.fill();
+            c.fillStyle = '#e4e9ee'; roundRect(c, barX + 20, y, barW, rowBox, K ? 8 : 12); c.fill();
             const cnt = ev.counts[n];
             if (cnt > 0) {
-                c.fillStyle = NOTE_COLORS[n];
-                roundRect(c, barX + 20, y, Math.max(24, barW * cnt / mx), 56, 12); c.fill();
+                c.fillStyle = col;
+                roundRect(c, barX + 20, y, Math.max(24, barW * cnt / mx), rowBox, K ? 8 : 12); c.fill();
             }
-            c.fillStyle = '#2c3e50'; c.font = font('700', 30);
-            c.fillText(String(cnt), barX + 20 + barW + 24, y + 40);
-            c.fillStyle = '#6b7885'; c.font = font('400', 22);
-            c.fillText((ev.n ? Math.round(cnt / ev.n * 100) : 0) + ' %', barX + 20 + barW + 24 + 56, y + 38);
-        }
+            c.fillStyle = '#2c3e50'; c.font = font('700', fs2);
+            c.fillText(String(cnt), barX + 20 + barW + 24, y + ty);
+            c.fillStyle = '#6b7885'; c.font = font('400', fs3);
+            c.fillText((ev.n ? Math.round(cnt / ev.n * 100) : 0) + ' %', barX + 20 + barW + 24 + 56, y + ty - 2);
+        });
         // Durchschnitt
-        const by = 620;
         c.fillStyle = '#2c3e50'; roundRect(c, 50, by, W - 100, 124, 16); c.fill();
         c.fillStyle = '#cfd8e1'; c.font = font('400', 22);
-        c.fillText('Notendurchschnitt', 80, by + 40);
+        c.fillText(K ? 'Notenpunkte-Durchschnitt' : 'Notendurchschnitt', 80, by + 40);
         c.fillStyle = '#ffffff'; c.font = font('800', 52);
         c.fillText(ev.avg == null ? '–' : fmt(ev.avg, 2), 80, by + 94);
         c.textAlign = 'right'; c.fillStyle = '#e8eef4'; c.font = font('400', 24);
         c.fillText(ev.n + ' von ' + a.students.length + ' bewertet', W - 80, by + 50);
-        if (ev.avgPts != null) c.fillText('Ø ' + fmt(ev.avgPts, 1) + ' von ' + fmtT(a.max) + ' Punkten', W - 80, by + 90);
+        if (!K && ev.avgPts != null) c.fillText('Ø ' + fmt(ev.avgPts, 1) + ' von ' + fmtT(a.max) + ' Punkten', W - 80, by + 90);
         c.textAlign = 'left';
         return cv;
     }
@@ -603,7 +873,7 @@
     $('jpg').addEventListener('click', () => {
         const a = A();
         if (!a) return;
-        const cv = drawSpiegel(a, KA.evaluate(a));
+        const cv = drawSpiegel(a, evalA(a));
         cv.toBlob(blob => {
             if (!blob) { infoDialog('JPEG nicht erstellt', 'Das Bild konnte nicht erzeugt werden.'); return; }
             saveBytes(blob, 'Notenspiegel-' + safeName(a.name) + '-' + today() + '.jpg', 'image/jpeg');
@@ -616,14 +886,19 @@
         const a = A();
         if (!a) return;
         if (a.useNumbers) { infoDialog('Nur mit Namen möglich', 'Die Noten lassen sich nur mit Namen weitergeben, weil der Notenrechner sie darüber zuordnet. Stellen Sie unter „Arbeit“ die Anzeige auf Namen um.'); return; }
-        const ev = KA.evaluate(a);
+        const ev = evalA(a);
         const grades = [];
         a.students.forEach((s, i) => {
+            if (isK(a)) {
+                const p = ev.rows[i].gesamt;
+                if (p != null && s.name.trim()) grades.push({ name: s.name.trim(), note: KA.npLabel(p), points: p });
+                return;
+            }
             const g = ev.rows[i].grade;
             if (g != null && s.name.trim()) grades.push({ name: s.name.trim(), note: g });
         });
-        if (!grades.length) { infoDialog('Keine Noten vorhanden', 'Es gibt noch keine Person mit Namen und Punkten.'); return; }
-        const data = { format: 'teachtools-noten', version: 1, name: a.name, tend: !!a.tend, grades: grades };
+        if (!grades.length) { infoDialog('Keine Noten vorhanden', 'Es gibt noch keine Person mit Namen und vollständigen Punkten.'); return; }
+        const data = { format: 'teachtools-noten', version: 1, name: a.name, tend: isK(a) ? true : !!a.tend, grades: grades };
         saveBytes(JSON.stringify(data), 'Noten-' + safeName(a.name) + '-' + today() + '.json', 'application/json');
     });
 
@@ -647,8 +922,25 @@
         try {
             if (!exportReady) exportReady = loadScript('export.js');
             await exportReady;
-            const bytes = await window.KAExport.build(a, KA.evaluate(a));
+            const bytes = isK(a) ? await window.KAExport.buildKlausur(a, KA.evaluateKlausur(a)) : await window.KAExport.build(a, KA.evaluate(a));
             saveBytes(bytes, 'Auswertung-' + safeName(a.name) + '-' + today() + '.pdf', 'application/pdf');
+        } catch (err) {
+            exportReady = null;
+            infoDialog('PDF nicht erstellt', 'Beim Erstellen der PDF ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.');
+        }
+        btn.disabled = false;
+    });
+
+    $('bedarf').addEventListener('click', async () => {
+        const a = A();
+        if (!a || !isK(a) || a.variant !== 'be') return;
+        const btn = $('bedarf');
+        btn.disabled = true;
+        try {
+            if (!exportReady) exportReady = loadScript('export.js');
+            await exportReady;
+            const bytes = await window.KAExport.buildBedarf(a);
+            saveBytes(bytes, 'BE-Uebersicht-' + safeName(a.name) + '-' + today() + '.pdf', 'application/pdf');
         } catch (err) {
             exportReady = null;
             infoDialog('PDF nicht erstellt', 'Beim Erstellen der PDF ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.');
@@ -664,6 +956,10 @@
         $('empty').hidden = has;
         $('main').hidden = !has;
         ['det-arbeit', 'det-key', 'det-names'].forEach(id => { $(id).hidden = !has; });
+        const a = A();
+        $('bedarf').hidden = !(isK(a) && a.variant === 'be');
+        $('det-key').hidden = !has || (isK(a) && a.variant === 'ab');
+        $('det-key').querySelector('summary').textContent = isK(a) ? 'Notenpunkte aus BE' : 'Notenschlüssel';
         renderArbeit();
         renderKey();
         renderTable();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
-    <title>Klassenarbeits-Auswertung</title>
+    <title>Arbeitauswerter</title>
     <link rel="manifest" href="../manifest.webmanifest">
     <meta name="theme-color" content="#2c3e50">
     <link rel="icon" type="image/png" href="../icons/icon-192.png">
@@ -20,7 +20,7 @@
 <header class="app-head">
     <div class="wrap">
         <a class="back" href="../">← Übersicht</a>
-        <h1>Klassenarbeits-Auswertung</h1>
+        <h1>Arbeitauswerter</h1>
         <p>Alle Daten bleiben auf Ihrem Gerät. Gespeichert wird nur, wenn Sie es ausdrücklich auslösen.</p>
     </div>
 </header>
@@ -47,6 +47,7 @@
                 <span class="btn-row inline">
                     <button type="button" id="jpg" class="btn small">Notenspiegel als JPEG</button>
                     <button type="button" id="pdf" class="btn small">Übersicht als PDF</button>
+                    <button type="button" id="bedarf" class="btn small" hidden>BE-Übersicht (Sprache) als PDF</button>
                     <button type="button" id="grades-file" class="btn small">Noten für Notenrechner</button>
                     <button type="button" id="save-local" class="btn small primary">Im Browser speichern</button>
                 </span>

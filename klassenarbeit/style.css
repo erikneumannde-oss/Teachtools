@@ -348,7 +348,7 @@ table.nt { border-spacing: 4px; }
 .catrow.sub .field { background: #faf6ec; }
 .subadd { margin: 0 0 12px 18px; min-height: 36px; font-size: 0.85rem; }
 
-/* ===== Klassenarbeits-Auswertung ===== */
+/* ===== Arbeitauswerter ===== */
 .result { border-top: 4px solid var(--blue); padding: 14px 16px; margin-bottom: 0; }
 .result h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--navy); }
 .result-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 18px; align-items: start; }
@@ -388,3 +388,23 @@ table.nt { border-spacing: 4px; }
     #main > .tablewrap { order: 2; }
     #main > .hint { order: 3; }
 }
+
+/* ---------- Oberstufe (Klausur) ---------- */
+.kind-pick { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
+.afb-row { display: grid; grid-template-columns: minmax(0, 1fr) 70px 18px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.afb-row .field { margin-top: 0; }
+.afb-row .info { color: var(--muted); font-size: 0.9rem; }
+.afb-fix { font-size: 0.95rem; padding-left: 2px; }
+.warn-text { color: #a3081d; }
+.spiegel-k { gap: 4px; }
+.spiegel-k .sp-note, .spiegel-k .sp-bar { height: 20px; border-radius: 6px; font-size: 0.82rem; }
+.nt-k thead th.afbh { white-space: normal; min-width: 72px; font-size: 0.8rem; line-height: 1.15; }
+.nt-k thead tr.subhead th { font-weight: 600; font-size: 0.8rem; }
+.nt-k td.g { width: 64px; min-width: 64px; }
+.nt-k td.k-ges { min-width: 56px; font-size: 1.05rem; border-radius: 8px; }
+.nt td.rm .need-btn { min-width: 44px; font-size: 0.82rem; font-weight: 700; color: var(--blue-dark); border: 1px solid #cfc6b3; background: #fffdf9; }
+.need-table { border-collapse: collapse; width: 100%; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.need-table th, .need-table td { border-bottom: 1px solid #e6dfd1; padding: 5px 10px; text-align: center; }
+.need-table th { background: #f1ece2; font-weight: 700; }
+.need-table tr.now td { background: #fbe9ec; font-weight: 700; }
+.need-box { max-height: 60vh; overflow: auto; }

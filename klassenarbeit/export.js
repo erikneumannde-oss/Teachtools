@@ -1,4 +1,4 @@
-/* PDF-Übersicht der Klassenarbeits-Auswertung. Wird erst beim ersten Export geladen. */
+/* PDF-Übersicht der Arbeitauswerter. Wird erst beim ersten Export geladen. */
 (function () {
     'use strict';
 
@@ -53,7 +53,7 @@
 
         // Kopf
         text(a.name, M, H - M - 14, 16, bold, ink, 'left', W - 2 * M - 90);
-        text('Klassenarbeits-Auswertung · ' + (a.tend ? 'mit Tendenz' : 'ohne Tendenz') + ' · Gesamtpunktzahl ' + fmtT(a.max), M, H - M - 30, 9, font, grey, 'left', W - 2 * M);
+        text('Arbeitauswerter · ' + (a.tend ? 'mit Tendenz' : 'ohne Tendenz') + ' · Gesamtpunktzahl ' + fmtT(a.max), M, H - M - 30, 9, font, grey, 'left', W - 2 * M);
         text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, grey, 'right');
         const topY = H - M - 44;
         text('Notenrechner-Tools · Auswertung', M, M - 14, 7, font, grey, 'left');
@@ -138,5 +138,189 @@
         return await doc.save();
     }
 
-    window.KAExport = { build: build };
+
+    /* ---------- Oberstufe ---------- */
+
+    async function init(W, H) {
+        if (!window.PDFLib) await loadScript('../lib/pdf-lib.min.js');
+        if (!window.fontkit) await loadScript('../lib/fontkit.umd.min.js');
+        const PDFLib = window.PDFLib, rgb = PDFLib.rgb;
+        const [regBytes, boldBytes] = await Promise.all([fetchBytes('../lib/fonts/DejaVuSans.ttf'), fetchBytes('../lib/fonts/DejaVuSans-Bold.ttf')]);
+        const doc = await PDFLib.PDFDocument.create();
+        doc.registerFontkit(window.fontkit);
+        const font = await doc.embedFont(regBytes, { subset: true });
+        const bold = await doc.embedFont(boldBytes, { subset: true });
+        const page = doc.addPage([W, H]);
+        const C = {
+            ink: rgb(0.13, 0.16, 0.2), grey: rgb(0.45, 0.48, 0.52), line: rgb(0.78, 0.74, 0.68),
+            headBg: rgb(0.93, 0.9, 0.84), zebra: rgb(0.975, 0.96, 0.93), accent: rgb(0.78, 0.04, 0.14), navy: rgb(0.16, 0.18, 0.21),
+            white: rgb(1, 1, 1)
+        };
+        const noteRgb = { 1: rgb(0.153, 0.682, 0.376), 2: rgb(0.482, 0.714, 0.38), 3: rgb(0.831, 0.675, 0.05), 4: rgb(0.902, 0.569, 0.22), 5: rgb(0.827, 0.329, 0), 6: rgb(0.753, 0.224, 0.169) };
+        function fit(t, f, size, maxW) {
+            if (f.widthOfTextAtSize(t, size) <= maxW) return t;
+            let s = t;
+            while (s.length > 1 && f.widthOfTextAtSize(s + '…', size) > maxW) s = s.slice(0, -1);
+            return s + '…';
+        }
+        function text(t, x, y, size, f, color, align, maxW) {
+            if (t === '' || t == null) return;
+            const s = maxW ? fit(String(t), f, size, maxW) : String(t);
+            const w = f.widthOfTextAtSize(s, size);
+            page.drawText(s, { x: align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, y: y, size: size, font: f, color: color || C.ink });
+        }
+        return { doc, page, font, bold, rgb, C, noteRgb, text };
+    }
+
+    async function buildKlausur(a, ev) {
+        const W = 841.89, H = 595.28, M = 36;
+        const { doc, page, font, bold, rgb, C, noteRgb, text } = await init(W, H);
+        const be = a.variant === 'be';
+        const wTxt = be
+            ? 'Fachlicher Teil: BE (gesamt ' + fmtT(a.beMax) + ') · Anteil fachlich ' + fmtT(100 - a.wSpr) + ' % · sprachlich ' + fmtT(a.wSpr) + ' %'
+            : 'Fachlicher Teil: ' + a.afbNames.map((n, k) => n + ' ' + fmtT(a.afbW[k]) + ' %').join(' · ') + ' · sprachlich ' + fmtT(a.wSpr) + ' %';
+        text(a.name, M, H - M - 14, 16, bold, C.ink, 'left', W - 2 * M - 90);
+        text('Klausurauswertung · Notenpunkte · ' + wTxt, M, H - M - 30, 8.5, font, C.grey, 'left', W - 2 * M);
+        text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, C.grey, 'right');
+        const topY = H - M - 44;
+        text('Notenrechner-Tools · Auswertung', M, M - 14, 7, font, C.grey, 'left');
+
+        const cols = [{ h: 'Nr.', w: 28 }];
+        if (!a.useNumbers) cols.push({ h: 'Name', w: 140, name: true });
+        if (be) cols.push({ h: 'BE', w: 56 });
+        else a.afbNames.forEach(n => cols.push({ h: n, w: 56, small: true }));
+        cols.push({ h: 'Fachlich', w: 54 }, { h: 'Sprachl.', w: 54 }, { h: 'Gesamt', w: 54, strong: true });
+        const xs = [M];
+        cols.forEach(c => xs.push(xs[xs.length - 1] + c.w));
+        const right = xs[xs.length - 1];
+        const hh = 24;
+        const avail = topY - (M + 8) - hh;
+        const n = Math.max(a.students.length, 1);
+        const rowH = Math.min(18, avail / n);
+        const fs = Math.max(4.5, Math.min(9.5, rowH * 0.58));
+
+        page.drawRectangle({ x: M, y: topY - hh, width: right - M, height: hh, color: C.headBg });
+        page.drawRectangle({ x: M, y: topY - hh, width: right - M, height: 1.4, color: C.accent });
+        cols.forEach((c, i) => {
+            if (c.name) text(c.h, xs[i] + 4, topY - hh + 9, 8, bold, C.ink, 'left');
+            else if (c.small) text(c.h.replace('Anforderungsbereich', 'AFB'), (xs[i] + xs[i + 1]) / 2, topY - hh + 9, 7.5, bold, C.ink, 'center', c.w - 4);
+            else text(c.h, (xs[i] + xs[i + 1]) / 2, topY - hh + 9, 8, bold, C.ink, 'center');
+        });
+
+        let y = topY - hh;
+        a.students.forEach((s, i) => {
+            const yb = y - rowH;
+            if (i % 2 === 1) page.drawRectangle({ x: M, y: yb, width: right - M, height: rowH, color: C.zebra });
+            const ty = yb + (rowH - fs) / 2 + fs * 0.18;
+            const r = ev.rows[i];
+            let k = 0;
+            const mid = () => (xs[k] + xs[k + 1]) / 2;
+            text(String(i + 1), mid(), ty, fs, font, C.grey, 'center'); k++;
+            if (!a.useNumbers) { text(s.name, xs[k] + 4, ty, fs, font, C.ink, 'left', cols[k].w - 8); k++; }
+            if (be) { text(s.be == null ? '' : fmtT(s.be), mid(), ty, fs, font, C.ink, 'center'); k++; }
+            else for (let q = 0; q < 3; q++) { text(s.afb[q] == null ? '' : String(s.afb[q]), mid(), ty, fs, font, C.ink, 'center'); k++; }
+            text(r.fach == null ? '' : String(r.fach), mid(), ty, fs, font, C.grey, 'center'); k++;
+            text(r.spr == null ? '' : String(r.spr), mid(), ty, fs, font, C.ink, 'center'); k++;
+            text(r.gesamt == null ? '' : String(r.gesamt), mid(), ty, fs, bold, r.gesamt == null ? C.ink : noteRgb[KA.npBase(r.gesamt)], 'center');
+            y = yb;
+        });
+        const bottom = y;
+        page.drawLine({ start: { x: M, y: bottom }, end: { x: right, y: bottom }, thickness: 0.8, color: C.line });
+        page.drawLine({ start: { x: M, y: topY }, end: { x: right, y: topY }, thickness: 0.8, color: C.line });
+        xs.forEach(x => page.drawLine({ start: { x: x, y: topY }, end: { x: x, y: bottom }, thickness: 0.5, color: C.line }));
+
+        // Rechts: Durchschnitt, Notenpunkte-Spiegel, bei BE der Schlüssel
+        const rx = right + 24, rw = W - M - rx;
+        let ry = topY;
+        page.drawRectangle({ x: rx, y: ry - 64, width: rw, height: 64, color: C.navy });
+        text('Notenpunkte-Durchschnitt', rx + 10, ry - 18, 8, font, rgb(0.85, 0.82, 0.75), 'left');
+        text(ev.avg == null ? '–' : fmt(ev.avg, 2), rx + 10, ry - 46, 24, bold, C.white, 'left');
+        text(ev.n + ' von ' + a.students.length + ' bewertet', rx + rw - 8, ry - 22, 7.5, font, rgb(0.93, 0.9, 0.84), 'right');
+        ry -= 64 + 20;
+
+        const halfW = be ? (rw - 16) / 2 : rw;
+        text('Notenpunkte', rx, ry, 9, bold, C.ink, 'left');
+        let sy = ry - 6;
+        const mx = Math.max(1, ...Object.values(ev.counts));
+        const rowS = Math.min(14, (sy - (M + 8)) / 16);
+        for (let p = 15; p >= 0; p--) {
+            sy -= rowS;
+            const bh = rowS - 2;
+            page.drawRectangle({ x: rx, y: sy, width: 20, height: bh, color: noteRgb[KA.npBase(p)] });
+            text(String(p), rx + 10, sy + bh / 2 - 3, 7.5, bold, C.white, 'center');
+            const bw = halfW - 20 - 6 - 40;
+            page.drawRectangle({ x: rx + 24, y: sy, width: bw, height: bh, color: rgb(0.91, 0.89, 0.84) });
+            if (ev.counts[p] > 0) page.drawRectangle({ x: rx + 24, y: sy, width: Math.max(3, bw * ev.counts[p] / mx), height: bh, color: noteRgb[KA.npBase(p)] });
+            text(ev.counts[p] + ' · ' + (ev.n ? Math.round(ev.counts[p] / ev.n * 100) : 0) + ' %', rx + halfW, sy + bh / 2 - 3, 7, font, C.ink, 'right');
+        }
+        if (be) {
+            const kx = rx + halfW + 16;
+            text('Notenpunkte aus BE', kx, ry, 9, bold, C.ink, 'left');
+            let ky = ry - 6;
+            for (let p = 15; p >= 1; p--) {
+                ky -= rowS;
+                text(String(p), kx + 2, ky + 3, 7.5, bold, C.ink, 'left');
+                text('ab ' + fmtT(KA.beNeeded(p, a.beMax)) + ' BE', kx + 26, ky + 3, 7.5, font, C.ink, 'left');
+                text(KA.BE_PCT[15 - p] + ' %', kx + halfW, ky + 3, 7.5, font, C.grey, 'right');
+            }
+            ky -= rowS;
+            text('0', kx + 2, ky + 3, 7.5, bold, C.ink, 'left');
+            text('darunter', kx + 26, ky + 3, 7.5, font, C.ink, 'left');
+        }
+        return await doc.save();
+    }
+
+    // BE-Übersicht: Welche BE werden bei welcher sprachlichen Leistung für welche Gesamt-Notenpunkte benötigt?
+    async function buildBedarf(a) {
+        const W = 841.89, H = 595.28, M = 36;
+        const { doc, page, font, bold, rgb, C, noteRgb, text } = await init(W, H);
+        text('BE-Übersicht · ' + a.name, M, H - M - 14, 16, bold, C.ink, 'left', W - 2 * M - 90);
+        text('Gesamt-BE ' + fmtT(a.beMax) + ' · Anteil fachlich ' + fmtT(100 - a.wSpr) + ' % · sprachlich ' + fmtT(a.wSpr) + ' % · Ab ,5 wird aufgerundet', M, H - M - 30, 8.5, font, C.grey, 'left', W - 2 * M);
+        text('Zeilen: Notenpunkte im sprachlichen Teil. Spalten: angestrebte Gesamt-Notenpunkte. Eintrag: mindestens benötigte BE im fachlichen Teil, „–“ bedeutet nicht erreichbar.', M, H - M - 44, 8, font, C.grey, 'left', W - 2 * M);
+        text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, C.grey, 'right');
+        text('Notenrechner-Tools · Auswertung', M, M - 14, 7, font, C.grey, 'left');
+
+        const topY = H - M - 58;
+        const labW = 78, cw = (W - 2 * M - labW) / 15, rh = 20, hh = 26;
+        const x0 = M;
+        page.drawRectangle({ x: x0, y: topY - hh, width: W - 2 * M, height: hh, color: C.headBg });
+        page.drawRectangle({ x: x0, y: topY - hh, width: W - 2 * M, height: 1.4, color: C.accent });
+        text('Sprache ↓', x0 + 5, topY - hh + 9, 6.5, bold, C.ink, 'left', labW - 6);
+        for (let t = 15; t >= 1; t--) text(String(t), x0 + labW + (15 - t) * cw + cw / 2, topY - hh + 9, 9, bold, C.ink, 'center');
+        let y = topY - hh;
+        for (let sp = 15; sp >= 0; sp--) {
+            const tbl = KA.needTable(a, sp);
+            const yb = y - rh;
+            if (sp % 2 === 1) page.drawRectangle({ x: x0, y: yb, width: W - 2 * M, height: rh, color: C.zebra });
+            page.drawRectangle({ x: x0, y: yb, width: labW, height: rh, color: C.headBg });
+            text(String(sp), x0 + labW / 2, yb + 6, 9, bold, C.ink, 'center');
+            for (let t = 15; t >= 1; t--) {
+                const r = tbl[t];
+                text(r ? fmtT(r.be) : '–', x0 + labW + (15 - t) * cw + cw / 2, yb + 6, 8, r ? font : font, r ? C.ink : C.grey, 'center');
+            }
+            y = yb;
+        }
+        const bottom = y;
+        page.drawLine({ start: { x: x0, y: bottom }, end: { x: W - M, y: bottom }, thickness: 0.8, color: C.line });
+        page.drawLine({ start: { x: x0, y: topY }, end: { x: W - M, y: topY }, thickness: 0.8, color: C.line });
+        for (let i = 0; i <= 15; i++) { const x = x0 + labW + i * cw; page.drawLine({ start: { x: x, y: topY }, end: { x: x, y: bottom }, thickness: 0.4, color: C.line }); }
+        page.drawLine({ start: { x: x0, y: topY }, end: { x: x0, y: bottom }, thickness: 0.5, color: C.line });
+        page.drawLine({ start: { x: W - M, y: topY }, end: { x: W - M, y: bottom }, thickness: 0.5, color: C.line });
+        page.drawLine({ start: { x: x0 + labW, y: topY }, end: { x: x0 + labW, y: bottom }, thickness: 1, color: C.line });
+
+        // Schlüssel: Fachliche Notenpunkte aus BE
+        const ky = bottom - 22;
+        text('Fachliche Notenpunkte aus BE (VOGO, ab 2019/2020)', M, ky + 8, 8, bold, C.ink, 'left');
+        const kw = (W - 2 * M - labW) / 16;
+        text('Notenpunkte', x0 + 2, ky - 8, 7, bold, C.ink, 'left');
+        text('ab BE', x0 + 2, ky - 20, 7, bold, C.ink, 'left');
+        for (let p = 15; p >= 0; p--) {
+            const cx = x0 + labW + (15 - p) * kw + kw / 2;
+            text(String(p), cx, ky - 8, 7.5, bold, C.ink, 'center');
+            text(p === 0 ? '0' : fmtT(KA.beNeeded(p, a.beMax)), cx, ky - 20, 7.5, font, C.ink, 'center');
+        }
+        return await doc.save();
+    }
+
+    window.KAExport = { build: build, buildKlausur: buildKlausur, buildBedarf: buildBedarf };
 })();
