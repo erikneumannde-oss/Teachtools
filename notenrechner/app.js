@@ -241,6 +241,7 @@
                         ? (typeof s.final === 'string' && NR.TEND.indexOf(s.final) !== -1 ? s.final : null)
                         : (isInt(s.final) && s.final >= 1 && s.final <= 6 ? s.final : null);
                     if (f != null) st.final = f;
+                    if (typeof s.over === 'string' && NR.allGrades(g).indexOf(s.over) !== -1) st.over = s.over;
                 } else if (s.dec && typeof s.dec === 'object') {
                     st.dec = {};
                     ['at', 'kl', 'final'].forEach(k => { const v = dval(s.dec[k]); if (v) st.dec[k] = v; });
@@ -451,6 +452,7 @@
                 st.grades[k] = st.grades[k].map(v => v ? v.replace(/[+-]/g, '') : v);
             });
             delete st.final;
+            delete st.over;
         });
     }
 
@@ -964,14 +966,30 @@
                 } else if (k === 'tot') td.textContent = c.total == null ? '' : fmt2(c.total);
                 else if (k === 'calc') td.textContent = c.grade == null ? '' : String(g.tendency ? c.tgrade : c.grade);
                 else if (k === 'fin') {
-                    const opts = NR.sek1Options(g, c);
-                    if (opts.length > 1) {
-                        const sel = el('select', { class: 'fin', 'aria-label': 'Endnote für ' + st.name });
-                        opts.forEach(o => sel.append(el('option', { value: String(o), text: String(o) })));
-                        sel.value = String(NR.sek1Final(g, st, c));
-                        sel.addEventListener('change', () => { st.final = g.tendency ? sel.value : parseInt(sel.value, 10); markDirty(); });
-                        td.append(sel);
-                    } else if (opts.length === 1) td.textContent = String(opts[0]);
+                    td.classList.remove('over');
+                    if (c.grade == null) return;
+                    const opts = NR.sek1Options(g, c).map(String);
+                    const rest = NR.allGrades(g).filter(x => opts.indexOf(x) === -1);
+                    const cur = String(NR.sek1Final(g, st, c));
+                    const overridden = NR.sek1Over(g, st) != null && opts.indexOf(cur) === -1;
+                    const sel = el('select', { class: 'fin', 'aria-label': 'Endnote für ' + st.name });
+                    const g1 = el('optgroup', { label: 'Rechnerisch' });
+                    opts.forEach(o => g1.append(el('option', { value: o, text: o })));
+                    const g2 = el('optgroup', { label: 'Nach pädagogischem Ermessen' });
+                    rest.forEach(o => g2.append(el('option', { value: o, text: o })));
+                    sel.append(g1, g2);
+                    sel.value = cur;
+                    td.classList.toggle('over', overridden);
+                    if (overridden) sel.title = 'Nach pädagogischem Ermessen gesetzt (rechnerisch ' + (g.tendency ? c.tgrade : c.grade) + ')';
+                    sel.addEventListener('change', () => {
+                        const v = sel.value;
+                        if (opts.indexOf(v) !== -1) { delete st.over; st.final = g.tendency ? v : parseInt(v, 10); }
+                        else st.over = v;
+                        markDirty();
+                        td.classList.toggle('over', st.over != null);
+                        sel.title = st.over != null ? 'Nach pädagogischem Ermessen gesetzt (rechnerisch ' + (g.tendency ? c.tgrade : c.grade) + ')' : '';
+                    });
+                    td.append(sel);
                 }
             });
         } else {

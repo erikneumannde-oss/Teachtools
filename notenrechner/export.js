@@ -88,7 +88,8 @@
             addSingle('Rechn.', 1.5, false, (st, ctx) => ctx.calc.grade == null ? '' : String(g.tendency ? ctx.calc.tgrade : ctx.calc.grade));
             addSingle('Note', 1.5, true, (st, ctx) => {
                 const f = NR.sek1Final(g, st, ctx.calc);
-                return f == null ? '' : String(f);
+                if (f == null) return '';
+                return String(f) + (NR.sek1Over(g, st) != null && String(f) !== String(g.tendency ? ctx.calc.tgrade : ctx.calc.grade) && NR.sek1Options(g, ctx.calc).map(String).indexOf(String(f)) === -1 ? '*' : '');
             });
         } else {
             const avg = a => a.length ? fmtT(a.reduce((x, y) => x + y, 0) / a.length) : '';
@@ -168,6 +169,7 @@
 
             // Fuß
             text('Notenrechner · Seite ' + (gi + 1) + ' von ' + groups.length, M, M - 10, 7, font, grey, 'left');
+            if (g.stufe === 'sek1') text('* Note nach pädagogischem Ermessen gesetzt.', W - M, M - 10, 7, font, grey, 'right');
             if (g.stufe === 'sek2') text('Ein „?“ bedeutet: Entscheidung bei x,5 steht noch aus.', W - M, M - 10, 7, font, grey, 'right');
 
             if (!L.rows.length) {

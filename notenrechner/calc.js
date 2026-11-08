@@ -138,7 +138,17 @@
         return opts;
     }
 
+    function allGrades(group) { return group.tendency ? TEND : PLAIN; }
+
+    // Nach pädagogischem Ermessen überschriebene Note (nur Sek I), sonst null
+    function sek1Over(group, student) {
+        const v = student.over == null ? null : String(student.over);
+        return v != null && allGrades(group).indexOf(v) !== -1 ? v : null;
+    }
+
     function sek1Final(group, student, calc) {
+        const over = sek1Over(group, student);
+        if (over != null && calc.grade != null) return group.tendency ? over : parseInt(over, 10);
         const opts = sek1Options(group, calc);
         if (!opts.length) return null;
         const chosen = student.final != null ? (group.tendency ? String(student.final) : parseInt(student.final, 10)) : null;
@@ -301,7 +311,7 @@
         PTS: PTS, TEND: TEND, PLAIN: PLAIN, NOTE_OF_POINTS: NOTE_OF_POINTS,
         pointsToNote: pointsToNote, noteLevel: noteLevel, noteDecimalFromPoints: noteDecimalFromPoints,
         normalizeGrade: normalizeGrade, gradeFromAvg: gradeFromAvg,
-        calcSek1: calcSek1, sek1Options: sek1Options, sek1Final: sek1Final, adviceSek1: adviceSek1,
+        calcSek1: calcSek1, sek1Options: sek1Options, sek1Final: sek1Final, sek1Over: sek1Over, allGrades: allGrades, adviceSek1: adviceSek1,
         frac: frac, roundFrac: roundFrac, tableA: tableA, tableB: tableB,
         calcSek2: calcSek2, adviceSek2: adviceSek2
     };
