@@ -115,12 +115,24 @@
         const m = weightedMean(cats);
         const total = m == null ? null : scaleToNote(group, m);
         const grade = total == null ? null : gradeFromAvg(total, ROUND_LIMIT);
-        return { cats: cats, byId: byId, total: total, grade: grade };
+        // Mit Tendenz: Punktedurchschnitt auf ganze Punkte runden; ab x,5 zählt die schlechtere Note
+        let pts = null, tgrade = null;
+        if (group.tendency && m != null) {
+            pts = Math.max(0, Math.min(15, Math.ceil(m - 0.5 - 1e-9)));
+            tgrade = NOTE_OF_POINTS[pts];
+        }
+        return { cats: cats, byId: byId, total: total, grade: grade, mean: m, pts: pts, tgrade: tgrade };
     }
 
     // Wählbare Endnoten: rechnerische Note und, falls aufgerundet wurde, die bessere
     function sek1Options(group, calc) {
         if (calc.grade == null) return [];
+        if (group.tendency) {
+            // Mit Tendenz: rechnerische Tendenz und, falls abgerundet wurde, die nächstbessere
+            const opts = [calc.tgrade];
+            if (calc.pts < 15 && calc.mean - calc.pts > 1e-9) opts.unshift(NOTE_OF_POINTS[calc.pts + 1]);
+            return opts;
+        }
         const opts = [calc.grade];
         if (calc.grade > 1 && Math.floor(calc.total + 1e-9) <= calc.grade - 1) opts.unshift(calc.grade - 1);
         return opts;
@@ -129,8 +141,8 @@
     function sek1Final(group, student, calc) {
         const opts = sek1Options(group, calc);
         if (!opts.length) return null;
-        const chosen = student.final != null ? parseInt(student.final, 10) : null;
-        return chosen != null && opts.indexOf(chosen) !== -1 ? chosen : calc.grade;
+        const chosen = student.final != null ? (group.tendency ? String(student.final) : parseInt(student.final, 10)) : null;
+        return chosen != null && opts.indexOf(chosen) !== -1 ? chosen : (group.tendency ? calc.tgrade : calc.grade);
     }
 
     // Beratung: Welche nächste Note in welcher Kategorie bringt die nächstbessere Note?

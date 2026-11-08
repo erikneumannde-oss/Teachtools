@@ -237,7 +237,9 @@
                     }
                 });
                 if (stufe === 'sek1') {
-                    const f = isInt(s.final) && s.final >= 1 && s.final <= 6 ? s.final : null;
+                    const f = g.tendency
+                        ? (typeof s.final === 'string' && NR.TEND.indexOf(s.final) !== -1 ? s.final : null)
+                        : (isInt(s.final) && s.final >= 1 && s.final <= 6 ? s.final : null);
                     if (f != null) st.final = f;
                 } else if (s.dec && typeof s.dec === 'object') {
                     st.dec = {};
@@ -960,14 +962,14 @@
                     const cc = c.byId[k.slice(5)];
                     td.textContent = cc && cc.note != null ? fmt2(cc.note) : '';
                 } else if (k === 'tot') td.textContent = c.total == null ? '' : fmt2(c.total);
-                else if (k === 'calc') td.textContent = c.grade == null ? '' : String(c.grade);
+                else if (k === 'calc') td.textContent = c.grade == null ? '' : String(g.tendency ? c.tgrade : c.grade);
                 else if (k === 'fin') {
                     const opts = NR.sek1Options(g, c);
                     if (opts.length > 1) {
                         const sel = el('select', { class: 'fin', 'aria-label': 'Endnote für ' + st.name });
                         opts.forEach(o => sel.append(el('option', { value: String(o), text: String(o) })));
                         sel.value = String(NR.sek1Final(g, st, c));
-                        sel.addEventListener('change', () => { st.final = parseInt(sel.value, 10); markDirty(); });
+                        sel.addEventListener('change', () => { st.final = g.tendency ? sel.value : parseInt(sel.value, 10); markDirty(); });
                         td.append(sel);
                     } else if (opts.length === 1) td.textContent = String(opts[0]);
                 }
@@ -1228,7 +1230,7 @@
         if (a.status === 'empty') { box.append(el('p', { class: 'none', text: 'Für die Beratung wird mindestens eine Note benötigt.' })); return; }
         const c = a.calc;
         if (a.status === 'best') { box.append(el('p', { text: 'Rechnerisch Ø ' + fmt2(c.total) + ' und damit bereits Note 1.' })); return; }
-        box.append(el('p', { text: 'Rechnerisch Ø ' + fmt2(c.total) + ', Note ' + c.grade + '. Für Note ' + a.targetGrade + ' muss der Durchschnitt bei höchstens ' + fmt2(a.maxAvg) + ' liegen.' }));
+        box.append(el('p', { text: 'Rechnerisch Ø ' + fmt2(c.total) + ', Note ' + (g.tendency ? c.tgrade : c.grade) + '. Für Note ' + a.targetGrade + ' muss der Durchschnitt bei höchstens ' + fmt2(a.maxAvg) + ' liegen.' }));
         const rows = a.rows.map(r => [
             { text: r.name },
             r.needed ? { text: (g.tendency ? r.needed : r.needed) + ' oder besser', cls: 'need' } : { text: 'mit einer weiteren Note nicht erreichbar', cls: 'none' },

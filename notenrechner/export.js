@@ -85,7 +85,7 @@
                 } else addCat(c, c.name + ' · ' + pct(g.categories, c) + ' %', true, meanOf(c.id));
             });
             addSingle('Ø', 1.7, false, (st, ctx) => ctx.calc.total == null ? '' : fmt2(ctx.calc.total));
-            addSingle('Rechn.', 1.5, false, (st, ctx) => ctx.calc.grade == null ? '' : String(ctx.calc.grade));
+            addSingle('Rechn.', 1.5, false, (st, ctx) => ctx.calc.grade == null ? '' : String(g.tendency ? ctx.calc.tgrade : ctx.calc.grade));
             addSingle('Note', 1.5, true, (st, ctx) => {
                 const f = NR.sek1Final(g, st, ctx.calc);
                 return f == null ? '' : String(f);
@@ -146,7 +146,7 @@
         groups.forEach((g, gi) => {
             const L = layoutFor(g);
             const gradeCols = L.cols.length;
-            const landscape = gradeCols > 13;
+            const landscape = true; // immer A4 quer
             const W = landscape ? 841.89 : 595.28, H = landscape ? 595.28 : 841.89;
             const M = 30;
             const page = doc.addPage([W, H]);
