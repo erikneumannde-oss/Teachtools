@@ -20,7 +20,10 @@
             $('panel-' + t).hidden = !on;
         });
     }
-    TABS.forEach(t => $('tab-' + t).addEventListener('click', () => showTab(t)));
+    TABS.forEach(t => $('tab-' + t).addEventListener('click', () => {
+        if (t !== 'ampel' && typeof setMode === 'function' && A.mode === 'mic') setMode('hand');
+        showTab(t);
+    }));
 
     /* ---------- Ton ---------- */
 
@@ -114,7 +117,30 @@
         d.textContent = fmtCountdown(ms);
         d.classList.toggle('warn', T.state !== 'idle' && T.state !== 'done' && ms <= 10000 && ms > 0);
         d.classList.toggle('done', T.state === 'done');
+        tLamp(ms);
     }
+
+    function tLamp(ms) {
+        const on = $('t-ampel-on').checked;
+        $('t-ampel').hidden = !on;
+        if (!on) return;
+        const warn = Math.max(0, parseInt($('t-warn').value, 10) || 0) * 60000;
+        let c = 'green';
+        if (T.state === 'done') c = 'red';
+        else if (T.state !== 'idle' && warn > 0 && ms <= warn) c = 'yellow';
+        if (c !== tLamp.last) {
+            tLamp.last = c;
+            document.querySelectorAll('#t-ampel .lamp').forEach(l => l.classList.toggle('on', l.dataset.c === c));
+            if (T.state !== 'idle') announce(c === 'red' ? 'Rot. Die Zeit ist um' : (c === 'yellow' ? 'Gelb' : 'Grün'));
+        }
+    }
+    tLamp.last = '';
+    $('t-ampel-on').addEventListener('change', () => {
+        $('t-warn-wrap').hidden = !$('t-ampel-on').checked;
+        $('t-ampel-note').hidden = !$('t-ampel-on').checked;
+        tLamp.last = ''; tShow();
+    });
+    $('t-warn').addEventListener('input', () => { tLamp.last = ''; tShow(); });
 
     function tSetButtons() {
         const run = T.state === 'running';
@@ -261,10 +287,11 @@
     });
 
     /* =========================================================
-       Ampel
+       Geräuschampel
        ========================================================= */
 
-    const A = { color: 'green', auto: false, endAt: 0, warnAt: 0, timer: null };
+    const A = { color: 'green', mode: 'hand', stream: null, ctx: null, an: null, buf: null, raf: 0,
+                base: -55, smooth: -90, lastAbove: 0, calibUntil: 0, calibSum: 0, calibN: 0 };
 
     function setLamp(c) {
         A.color = c;
@@ -275,57 +302,132 @@
         });
     }
 
-    function aStop() {
-        clearInterval(A.timer);
-        A.auto = false;
-        $('a-start').textContent = 'Mit Zeit starten';
-        $('a-time').hidden = true;
-        ['a-min', 'a-warn'].forEach(id => { $(id).disabled = false; });
+    ['red', 'yellow', 'green'].forEach(k => $('lamp-' + k).addEventListener('click', () => {
+        if (A.mode === 'mic') setMode('hand');
+        setLamp(k);
+    }));
+
+    $('a-note').addEventListener('input', () => { $('a-text').textContent = $('a-note').value; });
+
+    /* Schwellen in dB (relativ zu Vollaussteuerung); Empfindlichkeit 1 (unempfindlich) bis 9 */
+    function thresholds() {
+        const s = parseInt($('a-sens').value, 10) || 5;
+        const shift = (5 - s) * 2.5;            // empfindlicher = Schwellen näher am Ruhepegel
+        const y = A.base + 10 + shift;
+        return { y, r: y + 10 };
+    }
+    const DB_MIN = -80, DB_MAX = -10;
+    const pct = db => Math.max(0, Math.min(100, (db - DB_MIN) / (DB_MAX - DB_MIN) * 100));
+    function drawMarks() {
+        const t = thresholds();
+        $('a-mark-y').style.left = pct(t.y) + '%';
+        $('a-mark-r').style.left = pct(t.r) + '%';
+    }
+    $('a-sens').addEventListener('input', drawMarks);
+
+    function micLoop() {
+        A.raf = requestAnimationFrame(micLoop);
+        A.an.getFloatTimeDomainData(A.buf);
+        let sum = 0;
+        for (let i = 0; i < A.buf.length; i++) sum += A.buf[i] * A.buf[i];
+        const db = 20 * Math.log10(Math.sqrt(sum / A.buf.length) + 1e-7);
+        const now = performance.now();
+        A.smooth = A.smooth + (db - A.smooth) * (db > A.smooth ? 0.35 : 0.08);
+        $('a-bar').style.width = pct(A.smooth) + '%';
+        if (now < A.calibUntil) {
+            A.calibSum += db; A.calibN++;
+            return;
+        }
+        if (A.calibUntil) {
+            A.calibUntil = 0;
+            if (A.calibN > 0) A.base = Math.max(-75, Math.min(-35, A.calibSum / A.calibN));
+            drawMarks();
+            $('a-calib').disabled = false;
+            $('a-status').textContent = 'Das Mikrofon ist aktiv.';
+        }
+        const t = thresholds();
+        const want = A.smooth >= t.r ? 'red' : (A.smooth >= t.y ? 'yellow' : 'green');
+        const rank = { green: 0, yellow: 1, red: 2 };
+        if (rank[want] >= rank[A.color]) {
+            A.lastAbove = now;
+            if (want !== A.color) { setLamp(want); announce(want === 'red' ? 'Rot. Zu laut' : 'Gelb'); }
+        } else if (now - A.lastAbove > 1800) {
+            setLamp(want);
+            A.lastAbove = now;
+        }
+    }
+
+    function stopMic() {
+        cancelAnimationFrame(A.raf);
+        if (A.stream) A.stream.getTracks().forEach(t => t.stop());
+        if (A.ctx) { try { A.ctx.close(); } catch (e) { /* egal */ } }
+        A.stream = A.ctx = A.an = null;
+        A.calibUntil = 0;
         running.ampel = false;
         updateWake();
     }
 
-    function aTick() {
-        const now = Date.now();
-        const left = A.endAt - now;
-        if (left <= 0) {
-            setLamp('red');
-            $('a-time').textContent = '00:00';
-            aStop();
-            $('a-time').hidden = false;
-            announce('Rot. Die Zeit ist um');
+    async function startMic() {
+        $('a-status').textContent = 'Mikrofon wird angefragt …';
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            $('a-status').textContent = 'Dieser Browser bietet keinen Zugriff auf das Mikrofon.';
+            setMode('hand', true);
             return;
         }
-        $('a-time').textContent = fmtCountdown(left);
-        const c = A.warnAt > 0 && now >= A.endAt - A.warnAt ? 'yellow' : 'green';
-        if (c !== A.color) { setLamp(c); if (c === 'yellow') announce('Gelb'); }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+            });
+            if (A.mode !== 'mic') { stream.getTracks().forEach(t => t.stop()); return; }
+            const AC = window.AudioContext || window.webkitAudioContext;
+            A.ctx = new AC();
+            if (A.ctx.state === 'suspended') await A.ctx.resume();
+            A.stream = stream;
+            const src = A.ctx.createMediaStreamSource(stream);
+            A.an = A.ctx.createAnalyser();
+            A.an.fftSize = 2048;
+            A.buf = new Float32Array(A.an.fftSize);
+            src.connect(A.an);
+            A.smooth = -90; A.lastAbove = performance.now();
+            running.ampel = true;
+            updateWake();
+            setLamp('green');
+            $('a-status').textContent = 'Das Mikrofon ist aktiv.';
+            drawMarks();
+            micLoop();
+        } catch (e) {
+            const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+            $('a-status').textContent = denied
+                ? 'Der Zugriff auf das Mikrofon wurde nicht erlaubt. Er lässt sich in den Einstellungen des Browsers freigeben.'
+                : 'Es wurde kein Mikrofon gefunden.';
+            setMode('hand', true);
+        }
     }
 
-    ['red', 'yellow', 'green'].forEach(k => $('lamp-' + k).addEventListener('click', () => {
-        if (A.auto) aStop();
-        setLamp(k);
-    }));
+    function setMode(m, keepStatus) {
+        if (A.mode === 'mic' && m === 'hand') stopMic();
+        A.mode = m;
+        const mic = m === 'mic';
+        $('a-mode-hand').setAttribute('aria-checked', String(!mic));
+        $('a-mode-mic').setAttribute('aria-checked', String(mic));
+        $('a-mic-ctrl').hidden = !mic;
+        $('a-meter').hidden = !mic;
+        $('a-privacy').hidden = !mic;
+        $('a-help').hidden = mic;
+        if (!keepStatus) $('a-status').textContent = '';
+        if (mic) startMic();
+    }
+    $('a-mode-hand').addEventListener('click', () => setMode('hand'));
+    $('a-mode-mic').addEventListener('click', () => { if (A.mode !== 'mic') setMode('mic'); });
 
-    $('a-start').addEventListener('click', () => {
-        if (A.auto) { aStop(); return; }
-        const min = Math.max(1, Math.min(999, parseInt($('a-min').value, 10) || 0));
-        const warn = Math.max(0, Math.min(999, parseInt($('a-warn').value, 10) || 0));
-        if (!parseInt($('a-min').value, 10)) { $('a-min').focus(); return; }
-        A.endAt = Date.now() + min * 60000;
-        A.warnAt = Math.min(warn, min) * 60000;
-        A.auto = true;
-        $('a-start').textContent = 'Beenden';
-        ['a-min', 'a-warn'].forEach(id => { $(id).disabled = true; });
-        $('a-time').hidden = false;
-        running.ampel = true;
-        updateWake();
-        setLamp('green');
-        aTick();
-        clearInterval(A.timer);
-        A.timer = setInterval(aTick, 250);
+    $('a-calib').addEventListener('click', () => {
+        if (!A.an) return;
+        A.calibSum = 0; A.calibN = 0; A.calibUntil = performance.now() + 4000;
+        $('a-calib').disabled = true;
+        $('a-status').textContent = 'Der Ruhepegel wird gemessen. Bitte vier Sekunden Ruhe.';
     });
 
-    $('a-note').addEventListener('input', () => { $('a-text').textContent = $('a-note').value; });
+    window.addEventListener('pagehide', () => { if (A.mode === 'mic') setMode('hand'); });
 
     setLamp('green');
     sShow();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
-    <title>Timer, Stoppuhr und Ampel</title>
+    <title>Timer, Stoppuhr und Geräuschampel</title>
     <link rel="manifest" href="../manifest.webmanifest">
     <meta name="theme-color" content="#2c3e50">
     <link rel="icon" type="image/png" href="../icons/icon-192.png">
@@ -20,7 +20,7 @@
 <header class="app-head">
     <div class="wrap">
         <a class="back" href="../">← Übersicht</a>
-        <h1>Timer, Stoppuhr und Ampel</h1>
+        <h1>Timer, Stoppuhr und Geräuschampel</h1>
         <p>Läuft komplett im Browser. Es wird nichts gespeichert.</p>
     </div>
 </header>
@@ -31,13 +31,18 @@
         <div class="tabs" role="tablist" aria-label="Funktion">
             <button type="button" class="tab" role="tab" id="tab-timer" aria-selected="true" aria-controls="panel-timer">Timer</button>
             <button type="button" class="tab" role="tab" id="tab-stopp" aria-selected="false" aria-controls="panel-stopp">Stoppuhr</button>
-            <button type="button" class="tab" role="tab" id="tab-ampel" aria-selected="false" aria-controls="panel-ampel">Ampel</button>
+            <button type="button" class="tab" role="tab" id="tab-ampel" aria-selected="false" aria-controls="panel-ampel">Geräuschampel</button>
         </div>
     </div>
 
     <!-- Timer -->
     <section class="panel" id="panel-timer" role="tabpanel" aria-labelledby="tab-timer">
         <div class="fsbar"><button type="button" class="btn small fs" data-target="panel-timer">Vollbild</button></div>
+        <div id="t-ampel" class="ampel h" role="img" aria-label="Zeitampel" hidden>
+            <span class="lamp static red" data-c="red"></span>
+            <span class="lamp static yellow" data-c="yellow"></span>
+            <span class="lamp static green on" data-c="green"></span>
+        </div>
         <div id="t-display" class="display" role="timer" aria-live="off">05:00</div>
         <div class="presets" id="t-presets" aria-label="Schnellwahl"></div>
         <div class="ctrl center">
@@ -51,7 +56,10 @@
         </div>
         <div class="ctrl center">
             <label class="check"><input type="checkbox" id="t-sound" checked> Ton am Ende</label>
+            <label class="check"><input type="checkbox" id="t-ampel-on"> Ampel zur Zeit anzeigen</label>
+            <label id="t-warn-wrap" hidden>Gelb in den letzten Minuten <input id="t-warn" class="field" type="number" min="0" max="999" value="1" inputmode="numeric"></label>
         </div>
+        <p id="t-ampel-note" class="note" hidden>Die Ampel steht auf Grün, wird in den letzten Minuten gelb und bei Ablauf der Zeit rot.</p>
     </section>
 
     <!-- Stoppuhr -->
@@ -69,29 +77,38 @@
         </table>
     </section>
 
-    <!-- Ampel -->
+    <!-- Geräuschampel -->
     <section class="panel" id="panel-ampel" role="tabpanel" aria-labelledby="tab-ampel" hidden>
         <div class="fsbar"><button type="button" class="btn small fs" data-target="panel-ampel">Vollbild</button></div>
-        <div class="ampel-wrap">
-            <div class="ampel" role="group" aria-label="Ampel">
+        <div class="ampel-wrap col">
+            <div class="ampel" role="group" aria-label="Geräuschampel">
                 <button type="button" class="lamp red" id="lamp-red" aria-label="Rot" aria-pressed="false"></button>
                 <button type="button" class="lamp yellow" id="lamp-yellow" aria-label="Gelb" aria-pressed="false"></button>
                 <button type="button" class="lamp green" id="lamp-green" aria-label="Grün" aria-pressed="true"></button>
             </div>
-            <div class="ampel-side">
-                <p id="a-text" class="ampel-text"></p>
-                <div id="a-time" class="ampel-time" hidden role="timer" aria-live="off"></div>
+            <p id="a-text" class="ampel-text"></p>
+            <div id="a-meter" class="meter" hidden aria-hidden="true">
+                <div class="meter-bar" id="a-bar"></div>
+                <div class="meter-mark" id="a-mark-y"></div>
+                <div class="meter-mark" id="a-mark-r"></div>
+            </div>
+            <p id="a-status" class="note" role="status"></p>
+        </div>
+        <div class="ctrl center">
+            <div class="seg" role="radiogroup" aria-label="Betriebsart">
+                <button type="button" class="btn" id="a-mode-hand" role="radio" aria-checked="true">Von Hand</button>
+                <button type="button" class="btn" id="a-mode-mic" role="radio" aria-checked="false">Mit Mikrofon</button>
             </div>
         </div>
-        <div class="ctrl center">
-            <label>Hinweis zur Ampel <input id="a-note" class="field wide" type="text" maxlength="60" placeholder="zum Beispiel: Leise arbeiten"></label>
+        <div class="ctrl center" id="a-mic-ctrl" hidden>
+            <label>Empfindlichkeit <input id="a-sens" type="range" min="1" max="9" value="5"></label>
+            <button type="button" id="a-calib" class="btn">Ruhepegel messen</button>
         </div>
         <div class="ctrl center">
-            <label>Dauer in Minuten <input id="a-min" class="field" type="number" min="1" max="999" value="10" inputmode="numeric"></label>
-            <label>Gelb in den letzten Minuten <input id="a-warn" class="field" type="number" min="0" max="999" value="2" inputmode="numeric"></label>
-            <button type="button" id="a-start" class="btn primary bigbtn">Mit Zeit starten</button>
+            <label>Hinweis zur Ampel <input id="a-note" class="field wide" type="text" maxlength="60" placeholder="zum Beispiel: Flüsterlautstärke"></label>
         </div>
-        <p class="note">Ein Tipp auf eine Lampe schaltet die Ampel von Hand. „Mit Zeit starten“ beginnt bei Grün, schaltet in den letzten Minuten auf Gelb und am Ende auf Rot.</p>
+        <p class="note" id="a-help">Ein Tipp auf eine Lampe schaltet die Ampel von Hand. Mit Mikrofon wechselt sie selbst: Grün bei Ruhe, Gelb bei steigender Lautstärke, Rot bei zu viel Lärm.</p>
+        <p class="note" id="a-privacy" hidden>Das Mikrofon misst nur die Lautstärke auf diesem Gerät. Es wird nichts aufgenommen, gespeichert oder übertragen.</p>
     </section>
 </div>
 

@@ -258,10 +258,24 @@ label .field { margin-top: 4px; font-weight: 400; }
 .lamp.on.red { background: radial-gradient(circle at 35% 30%, #ff9a8d, #e53b2b 55%, #a31b10); box-shadow: 0 0 40px 8px rgba(229,59,43,.65); }
 .lamp.on.yellow { background: radial-gradient(circle at 35% 30%, #fff1a0, #f5c518 55%, #b58a00); box-shadow: 0 0 40px 8px rgba(245,197,24,.65); }
 .lamp.on.green { background: radial-gradient(circle at 35% 30%, #a6f0b8, #2ecc71 55%, #178a45); box-shadow: 0 0 40px 8px rgba(46,204,113,.6); }
-.ampel-side { flex: 1 1 280px; max-width: 520px; text-align: center; }
+.ampel-wrap.col { flex-direction: column; gap: 14px; }
 .ampel-text { font-size: clamp(1.6rem, 5.5vw, 3.4rem); font-weight: 800; color: var(--navy); min-height: 1.3em; margin: 0 0 6px; overflow-wrap: anywhere; }
-.ampel-time { font-size: clamp(2.4rem, 9vw, 5.5rem); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--navy); }
-.ampel-time[hidden] { display: none; }
+[hidden] { display: none !important; }
+.ampel.h { flex-direction: row; gap: 12px; padding: 10px 14px; border-radius: 40px; width: fit-content; margin: 4px auto 8px; }
+.ampel.h .lamp { --d: clamp(36px, 8vmin, 70px); cursor: default; }
+.ampel.h .lamp.on.red, .ampel.h .lamp.on.yellow, .ampel.h .lamp.on.green { box-shadow: 0 0 22px 4px currentColor; }
+.ampel.h .lamp.on.red { color: rgba(229,59,43,.6); } .ampel.h .lamp.on.yellow { color: rgba(245,197,24,.6); } .ampel.h .lamp.on.green { color: rgba(46,204,113,.55); }
+.meter { position: relative; width: min(100%, 460px); height: 16px; background: #e7e0d2; border-radius: 8px; overflow: hidden; }
+.meter-bar { height: 100%; width: 0; background: #6b6960; border-radius: 8px; transition: width .08s linear; }
+.meter-mark { position: absolute; top: 0; bottom: 0; width: 3px; background: #25282d; opacity: .6; }
+.seg { display: inline-flex; gap: 0; }
+.seg .btn { border-radius: 0; }
+.seg .btn:first-child { border-radius: 8px 0 0 8px; } .seg .btn:last-child { border-radius: 0 8px 8px 0; }
+.seg .btn[aria-checked="true"] { background: #2a2e36; color: #fff; border-color: #2a2e36; }
+#a-sens { width: 180px; accent-color: #c70a24; }
 .check { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 400; }
 
 .tabs { flex-wrap: nowrap; }
+
+#panel-ampel .ampel:not(.h) .lamp { --d: clamp(64px, 13vmin, 130px); }
+#panel-ampel:fullscreen .ampel:not(.h) .lamp { --d: clamp(90px, 19vmin, 200px); }
