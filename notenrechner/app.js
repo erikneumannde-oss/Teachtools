@@ -663,6 +663,127 @@
         renderTable();
     });
 
+
+    /* =========================================================
+       Noten aus der Klassenarbeits-Auswertung
+       ========================================================= */
+
+    const NOTE_PTS = {
+        '1+': 15, '1': 14, '1-': 13, '2+': 12, '2': 11, '2-': 10, '3+': 9, '3': 8, '3-': 7,
+        '4+': 6, '4': 5, '4-': 4, '5+': 3, '5': 2, '5-': 1, '6': 0
+    };
+    const nameKey = n => n.toLowerCase().replace(/\s+/g, ' ').trim();
+    // Auch „Nachname, Vorname“ wird als „Vorname Nachname“ erkannt
+    const nameKeys = n => {
+        const k = [nameKey(n)];
+        const m = /^([^,]+),\s*(.+)$/.exec(n);
+        if (m) k.push(nameKey(m[2] + ' ' + m[1]));
+        return k;
+    };
+
+    function convertNote(g, note) {
+        const mode = gradeMode(g);
+        if (mode === 'points') return String(NOTE_PTS[note]);
+        return NR.normalizeGrade(mode, note);
+    }
+
+    $('grades-import2').addEventListener('click', () => $('grades-import').click());
+    $('grades-import').addEventListener('click', () => {
+        const g = G();
+        if (!g) { infoDialog('Keine Lerngruppe', 'Legen Sie zuerst eine Lerngruppe an.'); return; }
+        $('grades-input').click();
+    });
+
+    $('grades-input').addEventListener('change', async e => {
+        const f = e.target.files[0];
+        e.target.value = '';
+        const g = G();
+        if (!f || !g) return;
+        let raw;
+        try { raw = JSON.parse(await f.text()); } catch (err) { raw = null; }
+        const list = raw && raw.format === 'teachtools-noten' && Array.isArray(raw.grades)
+            ? raw.grades.filter(x => x && typeof x.name === 'string' && typeof x.note === 'string' && NOTE_PTS[x.note] != null).slice(0, MAX_STUDENTS)
+            : null;
+        if (!list || !list.length) { infoDialog('Datei nicht lesbar', 'Das ist keine Noten-Datei aus der Klassenarbeits-Auswertung.'); return; }
+
+        // Zuordnung über die Namen
+        const byKey = new Map();
+        g.students.forEach(st => nameKeys(st.name).forEach(k => { if (!byKey.has(k)) byKey.set(k, st); }));
+        const matched = [], missing = [];
+        list.forEach(x => {
+            const name = x.name.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME);
+            const st = nameKeys(name).map(k => byKey.get(k)).find(Boolean);
+            if (st) matched.push({ st: st, note: x.note }); else missing.push({ name: name, note: x.note });
+        });
+
+        const cols = catList(g);
+        const colSel = el('select', { class: 'field', 'aria-label': 'Spalte' });
+        cols.forEach(c => colSel.append(el('option', { value: c.id, text: fullName(g, c.id) || c.name })));
+        const slotSel = el('select', { class: 'field', 'aria-label': 'Platz' });
+        function fillSlots() {
+            const c = cols.find(x => x.id === colSel.value);
+            slotSel.textContent = '';
+            // Erster Platz, der bei allen zugeordneten Personen frei ist
+            let firstFree = -1;
+            for (let i = 0; i < c.slots; i++) {
+                if (matched.every(m => !((m.st.grades[c.id] || [])[i]))) { firstFree = i; break; }
+            }
+            for (let i = 0; i < c.slots; i++) slotSel.append(el('option', { value: String(i), text: 'Note ' + (i + 1) }));
+            const canNew = c.slots < MAX_SLOTS && !(g.course === 'lk13' && c.id === 'k');
+            if (canNew) slotSel.append(el('option', { value: 'new', text: 'Neuer Platz am Ende' }));
+            slotSel.value = firstFree >= 0 ? String(firstFree) : (canNew ? 'new' : '0');
+        }
+        colSel.addEventListener('change', fillSlots);
+        fillSlots();
+
+        const addMissing = el('input', { type: 'checkbox' });
+        const body = el('div', { class: 'import-box' }, [
+            el('p', { class: 'small-text', text: (raw.name ? '„' + String(raw.name).slice(0, 60) + '“: ' : '') + matched.length + ' von ' + list.length + ' Personen gefunden.' }),
+            el('label', {}, ['Spalte', colSel]),
+            el('label', {}, ['Platz', slotSel])
+        ]);
+        if (missing.length) {
+            body.append(el('p', { class: 'small-text', text: 'Nicht in der Lerngruppe: ' + missing.map(m => m.name).join(', ') }));
+            body.append(el('label', { class: 'check' }, [addMissing, ' Diese Namen neu hinzufügen']));
+        }
+        const ok = await modal({ title: 'Noten übernehmen', body: body, ok: 'Übernehmen', collect: () => ({ col: colSel.value, slot: slotSel.value, add: addMissing.checked }) });
+        if (!ok) return;
+
+        const c = cols.find(x => x.id === ok.col);
+        let slot;
+        if (ok.slot === 'new') { slot = c.slots; changeSlotsDirect(g, c, c.slots + 1); } else slot = parseInt(ok.slot, 10);
+        const targets = matched.slice();
+        if (ok.add) {
+            missing.forEach(m => {
+                if (g.students.length >= MAX_STUDENTS) return;
+                const st = { id: uid(), name: m.name, grades: {} };
+                catList(g).forEach(k => ensureGrades(g, st, k.id));
+                g.students.push(st);
+                targets.push({ st: st, note: m.note });
+            });
+        }
+        let overwritten = 0;
+        targets.forEach(t => {
+            const arr = ensureGrades(g, t.st, c.id);
+            if (arr[slot]) overwritten++;
+            arr[slot] = convertNote(g, t.note);
+            delete t.st.dec;
+        });
+        markDirty();
+        renderTable();
+        renderAdvice();
+        renderTabs();
+        announce(targets.length + ' Noten übernommen');
+        if (overwritten) infoDialog('Hinweis', overwritten + ' vorhandene Noten wurden überschrieben.');
+    });
+
+    // Anzahl der Plätze einer Spalte setzen (ohne Rückfrage)
+    function changeSlotsDirect(g, c, n) {
+        if (g.stufe === 'sek1') c.slots = n;
+        else g.slots[c.id] = n;
+        g.students.forEach(st => ensureGrades(g, st, c.id));
+    }
+
     /* =========================================================
        Tabelle
        ========================================================= */

@@ -260,3 +260,6 @@ html, body { overflow-x: hidden; }
 .note[data-tag="Extern"]::before { background: radial-gradient(circle at 35% 30%, #a5d6a7 0, #388e3c 55%, #1b5e20 100%); }
 .note:nth-child(n+4):not([data-tag="Extern"]) { background: #ffe0b2; }
 .note:nth-child(n+7):not([data-tag="Extern"]) { background: #e1bee7; }
+
+/* Externe Zettel stehen immer ganz am Ende der Pinnwand, egal wo sie im HTML stehen oder was dazukommt */
+.note[data-tag="Extern"] { order: 9999; }
