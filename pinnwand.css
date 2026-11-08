@@ -263,3 +263,20 @@ html, body { overflow-x: hidden; }
 
 /* Externe Zettel stehen immer ganz am Ende der Pinnwand, egal wo sie im HTML stehen oder was dazukommt */
 .note[data-tag="Extern"] { order: 9999; }
+
+/* Mehr als sechs Zettel: Raster, das die ganze Pinnwand füllt (Spalten und Reihen setzt pinnwand.js) */
+@media (min-aspect-ratio: 1/1) {
+  .notes.raster {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows, 3), minmax(0, 1fr));
+    gap: 1.8em 1.5em;
+    align-content: stretch;
+    font-size: calc(1em * var(--fs, 1));
+  }
+  .notes.raster .note {
+    width: auto; min-height: 0; margin-top: 0 !important;
+    padding: 1.7em .9em .7em;
+  }
+  .notes.raster .note b { font-size: 1.05em; }
+}

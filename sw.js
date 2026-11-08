@@ -1,9 +1,9 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v9';
+const CACHE = 'teachtools-v10';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
-  './pinnwand.css', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
+  './pinnwand.css', './pinnwand.js', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './pdf-werkzeuge/', './pdf-werkzeuge/index.html', './pdf-werkzeuge/app.js',
   './sitzplan/', './sitzplan/index.html', './sitzplan/app.js', './sitzplan/style.css',
