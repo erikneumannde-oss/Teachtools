@@ -1,14 +1,14 @@
 :root {
-    --navy: #2c3e50;
-    --blue: #2f80c2;
-    --blue-dark: #256aa3;
+    --navy: #2a2e36;
+    --blue: #2b3038;
+    --blue-dark: #c70a24;
     --green: #27ae60;
-    --red: #c0392b;
-    --bg: #f0f2f5;
-    --card: #ffffff;
-    --line: #d5dbe1;
-    --text: #2b3138;
-    --muted: #66707a;
+    --red: #b3001e;
+    --bg: #f3efe8;
+    --card: #fffdf9;
+    --line: #ddd5c7;
+    --text: #25282d;
+    --muted: #6b6960;
     --focus: #f1b400;
 }
 
@@ -44,8 +44,8 @@ body {
 }
 .app-head .wrap { max-width: 1500px; margin: 0 auto; }
 .app-head h1 { margin: 2px 0 2px; font-size: 1.5rem; }
-.app-head p { margin: 0; color: #c3ccd4; font-size: 0.9rem; }
-.app-head .back { color: #c3ccd4; text-decoration: none; font-size: 0.9rem; }
+.app-head p { margin: 0; color: #cfc6b3; font-size: 0.9rem; }
+.app-head .back { color: #cfc6b3; text-decoration: none; font-size: 0.9rem; }
 .app-head .back:hover { color: #fff; text-decoration: underline; }
 
 .app-foot {
@@ -94,7 +94,7 @@ body {
     cursor: pointer;
     touch-action: manipulation;
 }
-.btn:hover:not(:disabled) { background: #eef2f6; }
+.btn:hover:not(:disabled) { background: #f1ece2; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 .btn.small { min-height: 40px; padding: 0 10px; font-size: 0.92rem; }
 .btn.icon { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
@@ -117,7 +117,7 @@ summary:focus-visible {
     width: 100%;
     min-height: 44px;
     padding: 8px 10px;
-    border: 1px solid #b9c2cb;
+    border: 1px solid #c9bfab;
     border-radius: 8px;
     font: inherit;
     font-size: 16px; /* verhindert das Hineinzoomen auf iOS */
@@ -139,7 +139,7 @@ label .field { margin-top: 4px; font-weight: 400; }
     background: var(--card);
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-    border: 1px solid #e3e7eb;
+    border: 1px solid #e6dfd1;
 }
 .card summary {
     min-height: 48px;
@@ -183,14 +183,14 @@ label .field { margin-top: 4px; font-weight: 400; }
 .tabs { display: flex; gap: 6px; overflow-x: auto; flex: 1; padding-bottom: 2px; }
 .tab {
     flex: none; min-height: 44px; padding: 0 16px; border: 1px solid var(--line);
-    border-radius: 8px 8px 0 0; background: #e1e6eb; color: var(--navy);
+    border-radius: 8px 8px 0 0; background: #e7e0d2; color: var(--navy);
     font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 .tab[aria-selected="true"] { background: #fff; color: var(--blue-dark); border-top: 3px solid var(--blue); }
 .tab small { font-weight: 400; color: var(--muted); margin-left: 6px; }
 .tab:focus-visible, .chk:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-.empty { background: #fff; border-radius: 12px; padding: 30px; text-align: center; border: 1px solid #e3e7eb; }
+.empty { background: #fff; border-radius: 12px; padding: 30px; text-align: center; border: 1px solid #e6dfd1; }
 .empty[hidden], #main[hidden] { display: none; }
 
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; font-weight: 400; }
@@ -219,8 +219,8 @@ label .field { margin-top: 4px; font-weight: 400; }
     padding: 12px 14px; font: inherit; font-weight: 700; cursor: pointer; min-height: 64px; touch-action: manipulation;
 }
 .kind small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
-.kind[aria-pressed="true"] { border-color: var(--blue); background: #e8f2fb; }
-.kind:disabled { opacity: 0.55; cursor: default; background: #f3f5f7; }
+.kind[aria-pressed="true"] { border-color: var(--blue); background: #fbe9ec; }
+.kind:disabled { opacity: 0.55; cursor: default; background: #f1ede4; }
 .kind:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
@@ -237,7 +237,7 @@ textarea.field.big { min-height: 320px; line-height: 1.5; }
 .fieldhint { font-size: 0.85rem; color: var(--muted); margin: 4px 0 0; font-weight: 400; }
 [hidden] { display: none !important; }
 
-.check-box { background: #f3f7fb; border: 1px solid #d3e0ec; border-radius: 10px; padding: 10px 14px; white-space: pre-wrap; font-size: 0.95rem; }
+.check-box { background: #f7f2e8; border: 1px solid #e0d8c6; border-radius: 10px; padding: 10px 14px; white-space: pre-wrap; font-size: 0.95rem; }
 .check-box b { color: var(--navy); }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 20px; }
@@ -248,5 +248,5 @@ textarea.field.big { min-height: 320px; line-height: 1.5; }
 }
 .nomargin { margin: 0; display: block; }
 
-.preview { display: flex; flex-direction: column; gap: 14px; align-items: center; margin-top: 10px; background: #dfe4e9; padding: 14px; border-radius: 10px; }
+.preview { display: flex; flex-direction: column; gap: 14px; align-items: center; margin-top: 10px; background: #e4ddcd; padding: 14px; border-radius: 10px; }
 .preview canvas { width: 100%; max-width: 640px; height: auto; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.25); }

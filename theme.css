@@ -1,0 +1,35 @@
+/* Gemeinsames Erscheinungsbild – abgeleitet vom Briefkopf der Schule */
+.app-head, body > header:not(.app-head) {
+    position: relative;
+    background: linear-gradient(120deg, #23262d 0%, #343944 100%) !important;
+    color: #fff;
+    border-bottom: 4px solid #e00427;
+    box-shadow: 0 4px 12px rgba(35, 38, 45, 0.25) !important;
+    overflow: hidden;
+}
+.app-head::after, body > header:not(.app-head)::after {
+    content: "";
+    position: absolute;
+    right: max(8px, 2vw);
+    bottom: 0;
+    width: min(46vw, 420px);
+    height: 100%;
+    background: url("schule-hell.png") right bottom / contain no-repeat;
+    opacity: 0.2;
+    pointer-events: none;
+}
+.app-head > *, body > header:not(.app-head) > * { position: relative; z-index: 1; }
+.app-head h1, body > header:not(.app-head) h1 { letter-spacing: 0.01em; }
+.app-head h1::after, body > header:not(.app-head) h1::after {
+    content: ""; display: block; width: 44px; height: 3px; margin-top: 6px; background: #e00427; border-radius: 2px;
+}
+.app-head p, body > header:not(.app-head) p { color: #d9d0be !important; }
+body { background-image: linear-gradient(#f3efe8, #ece6d9); background-attachment: fixed; }
+.card, section.card { border-top: 3px solid #e00427; border-radius: 10px; box-shadow: 0 1px 3px rgba(35,38,45,.08), 0 6px 16px rgba(35,38,45,.05); }
+button:hover:not(:disabled), .btn:hover { filter: none; }
+.app-foot a:hover { color: #c70a24; }
+:focus-visible { outline: 3px solid #f1b400; outline-offset: 2px; }
+body > header:not(.app-head) h1::after { margin-left: auto; margin-right: auto; }
+.panel { border-top: 3px solid #e00427 !important; }
+.btn.primary, button.primary { background: #c70a24; border-color: #c70a24; color: #fff; }
+.btn.primary:hover:not(:disabled), button.primary:hover:not(:disabled) { background: #a3081d; border-color: #a3081d; }

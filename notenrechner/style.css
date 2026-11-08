@@ -1,14 +1,14 @@
 :root {
-    --navy: #2c3e50;
-    --blue: #2f80c2;
-    --blue-dark: #256aa3;
+    --navy: #2a2e36;
+    --blue: #2b3038;
+    --blue-dark: #c70a24;
     --green: #27ae60;
-    --red: #c0392b;
-    --bg: #f0f2f5;
-    --card: #ffffff;
-    --line: #d5dbe1;
-    --text: #2b3138;
-    --muted: #66707a;
+    --red: #b3001e;
+    --bg: #f3efe8;
+    --card: #fffdf9;
+    --line: #ddd5c7;
+    --text: #25282d;
+    --muted: #6b6960;
     --focus: #f1b400;
 }
 
@@ -44,8 +44,8 @@ body {
 }
 .app-head .wrap { max-width: 1500px; margin: 0 auto; }
 .app-head h1 { margin: 2px 0 2px; font-size: 1.5rem; }
-.app-head p { margin: 0; color: #c3ccd4; font-size: 0.9rem; }
-.app-head .back { color: #c3ccd4; text-decoration: none; font-size: 0.9rem; }
+.app-head p { margin: 0; color: #cfc6b3; font-size: 0.9rem; }
+.app-head .back { color: #cfc6b3; text-decoration: none; font-size: 0.9rem; }
 .app-head .back:hover { color: #fff; text-decoration: underline; }
 
 .app-foot {
@@ -94,7 +94,7 @@ body {
     cursor: pointer;
     touch-action: manipulation;
 }
-.btn:hover:not(:disabled) { background: #eef2f6; }
+.btn:hover:not(:disabled) { background: #f1ece2; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 .btn.small { min-height: 40px; padding: 0 10px; font-size: 0.92rem; }
 .btn.icon { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
@@ -117,7 +117,7 @@ summary:focus-visible {
     width: 100%;
     min-height: 44px;
     padding: 8px 10px;
-    border: 1px solid #b9c2cb;
+    border: 1px solid #c9bfab;
     border-radius: 8px;
     font: inherit;
     font-size: 16px; /* verhindert das Hineinzoomen auf iOS */
@@ -139,7 +139,7 @@ label .field { margin-top: 4px; font-weight: 400; }
     background: var(--card);
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-    border: 1px solid #e3e7eb;
+    border: 1px solid #e6dfd1;
 }
 .card summary {
     min-height: 48px;
@@ -183,14 +183,14 @@ label .field { margin-top: 4px; font-weight: 400; }
 .tabs { display: flex; gap: 6px; overflow-x: auto; flex: 1; padding-bottom: 2px; }
 .tab {
     flex: none; min-height: 44px; padding: 0 16px; border: 1px solid var(--line);
-    border-radius: 8px 8px 0 0; background: #e1e6eb; color: var(--navy);
+    border-radius: 8px 8px 0 0; background: #e7e0d2; color: var(--navy);
     font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 .tab[aria-selected="true"] { background: #fff; color: var(--blue-dark); border-top: 3px solid var(--blue); }
 .tab small { font-weight: 400; color: var(--muted); margin-left: 6px; }
 .tab:focus-visible, .chk:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-.empty { background: #fff; border-radius: 12px; padding: 30px; text-align: center; border: 1px solid #e3e7eb; }
+.empty { background: #fff; border-radius: 12px; padding: 30px; text-align: center; border: 1px solid #e6dfd1; }
 .empty[hidden], #main[hidden] { display: none; }
 
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; font-weight: 400; }
@@ -217,8 +217,8 @@ select.field { padding-right: 6px; }
     max-height: calc(100vh - 150px - var(--kp, 0px)); min-height: 260px;
 }
 table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
-.nt th, .nt td { border-right: 1px solid #e3e7eb; border-bottom: 1px solid #e3e7eb; padding: 0; text-align: center; background: #fff; }
-.nt thead th { position: sticky; z-index: 3; background: #eef2f6; color: var(--navy); height: 40px; padding: 0 4px; font-weight: 700; white-space: nowrap; }
+.nt th, .nt td { border-right: 1px solid #e6dfd1; border-bottom: 1px solid #e6dfd1; padding: 0; text-align: center; background: #fff; }
+.nt thead th { position: sticky; z-index: 3; background: #f1ece2; color: var(--navy); height: 40px; padding: 0 4px; font-weight: 700; white-space: nowrap; }
 .nt thead tr:first-child th { top: 0; }
 .nt thead tr:nth-child(2) th { top: 40px; font-weight: 600; font-size: 0.82rem; color: var(--muted); }
 .nt thead th.cat { border-top: 3px solid var(--blue); }
@@ -228,7 +228,7 @@ table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
     font-weight: 700; color: var(--navy); cursor: pointer; padding: 0; touch-action: manipulation;
 }
 .nt .name { position: sticky; left: 0; z-index: 2; min-width: 150px; max-width: 190px; text-align: left; background: #fff; }
-.nt thead th.name { z-index: 5; text-align: left; padding-left: 10px; background: #eef2f6; }
+.nt thead th.name { z-index: 5; text-align: left; padding-left: 10px; background: #f1ece2; }
 .nt .name button {
     display: block; width: 100%; min-height: 44px; padding: 4px 8px 4px 10px; border: 0; background: transparent;
     text-align: left; font: inherit; font-weight: 600; color: var(--navy); cursor: pointer; overflow-wrap: anywhere;
@@ -241,20 +241,20 @@ table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
     width: 100%; height: 44px; border: 0; background: transparent; text-align: center;
     font: inherit; font-size: 16px; color: var(--text); border-radius: 0; padding: 0; caret-color: var(--blue);
 }
-.nt td.g input:focus { outline: 3px solid var(--blue); outline-offset: -3px; background: #eaf4ff; }
+.nt td.g input:focus { outline: 3px solid var(--blue); outline-offset: -3px; background: #f6efe0; }
 .nt td.g input.bad { background: #fde4e1; }
 .nt td.calc { padding: 0 8px; min-width: 62px; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--navy); }
 .nt td.calc.strong { font-weight: 700; }
 .nt td.calc.pending { background: #fff1d6; }
-.nt td.sep, .nt th.sep { border-left: 2px solid #c5ced6; }
+.nt td.sep, .nt th.sep { border-left: 2px solid #d3cab8; }
 .nt .dec { display: inline-flex; gap: 4px; margin-left: 4px; vertical-align: middle; }
 .nt .dec button {
-    min-width: 40px; min-height: 36px; border: 1px solid #b9c2cb; border-radius: 6px; background: #fff;
+    min-width: 40px; min-height: 36px; border: 1px solid #c9bfab; border-radius: 6px; background: #fff;
     font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; touch-action: manipulation;
 }
 .nt .dec button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
 .nt select.fin {
-    min-height: 40px; font: inherit; font-size: 16px; font-weight: 700; border: 1px solid #b9c2cb;
+    min-height: 40px; font: inherit; font-size: 16px; font-weight: 700; border: 1px solid #c9bfab;
     border-radius: 6px; background: #fff; color: var(--navy); padding: 0 4px;
 }
 .nt .muted { color: var(--muted); font-weight: 400; }
@@ -265,7 +265,7 @@ table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
 .advice .card-body { padding-top: 0; }
 .advice p { margin: 0 0 8px; }
 .advice table { border-collapse: collapse; width: 100%; max-width: 560px; }
-.advice th, .advice td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e7eb; font-weight: 400; }
+.advice th, .advice td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e6dfd1; font-weight: 400; }
 .advice th { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
 .advice td.need { font-weight: 700; color: var(--navy); }
 .advice .none { color: var(--muted); }
@@ -286,42 +286,42 @@ table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
 /* ---------- Eingabetastatur für Touch-Geräte ---------- */
 
 .keypad {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; background: #dfe4ea;
-    padding: 8px 8px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid #b5bec7;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; background: #e4ddcd;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid #c4baa5;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.18); user-select: none; -webkit-user-select: none;
 }
 .keypad[hidden] { display: none; }
 .keypad .kp-who { font-size: 0.85rem; color: var(--navy); font-weight: 600; margin: 0 4px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .keypad .kp-grid { display: grid; gap: 6px; max-width: 640px; margin: 0 auto; }
 .keypad button {
-    min-height: 48px; border: 1px solid #aab4be; border-radius: 8px; background: #fff;
+    min-height: 48px; border: 1px solid #bbb09b; border-radius: 8px; background: #fff;
     font: inherit; font-size: 1.15rem; font-weight: 700; color: var(--navy); touch-action: manipulation; cursor: pointer;
 }
-.keypad button:active { background: #cfe3f5; }
-.keypad button.act { background: #eef2f6; font-size: 0.95rem; }
+.keypad button:active { background: #ece3cf; }
+.keypad button.act { background: #f1ece2; font-size: 0.95rem; }
 .keypad button.done { background: var(--blue); color: #fff; border-color: var(--blue); }
 
 .nt td.g input { scroll-margin-left: 170px; scroll-margin-top: 90px; scroll-margin-bottom: 8px; }
 
 /* ===== Tabelle im Stil des Sitzplaners: Brett in Blaugrau, farbige Felder ===== */
-.tablewrap { background: #e4e9ee; padding: 8px; border-radius: 12px; }
+.tablewrap { background: #e9e3d6; padding: 8px; border-radius: 12px; }
 table.nt { border-spacing: 4px; }
 .nt th, .nt td { border: 0; background: transparent; }
 .nt thead th { background: var(--navy); color: #fff; border-radius: 8px; }
-.nt thead tr:nth-child(2) th { background: #46627d; color: #e8eef4; font-weight: 600; }
+.nt thead tr:nth-child(2) th { background: #555a64; color: #eee8dc; font-weight: 600; }
 .nt thead th.cat { border-top: 0; background: var(--blue); color: #fff; }
 .nt thead th.name { background: var(--navy); color: #fff; }
 .nt thead th.sep, .nt td.sep, .nt th.sep { border-left: 0; }
 .nt .ctl button { background: rgba(255, 255, 255, 0.92); border: 0; }
-.nt .name { background: var(--blue); border-radius: 8px; box-shadow: 4px 0 0 #e4e9ee; }
+.nt .name { background: var(--blue); border-radius: 8px; box-shadow: 4px 0 0 #e9e3d6; }
 .nt .name button { color: #fff; }
-.nt tr.sel .name, .nt tr.sel .name button { background: #f1b400; color: #2b3138; }
-.nt tr.sel .name { box-shadow: 4px 0 0 #e4e9ee; }
+.nt tr.sel .name, .nt tr.sel .name button { background: #f1b400; color: #25282d; }
+.nt tr.sel .name { box-shadow: 4px 0 0 #e9e3d6; }
 .nt tr.sel td { background: transparent; }
 .nt td.g { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
 .nt tr.sel td.g { background: #fff8dc; }
 .nt td.g input { border-radius: 8px; }
-.nt td.calc { background: #cfe3f5; border-radius: 8px; color: var(--navy); }
+.nt td.calc { background: #ece3cf; border-radius: 8px; color: var(--navy); }
 .nt td.calc.final { background: var(--green); color: #fff; font-size: 1.05rem; }
 .nt td.calc.final select.fin { background: #fff; color: var(--navy); }
 .nt td.calc.pending { background: #ffe3a8; }
@@ -330,20 +330,20 @@ table.nt { border-spacing: 4px; }
 .advice { border-top: 4px solid var(--blue); }
 .advice td.need { color: var(--blue-dark); }
 .card summary { color: var(--navy); }
-.card { border-top: 3px solid #cfd8e1; }
+.card { border-top: 3px solid #d9d0be; }
 .card[open] { border-top-color: var(--blue); }
-.app-head { background: linear-gradient(135deg, #2c3e50, #34495e); }
+.app-head { background: linear-gradient(135deg, #2a2e36, #3a3f49); }
 .tab[aria-selected="true"] { border-top-color: var(--green); }
-.nt td.calc.final:empty { background: #cfe3f5; }
-.nt tr.sel td.calc { background: #cfe3f5; }
+.nt td.calc.final:empty { background: #ece3cf; }
+.nt tr.sel td.calc { background: #ece3cf; }
 .nt tr.sel td.calc.final { background: var(--green); }
-.nt tr.sel td.calc.final:empty { background: #cfe3f5; }
+.nt tr.sel td.calc.final:empty { background: #ece3cf; }
 .nt tr.sel td.calc.pending { background: #ffe3a8; }
 
 /* ===== Unterkategorien ===== */
-.nt thead tr:nth-child(3) th { top: 80px; background: #46627d; color: #e8eef4; font-weight: 600; font-size: 0.82rem; }
-.nt thead th.cat.main { background: #1f6aa5; }
+.nt thead tr:nth-child(3) th { top: 80px; background: #555a64; color: #eee8dc; font-weight: 600; font-size: 0.82rem; }
+.nt thead th.cat.main { background: #c70a24; }
 .nt thead th.cat.sub { background: var(--blue); }
 .catrow.sub { margin-left: 18px; grid-template-columns: minmax(0, 1fr) 70px 44px; }
-.catrow.sub .field { background: #f3f9ff; }
+.catrow.sub .field { background: #faf6ec; }
 .subadd { margin: 0 0 12px 18px; min-height: 36px; font-size: 0.85rem; }

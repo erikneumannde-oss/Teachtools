@@ -16,20 +16,20 @@
         * { box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-            background-color: #f0f2f5;
+            background-color: #f3efe8;
             color: #333;
             margin: 0;
             line-height: 1.5;
         }
         header {
-            background-color: #2c3e50;
+            background-color: #2a2e36;
             color: white;
             text-align: center;
             padding: 1.5rem 1rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         header h1 { margin: 0; font-size: 1.8rem; }
-        header p { margin: 8px 0 0; color: #bdc3c7; }
+        header p { margin: 8px 0 0; color: #c9bfab; }
         main { max-width: 900px; margin: 0 auto; padding: 1rem; }
 
         .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
@@ -38,20 +38,20 @@
             min-height: 44px;
             border: 0;
             border-radius: 8px;
-            background: #dfe4ea;
-            color: #2c3e50;
+            background: #e4ddcd;
+            color: #2a2e36;
             font: inherit;
             font-weight: 600;
             cursor: pointer;
         }
-        .tabs button.active { background: #3498db; color: white; }
+        .tabs button.active { background: #2b3038; color: white; }
 
         .panel {
             display: none;
             background: white;
             border-radius: 12px;
             padding: 1.25rem;
-            border-top: 5px solid #3498db;
+            border-top: 5px solid #2b3038;
             box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
         .panel.active { display: block; }
@@ -60,7 +60,7 @@
 
         .drop {
             display: block;
-            border: 2px dashed #9aa5b1;
+            border: 2px dashed #a39c8c;
             border-radius: 10px;
             padding: 1.5rem 1rem;
             text-align: center;
@@ -68,7 +68,7 @@
             cursor: pointer;
             margin: 1rem 0;
         }
-        .drop.over { background: #eaf4fc; border-color: #3498db; }
+        .drop.over { background: #f6efe0; border-color: #2b3038; }
         .drop input { display: none; }
 
         .btn {
@@ -76,8 +76,8 @@
             padding: 0 16px;
             border: 0;
             border-radius: 8px;
-            background: #dfe4ea;
-            color: #2c3e50;
+            background: #e4ddcd;
+            color: #2a2e36;
             font: inherit;
             font-weight: 600;
             cursor: pointer;
@@ -96,14 +96,14 @@
             align-items: center;
             gap: 8px;
             padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ece6d9;
         }
         .filelist .name { flex: 1; overflow-wrap: anywhere; }
         .filelist .size { color: #888; font-size: 0.85rem; white-space: nowrap; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 1rem 0; }
-        .card { border: 1px solid #dde1e6; border-radius: 10px; padding: 8px; text-align: center; background: #fafbfc; }
-        .card.sel { border-color: #3498db; background: #eaf4fc; }
+        .card { border: 1px solid #ddd5c7; border-radius: 10px; padding: 8px; text-align: center; background: #fffdf9; }
+        .card.sel { border-color: #2b3038; background: #f6efe0; }
         .card .thumb { height: 170px; display: flex; align-items: center; justify-content: center; }
         .card canvas { max-width: 100%; max-height: 170px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); background: white; }
         .card .label { font-size: 0.85rem; margin: 6px 0; color: #555; }
@@ -112,15 +112,16 @@
         .card .pick input { width: 22px; height: 22px; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
-        .status { min-height: 1.5em; margin: 0.75rem 0 0; color: #2c3e50; }
-        .status.error { color: #c0392b; }
+        .status { min-height: 1.5em; margin: 0.75rem 0 0; color: #2a2e36; }
+        .status.error { color: #b3001e; }
 
         .note { background: #fff8e1; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin: 1rem 0; }
 
         footer { text-align: center; padding: 20px 0 30px; font-size: 0.9rem; }
-        footer a { color: #7f8c8d; text-decoration: none; margin: 0 10px; }
-        footer a:hover { color: #3498db; text-decoration: underline; }
+        footer a { color: #6b6960; text-decoration: none; margin: 0 10px; }
+        footer a:hover { color: #2b3038; text-decoration: underline; }
     </style>
+    <link rel="stylesheet" href="../theme.css">
 </head>
 <body>
 
