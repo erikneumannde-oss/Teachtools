@@ -1,6 +1,6 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v18';
+const CACHE = 'teachtools-v19';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
   './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
@@ -51,7 +51,7 @@ self.addEventListener('fetch', event => {
 
   event.respondWith((async () => {
     try {
-      const res = await fetch(req);
+      const res = await fetch(req, { cache: "no-cache" });
       if (res.ok) {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
