@@ -1271,9 +1271,15 @@
         if (a.status === 'empty') { box.append(el('p', { class: 'none', text: 'Für die Beratung werden Noten im AT und in den Klausuren benötigt.' })); return; }
         if (a.status === 'pending') { box.append(el('p', { class: 'none', text: 'Bitte zuerst die Entscheidung bei x,5 in der Tabelle treffen. Danach erscheint die Beratung.' })); return; }
         const c = a.calc;
-        if (a.status === 'best') { box.append(el('p', { text: 'Aktuell 15 Punkte (1+). Mehr ist nicht möglich.' })); return; }
         const lbl = p => p + ' Punkte (' + NR.pointsToNote(p) + ')';
-        box.append(el('p', { text: 'Aktuell ' + lbl(a.current) + '. Für ' + lbl(a.target) + ' wird benötigt:' }));
+        if (a.status === 'lastK') {
+            box.append(el('p', { text: 'Die ' + a.last + ' fehlt noch. Damit ergäbe sich:' }));
+            box.append(adviceTable(['Die ' + a.last + ' mit', 'Zeugnisnote'], a.outs.map(o => [{ text: 'ab ' + o.from + ' Punkten' }, { text: lbl(o.points), cls: 'need' }])));
+            box.append(el('p', { class: 'small-text', text: 'Bei einem Ergebnis von genau x,5 wird dabei zugunsten der Person aufgerundet.' }));
+            return;
+        }
+        if (a.status === 'best') { box.append(el('p', { text: 'Aktuell 15 Punkte (1+). Mehr ist nicht möglich.' })); return; }
+        box.append(el('p', { text: 'Aktuell ' + lbl(a.current) + (a.assumed ? ' (bei x,5 aufgerundet)' : '') + '. Für ' + lbl(a.target) + ' wird benötigt:' }));
         const rows = a.rows.map(r => [
             { text: r.name },
             r.needed != null ? { text: 'mindestens ' + r.needed + ' Punkte', cls: 'need' } : { text: r.reason || 'mit einer weiteren Note nicht erreichbar', cls: 'none' }

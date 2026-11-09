@@ -289,8 +289,27 @@
     }
 
     function adviceSek2(group, student) {
-        const base = calcSek2(group, student, null, null);
-        if (base.points == null) return { status: base.pending.length ? 'pending' : 'empty', calc: base };
+        let base = calcSek2(group, student, null, null);
+        let assumed = false;
+        // Bei offener x,5-Entscheidung wird für die Beratung aufgerundet
+        if (base.points == null && base.pending.length) {
+            const up = calcSek2(group, student, null, 'up');
+            if (up.points != null) { base = up; assumed = true; }
+        }
+        if (base.points == null) {
+            // Es fehlt genau die letzte Klausur: zeigen, was sie ergäbe
+            const need = group.course === 'lk13' ? 2 : 1;
+            const have = listValues((student.grades || {}).k).length;
+            if (base.at && have === need - 1 && !(group.course === 'gk4')) {
+                const outs = [];
+                for (let x = 0; x <= 15; x++) {
+                    const t = calcSek2(group, student, { cat: 'k', grade: x }, 'up');
+                    if (t.points != null && (!outs.length || outs[outs.length - 1].points !== t.points)) outs.push({ from: x, points: t.points });
+                }
+                if (outs.length) return { status: 'lastK', calc: base, outs: outs, last: need === 2 ? 'zweite Klausur' : 'Klausur' };
+            }
+            return { status: base.pending.length ? 'pending' : 'empty', calc: base };
+        }
         const p0 = base.points;
         if (p0 >= 15) return { status: 'best', calc: base };
         let target = p0 + 1;
@@ -314,7 +333,7 @@
             }
             return { cat: cat, name: labels[cat], needed: null };
         });
-        return { status: 'ok', calc: base, current: p0, target: target, rows: rows };
+        return { status: 'ok', calc: base, current: p0, target: target, rows: rows, assumed: assumed };
     }
 
     return {
