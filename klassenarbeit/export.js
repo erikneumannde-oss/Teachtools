@@ -173,7 +173,7 @@
     }
 
     async function buildKlausur(a, ev) {
-        const W = 841.89, H = 595.28, M = 36;
+        const W = 595.28, H = 841.89, M = 36;
         const { doc, page, font, bold, rgb, C, noteRgb, text } = await init(W, H);
         const be = a.variant === 'be';
         const wTxt = be
@@ -190,13 +190,15 @@
         if (be) cols.push({ h: 'BE', w: 56 });
         else a.afbNames.forEach(n => cols.push({ h: n, w: 56, small: true }));
         cols.push({ h: 'Fachlich', w: 54 }, { h: 'Sprachl.', w: 54 }, { h: 'Gesamt', w: 54, strong: true });
+        const scale = (W - 2 * M) / cols.reduce((x, c) => x + c.w, 0);
         const xs = [M];
-        cols.forEach(c => xs.push(xs[xs.length - 1] + c.w));
+        cols.forEach(c => { c.w *= scale; xs.push(xs[xs.length - 1] + c.w); });
         const right = xs[xs.length - 1];
         const hh = 24;
-        const avail = topY - (M + 8) - hh;
+        const BOTTOM = 236;
+        const avail = topY - (M + BOTTOM + 16) - hh;
         const n = Math.max(a.students.length, 1);
-        const rowH = Math.min(18, avail / n);
+        const rowH = Math.min(17, avail / n);
         const fs = Math.max(4.5, Math.min(9.5, rowH * 0.58));
 
         page.drawRectangle({ x: M, y: topY - hh, width: right - M, height: hh, color: C.headBg });
@@ -229,44 +231,28 @@
         page.drawLine({ start: { x: M, y: topY }, end: { x: right, y: topY }, thickness: 0.8, color: C.line });
         xs.forEach(x => page.drawLine({ start: { x: x, y: topY }, end: { x: x, y: bottom }, thickness: 0.5, color: C.line }));
 
-        // Rechts: Durchschnitt, Notenpunkte-Spiegel, bei BE der Schlüssel
-        const rx = right + 24, rw = W - M - rx;
-        let ry = topY;
-        page.drawRectangle({ x: rx, y: ry - 64, width: rw, height: 64, color: C.navy });
-        text('Notenpunkte-Durchschnitt', rx + 10, ry - 18, 8, font, rgb(0.85, 0.82, 0.75), 'left');
-        text(ev.avg == null ? '–' : fmt(ev.avg, 2), rx + 10, ry - 46, 24, bold, C.white, 'left');
-        text(ev.n + ' von ' + a.students.length + ' bewertet', rx + rw - 8, ry - 22, 7.5, font, rgb(0.93, 0.9, 0.84), 'right');
-        ry -= 64 + 20;
-
-        const halfW = be ? (rw - 16) / 2 : rw;
-        text('Notenpunkte', rx, ry, 9, bold, C.ink, 'left');
-        let sy = ry - 6;
+        // Unten: Notenpunkte mit Anzahl, daneben der Durchschnitt
+        const by = M + BOTTOM;
+        text('Notenpunkte', M, by - 4, 10, bold, C.ink, 'left');
         const mx = Math.max(1, ...Object.values(ev.counts));
-        const rowS = Math.min(14, (sy - (M + 8)) / 16);
+        const rowS = (BOTTOM - 20) / 16;
+        const spW = (W - 2 * M) * 0.64;
+        let sy = by - 10;
         for (let p = 15; p >= 0; p--) {
             sy -= rowS;
-            const bh = rowS - 2;
-            page.drawRectangle({ x: rx, y: sy, width: 20, height: bh, color: noteRgb[KA.npBase(p)] });
-            text(String(p), rx + 10, sy + bh / 2 - 3, 7.5, bold, C.white, 'center');
-            const bw = halfW - 20 - 6 - 40;
-            page.drawRectangle({ x: rx + 24, y: sy, width: bw, height: bh, color: rgb(0.91, 0.89, 0.84) });
-            if (ev.counts[p] > 0) page.drawRectangle({ x: rx + 24, y: sy, width: Math.max(3, bw * ev.counts[p] / mx), height: bh, color: noteRgb[KA.npBase(p)] });
-            text(ev.counts[p] + ' · ' + (ev.n ? Math.round(ev.counts[p] / ev.n * 100) : 0) + ' %', rx + halfW, sy + bh / 2 - 3, 7, font, C.ink, 'right');
+            const bh = rowS - 2.5;
+            page.drawRectangle({ x: M, y: sy, width: 24, height: bh, color: noteRgb[KA.npBase(p)] });
+            text(String(p), M + 12, sy + bh / 2 - 3, 8, bold, C.white, 'center');
+            const bw = spW - 24 - 8 - 26;
+            page.drawRectangle({ x: M + 28, y: sy, width: bw, height: bh, color: rgb(0.91, 0.89, 0.84) });
+            if (ev.counts[p] > 0) page.drawRectangle({ x: M + 28, y: sy, width: Math.max(3, bw * ev.counts[p] / mx), height: bh, color: noteRgb[KA.npBase(p)] });
+            text(String(ev.counts[p]), M + spW, sy + bh / 2 - 3.5, 9, bold, C.ink, 'right');
         }
-        if (be) {
-            const kx = rx + halfW + 16;
-            text('Notenpunkte aus BE', kx, ry, 9, bold, C.ink, 'left');
-            let ky = ry - 6;
-            for (let p = 15; p >= 1; p--) {
-                ky -= rowS;
-                text(String(p), kx + 2, ky + 3, 7.5, bold, C.ink, 'left');
-                text('ab ' + fmtT(KA.beNeeded(p, a.beMax)) + ' BE', kx + 26, ky + 3, 7.5, font, C.ink, 'left');
-                text(KA.BE_PCT[15 - p] + ' %', kx + halfW, ky + 3, 7.5, font, C.grey, 'right');
-            }
-            ky -= rowS;
-            text('0', kx + 2, ky + 3, 7.5, bold, C.ink, 'left');
-            text('darunter', kx + 26, ky + 3, 7.5, font, C.ink, 'left');
-        }
+        const ax = M + spW + 24, aw = W - M - ax;
+        page.drawRectangle({ x: ax, y: by - 84, width: aw, height: 84, color: C.navy });
+        text('Notenpunkte-Durchschnitt', ax + aw / 2, by - 24, 8, font, rgb(0.85, 0.82, 0.75), 'center', aw - 8);
+        text(ev.avg == null ? '–' : fmt(ev.avg, 2), ax + aw / 2, by - 58, 26, bold, C.white, 'center');
+        text(ev.n + ' von ' + a.students.length + ' bewertet', ax + aw / 2, by - 76, 7.5, font, rgb(0.93, 0.9, 0.84), 'center', aw - 8);
         return await doc.save();
     }
 
