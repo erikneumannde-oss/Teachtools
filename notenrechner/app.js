@@ -1017,7 +1017,7 @@
                         if (x.value == null) td.classList.add('pending');
                     } else td.textContent = String(x.value);
                 } else if (k === 'kl') {
-                    td.textContent = r.kl ? String(r.kl.value) : '';
+                    td.textContent = r.kl ? (r.kl.provisional ? r.kl.single + ' ×2' : String(r.kl.value)) : '';
                 } else if (k === 'pts') {
                     if (r.tieFinal) {
                         td.append(decButtons(st, 'final', r.tieFinal.lo, r.tieFinal.hi));

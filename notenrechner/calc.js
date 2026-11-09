@@ -258,17 +258,19 @@
 
         // Klausurteil
         if (group.course === 'lk13') {
-            if (kv.length === 2) res.kl = { value: kv[0] + kv[1], half: false, sum: true };
-            else if (kv.length) res.info = 'Für Tabelle b werden beide Klausuren benötigt.';
+            if (kv.length >= 2) res.kl = { value: kv[0] + kv[1], half: false, sum: true };
+            // Mit nur einer Klausur zählt sie vorläufig doppelt
+            else if (kv.length === 1) res.kl = { value: 2 * kv[0], half: false, sum: true, provisional: true, single: kv[0] };
         } else if (kv.length) {
             res.kl = roundFrac(frac(kv.reduce((a, b) => a + b, 0), kv.length), useUp ? 'up' : dec.kl);
             if (res.kl.half && res.kl.value == null) res.pending.push('kl');
         }
 
         // Zeugnispunkte
-        if (group.course === 'gk4' && !kv.length && res.at && res.at.value != null) {
+        if (!kv.length && res.at && res.at.value != null) {
+            // Ohne Klausur bildet der allgemeine Teil allein die Note (im 4. Kurshalbjahr im Grundkurs endgültig, sonst vorläufig)
             res.points = res.at.value;
-            res.info = 'Ohne Klausur zählt der allgemeine Teil zu 100 Prozent.';
+            res.info = group.course === 'gk4' ? 'Ohne Klausur zählt der allgemeine Teil zu 100 Prozent.' : 'Noch keine Klausur: vorläufig zählt der allgemeine Teil allein.';
         } else if (res.at && res.kl && res.at.value != null && res.kl.value != null) {
             if (group.course === 'lk13' || group.course === 'lk4') {
                 const t = group.course === 'lk13' ? tableB(res.kl.value, res.at.value) : table11(res.kl.value, res.at.value);
@@ -323,9 +325,6 @@
             const count = (student.grades && student.grades[cat] || []).filter(x => x !== '').length;
             if (cat === 'k' && group.course === 'lk13' && count >= 2) {
                 return { cat: cat, name: labels[cat], needed: null, reason: 'Beide Klausuren sind geschrieben.' };
-            }
-            if (cat === 'k' && group.course === 'lk13' && count === 0) {
-                return { cat: cat, name: labels[cat], needed: null, reason: 'Es werden zwei Klausuren benötigt.' };
             }
             for (let x = 0; x <= 15; x++) {
                 const t = calcSek2(group, student, { cat: cat, grade: x }, 'up');

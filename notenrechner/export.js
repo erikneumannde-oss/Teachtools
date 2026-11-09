@@ -100,11 +100,11 @@
                 if (!a) return '';
                 return a.value == null ? fmtT(a.exact) + ' ?' : String(a.value);
             });
-            addCat(cl[2], g.course === 'lk13' ? 'Klausuren' : 'Klausuren', false);
+            addCat(cl[2], 'Klausuren', false);
             addSingle(g.course === 'lk13' ? 'Σ Kl.' : 'Klausur', 1.6, false, (st, ctx) => {
                 const k = ctx.s2.kl;
                 if (!k) return '';
-                return k.value == null ? fmtT(k.exact) + ' ?' : String(k.value);
+                return k.value == null ? fmtT(k.exact) + ' ?' : (k.provisional ? k.single + ' ×2' : String(k.value));
             });
             addSingle('Punkte', 1.5, true, (st, ctx) => ctx.s2.points != null ? String(ctx.s2.points) : (ctx.s2.tieFinal ? '?' : ''));
             addSingle('Note', 1.5, true, (st, ctx) => ctx.s2.note || '');
