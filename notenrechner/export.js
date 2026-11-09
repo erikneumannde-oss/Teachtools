@@ -36,7 +36,7 @@
 
     function groupTitle(g) {
         if (g.stufe === 'sek2') {
-            return 'Sek II · ' + (g.course === 'lk13' ? 'Leistungskurs 1.–3. Kurshalbjahr (Tabelle b)' : 'Grundkurs / LK 4. Kurshalbjahr (Tabelle a)');
+            return 'Sek II · ' + ({ gk13: 'Grundkurs 1.–3. Kurshalbjahr', gk4: 'Grundkurs 4. Kurshalbjahr', lk13: 'Leistungskurs 1.–3. Kurshalbjahr', lk4: 'Leistungskurs 4. Kurshalbjahr' }[g.course] || 'Grundkurs');
         }
         return 'Sek I · ' + (g.tendency ? 'mit Tendenz' : 'ohne Tendenz');
     }

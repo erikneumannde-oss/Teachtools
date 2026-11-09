@@ -107,8 +107,8 @@
     function newGroup(name, stufe) {
         if (stufe === 'sek2') {
             return {
-                id: uid(), name: name, stufe: 'sek2', course: 'gk',
-                atWeights: { m: 50, s: 50 }, slots: { m: 3, s: 3, k: 2 }, adviceTarget: 'punkt', students: []
+                id: uid(), name: name, stufe: 'sek2', course: 'gk13',
+                atWeights: { m: 50, s: 50 }, slots: { m: 3, s: 3, k: 1 }, adviceTarget: 'punkt', students: []
             };
         }
         return {
@@ -120,6 +120,9 @@
             students: []
         };
     }
+
+    // Leistungskurse haben eine feste Zahl Klausuren: LK 1. bis 3. Kurshalbjahr zwei, LK 4. Kurshalbjahr eine
+    const kFixedSlots = course => (course === 'lk13' ? 2 : course === 'lk4' ? 1 : 0);
 
     // Spalten mit Noten: Kategorien ohne Unterkategorien und alle Unterkategorien
     function leaves(g) {
@@ -209,14 +212,14 @@
                     });
                 }
             } else {
-                g.course = src.course === 'lk13' ? 'lk13' : 'gk';
+                g.course = ['gk13', 'gk4', 'lk13', 'lk4'].indexOf(src.course) !== -1 ? src.course : 'gk13';
                 const m = src.atWeights && typeof src.atWeights.m === 'number' && isFinite(src.atWeights.m) ? clamp(Math.round(src.atWeights.m), 0, 100) : 50;
                 g.atWeights = { m: m, s: 100 - m };
                 const sl = src.slots && typeof src.slots === 'object' ? src.slots : {};
                 g.slots = {
                     m: clamp(isInt(sl.m) ? sl.m : 3, 1, MAX_SLOTS),
                     s: clamp(isInt(sl.s) ? sl.s : 3, 1, MAX_SLOTS),
-                    k: g.course === 'lk13' ? 2 : clamp(isInt(sl.k) ? sl.k : 2, 1, MAX_SLOTS)
+                    k: kFixedSlots(g.course) || clamp(isInt(sl.k) ? sl.k : 1, 1, MAX_SLOTS)
                 };
                 g.adviceTarget = src.adviceTarget === 'note' ? 'note' : 'punkt';
             }
@@ -565,19 +568,25 @@
         box.append(el('div', { class: 'section-title', text: 'Kursart' }));
         const setCourse = async c => {
             if (c === g.course) return;
-            if (c === 'lk13' && g.students.some(st => (st.grades.k || []).slice(2).some(v => v))) {
-                if (!(await confirmDialog('Kursart ändern?', 'Für Leistungskurse im 1. bis 3. Kurshalbjahr zählen genau zwei Klausuren. Weitere Klausurnoten werden entfernt.', 'Ändern'))) { renderRating(); return; }
+            const fixed = kFixedSlots(c);
+            if (fixed && g.students.some(st => (st.grades.k || []).slice(fixed).some(v => v))) {
+                if (!(await confirmDialog('Kursart ändern?', fixed === 2
+                    ? 'Für Leistungskurse im 1. bis 3. Kurshalbjahr zählen genau zwei Klausuren. Weitere Klausurnoten werden entfernt.'
+                    : 'Für Leistungskurse im 4. Kurshalbjahr zählt genau eine Klausur. Weitere Klausurnoten werden entfernt.', 'Ändern'))) { renderRating(); return; }
             }
             g.course = c;
-            if (c === 'lk13') {
-                g.slots.k = 2;
-                g.students.forEach(st => { st.grades.k = (st.grades.k || []).slice(0, 2); delete st.dec; });
-            } else g.students.forEach(st => { delete st.dec; });
+            if (fixed) {
+                g.slots.k = fixed;
+                g.students.forEach(st => { st.grades.k = (st.grades.k || []).slice(0, fixed); });
+            }
+            g.students.forEach(st => { delete st.dec; });
             markDirty();
             renderAll();
         };
-        box.append(radio('course', 'gk', 'Grundkurs, Sport oder Leistungskurs im 4. Kurshalbjahr (Tabelle a)', g.course !== 'lk13', () => setCourse('gk')));
-        box.append(radio('course', 'lk13', 'LK im 1. bis 3. Kurshalbjahr (Tabelle b, zwei Klausuren)', g.course === 'lk13', () => setCourse('lk13')));
+        box.append(radio('course', 'gk13', 'Grundkurs, 1. bis 3. Kurshalbjahr (AT 2/3, Klausur 1/3)', g.course === 'gk13', () => setCourse('gk13')));
+        box.append(radio('course', 'gk4', 'Grundkurs, 4. Kurshalbjahr (mit Klausur wie zuvor, ohne Klausur zählt nur der AT)', g.course === 'gk4', () => setCourse('gk4')));
+        box.append(radio('course', 'lk13', 'Leistungskurs, 1. bis 3. Kurshalbjahr (AT 1/2, zwei Klausuren 1/2)', g.course === 'lk13', () => setCourse('lk13')));
+        box.append(radio('course', 'lk4', 'Leistungskurs, 4. Kurshalbjahr (AT 1/2, eine Klausur 1/2)', g.course === 'lk4', () => setCourse('lk4')));
 
         box.append(el('div', { class: 'section-title', text: 'Allgemeiner Teil (AT)' }));
         const wm = numField(g.atWeights.m, 0, 100, 'Anteil mündlicher Teil in Prozent', v => {
@@ -691,8 +700,7 @@
         return NR.normalizeGrade(mode, note);
     }
 
-    $('grades-import2').addEventListener('click', () => $('grades-import').click());
-    $('grades-import').addEventListener('click', () => {
+    $('grades-import2').addEventListener('click', () => {
         const g = G();
         if (!g) { infoDialog('Keine Lerngruppe', 'Legen Sie zuerst eine Lerngruppe an.'); return; }
         $('grades-input').click();
@@ -733,7 +741,7 @@
                 if (matched.every(m => !((m.st.grades[c.id] || [])[i]))) { firstFree = i; break; }
             }
             for (let i = 0; i < c.slots; i++) slotSel.append(el('option', { value: String(i), text: 'Note ' + (i + 1) }));
-            const canNew = c.slots < MAX_SLOTS && !(g.course === 'lk13' && c.id === 'k');
+            const canNew = c.slots < MAX_SLOTS && !(kFixedSlots(g.course) && c.id === 'k');
             if (canNew) slotSel.append(el('option', { value: 'new', text: 'Neuer Platz am Ende' }));
             slotSel.value = firstFree >= 0 ? String(firstFree) : (canNew ? 'new' : '0');
         }
@@ -818,7 +826,7 @@
         }
         if (c.id === 'm') return 'Mündlich · ' + g.atWeights.m + ' %';
         if (c.id === 's') return 'Sonstige · ' + g.atWeights.s + ' %';
-        return g.course === 'lk13' ? 'Klausuren (Σ)' : 'Klausuren';
+        return g.course === 'lk13' ? 'Klausuren (Σ)' : (g.course === 'lk4' ? 'Klausur' : 'Klausuren');
     }
 
     const CALC_LABEL = { tot: 'Ø', calc: 'Rechn. Note', fin: 'Note', at: 'AT', kl: 'Klausurteil', pts: 'Punkte', note: 'Note' };
@@ -891,7 +899,7 @@
                     const hasMean = segs[i + 1] && segs[i + 1].t === 'mean';
                     const th = el('th', { class: 'cat', colspan: String(s.cat.slots + (hasMean ? 1 : 0)) });
                     th.append(document.createTextNode(catHeadLabel(g, s.cat)));
-                    if (!(g.course === 'lk13' && s.cat.id === 'k')) th.append(slotCtl(s.cat));
+                    if (!(kFixedSlots(g.course) && s.cat.id === 'k')) th.append(slotCtl(s.cat));
                     rows[0].append(th);
                     numbers(s.cat, rows[1], hasMean);
                 } else if (s.t !== 'mean') calcHead(s);
@@ -904,7 +912,7 @@
         wrap.append(table);
 
         const hint = g.stufe === 'sek2'
-            ? 'Punkte von 0 bis 15 eintragen. Bei genau x,5 im AT, im Klausurteil oder in der Tabelle b wird die Entscheidung per Knopf getroffen.'
+            ? 'Punkte von 0 bis 15 eintragen. Bei genau x,5 im AT, im Klausurteil oder in der Gesamtnote wird die Entscheidung per Knopf getroffen.'
             : (g.tendency ? 'Noten mit Tendenz eintragen, zum Beispiel 2+, 3 oder 4-.' : 'Noten von 1 bis 6 eintragen.');
         $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
     }
@@ -1324,6 +1332,8 @@
         renderTable();
         renderAdvice();
         updateStatus();
+        const cg = G();
+        $('grades-import2').textContent = cg && cg.stufe === 'sek2' ? 'Noten aus Klausur' : 'Noten aus Klassenarbeit';
         ['det-group', 'det-rating', 'det-names'].forEach(id => { $(id).hidden = !has; });
     }
 

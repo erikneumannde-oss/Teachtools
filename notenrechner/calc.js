@@ -219,13 +219,20 @@
         return { lo: v, hi: v, tie: false };
     }
 
+    // LK im 4. Kurshalbjahr (1:1): eine Klausur und allgemeiner Teil, bei x,5 entscheidet die Lehrkraft
+    function table11(kl, at) {
+        const n = kl + at, lo = Math.floor(n / 2);
+        return n % 2 === 1 ? { lo: lo, hi: lo + 1, tie: true } : { lo: lo, hi: lo, tie: false };
+    }
+
     function listValues(arr) {
         const out = [];
         (arr || []).forEach(g => { if (g !== '' && g != null) out.push(parseInt(g, 10)); });
         return out;
     }
 
-    // Sek II: group.course = 'gk' | 'lk13' | 'lk4'; group.atWeights = { m, s }
+    // Sek II: group.course = 'gk13' | 'gk4' | 'lk13' | 'lk4'; group.atWeights = { m, s }
+    // gk13: AT 2/3, Klausur 1/3 · gk4: wie gk13, ohne Klausur zählt der AT zu 100 % · lk13: AT 1/2, zwei Klausuren 1/2 · lk4: AT 1/2, eine Klausur 1/2
     // extra: { cat: 'm'|'s'|'k', grade: n } (gedachte Zusatznote); ties: 'up' = bei x,5 aufrunden
     function calcSek2(group, student, extra, ties) {
         const g = student.grades || {};
@@ -259,9 +266,12 @@
         }
 
         // Zeugnispunkte
-        if (res.at && res.kl && res.at.value != null && res.kl.value != null) {
-            if (group.course === 'lk13') {
-                const t = tableB(res.kl.value, res.at.value);
+        if (group.course === 'gk4' && !kv.length && res.at && res.at.value != null) {
+            res.points = res.at.value;
+            res.info = 'Ohne Klausur zählt der allgemeine Teil zu 100 Prozent.';
+        } else if (res.at && res.kl && res.at.value != null && res.kl.value != null) {
+            if (group.course === 'lk13' || group.course === 'lk4') {
+                const t = group.course === 'lk13' ? tableB(res.kl.value, res.at.value) : table11(res.kl.value, res.at.value);
                 res.tieFinal = t.tie ? { lo: t.lo, hi: t.hi } : null;
                 res.special = !!t.special;
                 if (t.tie) {
@@ -312,7 +322,7 @@
         pointsToNote: pointsToNote, noteLevel: noteLevel, noteDecimalFromPoints: noteDecimalFromPoints,
         normalizeGrade: normalizeGrade, gradeFromAvg: gradeFromAvg,
         calcSek1: calcSek1, sek1Options: sek1Options, sek1Final: sek1Final, sek1Over: sek1Over, allGrades: allGrades, adviceSek1: adviceSek1,
-        frac: frac, roundFrac: roundFrac, tableA: tableA, tableB: tableB,
+        frac: frac, roundFrac: roundFrac, tableA: tableA, tableB: tableB, table11: table11,
         calcSek2: calcSek2, adviceSek2: adviceSek2
     };
 });

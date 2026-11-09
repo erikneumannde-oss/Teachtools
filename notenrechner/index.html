@@ -50,6 +50,7 @@
                 <span class="btn-row inline">
                     <button type="button" id="edit-rating" class="btn small">Kategorien und Wertung</button>
                     <button type="button" id="grades-import2" class="btn small">Noten aus Klassenarbeit</button>
+                    <input type="file" id="grades-input" accept=".json,application/json" hidden>
                     <button type="button" id="save-local" class="btn small primary">Im Browser speichern</button>
                     <button type="button" id="pdf-group" class="btn small">PDF dieser Gruppe</button>
                     <button type="button" id="pdf-all" class="btn small">PDF Gesamtübersicht</button>
@@ -86,17 +87,6 @@
                 </div>
                 <div class="btn-row">
                     <button type="button" id="names-sort" class="btn small">A–Z sortieren</button>
-                </div>
-            </div>
-        </details>
-
-        <details class="card" id="det-grades">
-            <summary>Noten aus Klassenarbeit</summary>
-            <div class="card-body">
-                <p class="small-text">Lädt die Noten-Datei aus dem Arbeitauswerter und trägt sie über die Namen in eine Spalte ein.</p>
-                <div class="btn-row">
-                    <button type="button" id="grades-import" class="btn primary">Noten-Datei laden</button>
-                    <input type="file" id="grades-input" accept=".json,application/json" hidden>
                 </div>
             </div>
         </details>
