@@ -62,7 +62,11 @@
         addPara([], BODY, true);
         addPara(toWords('Mit freundlichen Grüßen', 'reg', BODY), BODY, true);
         for (let i = 0; i < 3; i++) addPara([], BODY, true);
-        addPara(toWords(letter.names, 'reg', BODY), BODY, false);
+        addPara(toWords(letter.names, 'reg', BODY), BODY, !!letter.tail);
+        if (letter.tail) {
+            addPara([], BODY, true);
+            addPara(toWords(letter.tail, 'reg', 10), 10, false);
+        }
 
         const pages = [];
         let cur = [], y = C.TOP_FIRST;

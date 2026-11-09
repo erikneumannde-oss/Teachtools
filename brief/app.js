@@ -102,6 +102,7 @@
                 anrede: document.querySelector('input[name="anrede"]:checked').value
             },
             names: $('f-names').value, kuerzel: $('f-kuerzel').value,
+            child: { first: $('t-first').value, sex: $('t-sex').value, date: $('t-date').value, reason: $('t-reason').value },
             subject: $('f-subject').value, text: $('f-text').value
         };
     }
@@ -128,9 +129,17 @@
         kind = b.dataset.kind;
         document.querySelectorAll('.kind[data-kind]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         $('form').hidden = false;
+        const tadel = kind === 'tadel';
         $('box-eltern').hidden = kind !== 'eltern';
-        $('box-sonstig').hidden = kind !== 'sonstig';
-        if (kind === 'sonstig' && !$('s-persons').children.length) renderPersons();
+        $('box-sonstig').hidden = kind === 'eltern';
+        $('card-tadel').hidden = !tadel;
+        $('card-txt').hidden = tadel;
+        $('r-institution').hidden = tadel;
+        if (tadel && document.querySelector('input[name="typ"]:checked').value === 'institution') {
+            document.querySelector('input[name="typ"][value="einzel"]').checked = true;
+            renderPersons();
+        }
+        if (kind !== 'eltern' && !$('s-persons').children.length) renderPersons();
         refresh();
         $('h-addr').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }));
@@ -165,7 +174,7 @@
     }
 
     const stamp = () => new Date().toLocaleDateString('sv-SE');
-    const baseName = () => (kind === 'eltern' ? 'Elternbrief-' : 'Brief-') + stamp();
+    const baseName = () => (kind === 'eltern' ? 'Elternbrief-' : kind === 'tadel' ? 'Tadel-' : 'Brief-') + stamp();
 
     async function pdfBytes(letter) {
         await need('fflate', '../lib/fflate.js', () => !!window.fflate);

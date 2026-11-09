@@ -33,7 +33,7 @@
             <div class="kinds" id="kinds">
                 <button type="button" class="kind" data-kind="eltern" aria-pressed="false">Elternbrief<small>An eine Klasse oder einen Jahrgang</small></button>
                 <button type="button" class="kind" data-kind="sonstig" aria-pressed="false">Sonstiger Brief<small>An Personen, Familien oder Institutionen</small></button>
-                <button type="button" class="kind" disabled>Information über einen mündlichen Tadel<small>folgt</small></button>
+                <button type="button" class="kind" data-kind="tadel" aria-pressed="false">Information über einen mündlichen Tadel<small>An Eltern einer Schülerin oder eines Schülers</small></button>
                 <button type="button" class="kind" disabled>Information über eine ungenügende Leistung<small>folgt</small></button>
             </div>
         </div>
@@ -67,7 +67,7 @@
                             <label><input type="radio" name="typ" value="einzel" checked> eine Person</label>
                             <label><input type="radio" name="typ" value="zwei"> zwei Personen</label>
                             <label><input type="radio" name="typ" value="familie"> eine Familie</label>
-                            <label><input type="radio" name="typ" value="institution"> eine Institution</label>
+                            <label id="r-institution"><input type="radio" name="typ" value="institution"> eine Institution</label>
                         </div>
                     </div>
 
@@ -109,6 +109,31 @@
             </div>
         </section>
 
+        <section class="card" id="card-tadel" aria-labelledby="h-tadel" hidden>
+            <h2 id="h-tadel">Tadel</h2>
+            <div class="card-body stack">
+                <div class="grid3">
+                    <label>Vorname des Kindes
+                        <input id="t-first" class="field" type="text" maxlength="60" autocomplete="off">
+                    </label>
+                    <label>Geschlecht des Kindes
+                        <select id="t-sex" class="field">
+                            <option value="f">weiblich („Ihre Tochter“)</option>
+                            <option value="m">männlich („Ihr Sohn“)</option>
+                            <option value="n">keine Angabe („Ihr Kind“)</option>
+                        </select>
+                    </label>
+                    <label>Datum des Tadels
+                        <input id="t-date" class="field" type="date">
+                    </label>
+                </div>
+                <label>Grund
+                    <textarea id="t-reason" class="field" rows="4" maxlength="800"></textarea>
+                </label>
+                <p class="fieldhint nomargin">Betreff und Text sind für diesen Brief vorgegeben. Unter dem Gruß steht Ihr Name, am Ende der Hinweis, dass eine Kopie in die Schülerakte kommt.</p>
+            </div>
+        </section>
+
         <section class="card" aria-labelledby="h-abs">
             <h2 id="h-abs">Absender</h2>
             <div class="card-body">
@@ -125,7 +150,7 @@
             </div>
         </section>
 
-        <section class="card" aria-labelledby="h-txt">
+        <section class="card" id="card-txt" aria-labelledby="h-txt">
             <h2 id="h-txt">Betreff und Text</h2>
             <div class="card-body stack">
                 <label>Betreff

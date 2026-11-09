@@ -107,7 +107,11 @@
         body += para('', { keepNext: true });
         body += para('Mit freundlichen Grüßen', { keepNext: true });
         for (let i = 0; i < 3; i++) body += para('', { keepNext: true });
-        body += para(letter.names);
+        body += para(letter.names, { keepNext: !!letter.tail });
+        if (letter.tail) {
+            body += para('', { keepNext: true });
+            body += para(letter.tail, { rpr: '<w:sz w:val="20"/><w:szCs w:val="20"/>' });
+        }
         doc = doc.slice(0, start2) + body + doc.slice(end2);
 
         // 4. Fußzeile mit „Seite x von y“, nur bei mehr als einer Seite.
