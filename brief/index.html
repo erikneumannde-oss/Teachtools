@@ -34,7 +34,7 @@
                 <button type="button" class="kind" data-kind="eltern" aria-pressed="false">Elternbrief<small>An eine Klasse oder einen Jahrgang</small></button>
                 <button type="button" class="kind" data-kind="sonstig" aria-pressed="false">Sonstiger Brief<small>An Personen, Familien oder Institutionen</small></button>
                 <button type="button" class="kind" data-kind="tadel" aria-pressed="false">Information über einen mündlichen Tadel<small>An Eltern einer Schülerin oder eines Schülers</small></button>
-                <button type="button" class="kind" disabled>Information über eine ungenügende Leistung<small>folgt</small></button>
+                <button type="button" class="kind" data-kind="ungenuegend" aria-pressed="false">Information über eine ungenügende Leistung<small>An Eltern einer Schülerin oder eines Schülers</small></button>
             </div>
         </div>
     </section>
@@ -129,6 +129,30 @@
                 </div>
                 <label>Grund
                     <textarea id="t-reason" class="field" rows="4" maxlength="800"></textarea>
+                </label>
+                <p class="fieldhint nomargin">Betreff und Text sind für diesen Brief vorgegeben. Unter dem Gruß steht Ihr Name, am Ende der Hinweis, dass eine Kopie in die Schülerakte kommt.</p>
+            </div>
+        </section>
+
+        <section class="card" id="card-ungen" aria-labelledby="h-ungen" hidden>
+            <h2 id="h-ungen">Ungenügende Leistung</h2>
+            <div class="card-body stack">
+                <div class="grid2">
+                    <label>Vorname des Kindes
+                        <input id="u-first" class="field" type="text" maxlength="60" autocomplete="off">
+                    </label>
+                    <label>Fach
+                        <input id="u-fach" class="field" type="text" maxlength="60" autocomplete="off" placeholder="zum Beispiel Deutsch">
+                    </label>
+                    <label>Art der Leistungsüberprüfung
+                        <input id="u-art" class="field" type="text" maxlength="80" autocomplete="off" placeholder="zum Beispiel Klassenarbeit">
+                    </label>
+                    <label>Datum der Leistungsüberprüfung
+                        <input id="u-date" class="field" type="date">
+                    </label>
+                </div>
+                <label>Bemerkungen (optional)
+                    <textarea id="u-bem" class="field" rows="3" maxlength="800"></textarea>
                 </label>
                 <p class="fieldhint nomargin">Betreff und Text sind für diesen Brief vorgegeben. Unter dem Gruß steht Ihr Name, am Ende der Hinweis, dass eine Kopie in die Schülerakte kommt.</p>
             </div>

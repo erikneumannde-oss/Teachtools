@@ -56,6 +56,7 @@
         n: { poss: 'Ihr Kind', dat: 'Ihrem Kind' }
     };
     const TADEL_SUBJECT = 'Schriftliche Mitteilung über einen ausgesprochenen mündlichen Tadel, SchulG § 62, (2)';
+    const UNGEN_SUBJECT = 'Mitteilung über ungenügende Leistungen';
     const TADEL_TAIL = 'Eine Kopie dieses Schreibens wird in der Schülerakte abgeheftet.';
     // „2026-11-05“ -> „05.11.2026“
     function isoToGerman(s) {
@@ -65,14 +66,20 @@
 
     function missing(form) {
         const m = [];
-        if (form.kind === 'tadel') {
+        if (form.kind === 'tadel' || form.kind === 'ungenuegend') {
             const s = form.sonstig;
             if (s.typ === 'einzel' && !personOk(s.persons[0])) m.push('Name der Person');
             if (s.typ === 'zwei' && !(personOk(s.persons[0]) && personOk(s.persons[1]))) m.push('Namen der beiden Personen');
             if (s.typ === 'familie' && !clean(s.familie)) m.push('Familienname');
             if (!clean(form.child.first)) m.push('Vorname des Kindes');
-            if (!isoToGerman(form.child.date)) m.push('Datum des Tadels');
-            if (!clean(form.child.reason)) m.push('Grund');
+            if (form.kind === 'tadel') {
+                if (!isoToGerman(form.child.date)) m.push('Datum des Tadels');
+                if (!clean(form.child.reason)) m.push('Grund');
+            } else {
+                if (!clean(form.child.fach)) m.push('Fach');
+                if (!clean(form.child.art)) m.push('Art der Leistungsüberprüfung');
+                if (!isoToGerman(form.child.date)) m.push('Datum der Leistungsüberprüfung');
+            }
             if (!splitList(form.names).length) m.push('Ihr Name');
             if (!splitList(form.kuerzel).length) m.push('Kürzel');
             return m;
@@ -95,6 +102,25 @@
 
     function build(form, now) {
         let address = [], salutation = '';
+        if (form.kind === 'ungenuegend') {
+            const l = build(Object.assign({}, form, { kind: 'sonstig' }), now);
+            const c = form.child;
+            const bem = String(c.reason || '').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\t]/g, ' ').trim().split('\n').map(x => x.trim()).filter(Boolean).join(' ');
+            l.subject = UNGEN_SUBJECT;
+            l.lines = [
+                'Ihr Kind ' + clean(c.first),
+                'hat im Fach ' + clean(c.fach),
+                'Art der Leistungsüberprüfung: ' + clean(c.art),
+                'am ' + isoToGerman(c.date),
+                '',
+                'nur ungenügende Leistungen erbracht (Note 6).',
+                ''
+            ];
+            if (bem) l.lines.push('Bemerkungen: ' + bem, '');
+            l.lines.push('Bitte unterstützen Sie unsere pädagogische Arbeit, indem Sie mit Ihrem Kind darüber reden, damit es in Zukunft den schulischen Anforderungen gerecht werden kann.');
+            l.tail = TADEL_TAIL;
+            return l;
+        }
         if (form.kind === 'tadel') {
             const t = Object.assign({}, form, { kind: 'sonstig' });
             const l = build(t, now);

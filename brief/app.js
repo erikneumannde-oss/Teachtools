@@ -102,7 +102,9 @@
                 anrede: document.querySelector('input[name="anrede"]:checked').value
             },
             names: $('f-names').value, kuerzel: $('f-kuerzel').value,
-            child: { first: $('t-first').value, sex: $('t-sex').value, date: $('t-date').value, reason: $('t-reason').value },
+            child: kind === 'ungenuegend'
+                ? { first: $('u-first').value, fach: $('u-fach').value, art: $('u-art').value, date: $('u-date').value, reason: $('u-bem').value }
+                : { first: $('t-first').value, sex: $('t-sex').value, date: $('t-date').value, reason: $('t-reason').value },
             subject: $('f-subject').value, text: $('f-text').value
         };
     }
@@ -129,10 +131,11 @@
         kind = b.dataset.kind;
         document.querySelectorAll('.kind[data-kind]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         $('form').hidden = false;
-        const tadel = kind === 'tadel';
+        const tadel = kind === 'tadel' || kind === 'ungenuegend';
         $('box-eltern').hidden = kind !== 'eltern';
         $('box-sonstig').hidden = kind === 'eltern';
-        $('card-tadel').hidden = !tadel;
+        $('card-tadel').hidden = kind !== 'tadel';
+        $('card-ungen').hidden = kind !== 'ungenuegend';
         $('card-txt').hidden = tadel;
         $('r-institution').hidden = tadel;
         if (tadel && document.querySelector('input[name="typ"]:checked').value === 'institution') {
@@ -174,7 +177,7 @@
     }
 
     const stamp = () => new Date().toLocaleDateString('sv-SE');
-    const baseName = () => (kind === 'eltern' ? 'Elternbrief-' : kind === 'tadel' ? 'Tadel-' : 'Brief-') + stamp();
+    const baseName = () => (kind === 'eltern' ? 'Elternbrief-' : kind === 'tadel' ? 'Tadel-' : kind === 'ungenuegend' ? 'Ungenuegende-Leistung-' : 'Brief-') + stamp();
 
     async function pdfBytes(letter) {
         await need('fflate', '../lib/fflate.js', () => !!window.fflate);
