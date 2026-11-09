@@ -103,7 +103,10 @@
         body += para(letter.salutation, { keepNext: true });
         body += para('', { keepNext: true });
         const lines = letter.lines;
-        lines.forEach((l, i) => { body += para(l, { keepNext: i === lines.length - 1 }); });
+        lines.forEach((l, i) => {
+            const runs = l.split('\u0001').map((seg, k) => seg ? run(seg, k % 2 ? '<w:b/><w:bCs/>' : '') : '').join('');
+            body += para(l, { keepNext: i === lines.length - 1, runs: runs });
+        });
         body += para('', { keepNext: true });
         body += para('Mit freundlichen Grüßen', { keepNext: true });
         for (let i = 0; i < 3; i++) body += para('', { keepNext: true });

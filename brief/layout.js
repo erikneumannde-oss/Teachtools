@@ -45,6 +45,13 @@
     }
     const toWords = (s, font, size) => s.split(/ +/).filter(Boolean).map(t => ({ t: t, font: font, size: size }));
 
+    // Fettdruck: Text zwischen zwei Zeichen \u0001 ist fett
+    function richWords(s, size) {
+        const out = [];
+        String(s).split('\u0001').forEach((seg, i) => { out.push.apply(out, toWords(seg, i % 2 ? 'bold' : 'reg', size)); });
+        return out;
+    }
+
     function paginate(letter, measure) {
         const items = [];
         let paraNo = 0;
@@ -58,7 +65,7 @@
         addPara([], BODY, true);
         addPara(toWords(letter.salutation, 'reg', BODY), BODY, true);
         addPara([], BODY, true);
-        letter.lines.forEach((l, i) => addPara(toWords(l, 'reg', BODY), BODY, i === letter.lines.length - 1));
+        letter.lines.forEach((l, i) => addPara(richWords(l, BODY), BODY, i === letter.lines.length - 1));
         addPara([], BODY, true);
         addPara(toWords('Mit freundlichen Grüßen', 'reg', BODY), BODY, true);
         for (let i = 0; i < 3; i++) addPara([], BODY, true);
@@ -91,5 +98,5 @@
         return { pages: pages, bottomUsed: used };
     }
 
-    return { C: C, wrap: wrap, toWords: toWords, paginate: paginate };
+    return { C: C, wrap: wrap, toWords: toWords, richWords: richWords, paginate: paginate };
 });

@@ -109,8 +109,8 @@
             l.subject = UNGEN_SUBJECT;
             l.lines = [
                 'Ihr Kind ' + clean(c.first),
-                'hat im Fach ' + clean(c.fach),
-                'Art der Leistungsüberprüfung: ' + clean(c.art),
+                'hat im Fach \u0001' + clean(c.fach) + '\u0001',
+                'Art der Leistungsüberprüfung: \u0001' + clean(c.art) + '\u0001',
                 'am ' + isoToGerman(c.date),
                 '',
                 'nur ungenügende Leistungen erbracht (Note 6).',
