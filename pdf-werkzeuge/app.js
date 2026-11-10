@@ -189,6 +189,8 @@
         merge.items.forEach(function (it, i) {
             var handle = el('button', { type: 'button', class: 'btn small handle', 'aria-label': 'Seite ' + (i + 1) + ' ziehen', title: 'Ziehen, um die Seite zu verschieben', text: '⠿' });
             handle.addEventListener('pointerdown', function (e) { startDrag(e, it, card); });
+            var cb = el('input', { type: 'checkbox', 'aria-label': 'Seite ' + (i + 1) + ' wählen' });
+            cb.checked = !!it.sel;
             var card = el('div', { class: 'card', 'data-id': String(it.id) }, [
                 el('div', { class: 'thumb' }, [it.canvas]),
                 el('div', { class: 'label', text: 'Seite ' + (i + 1) }),
@@ -199,8 +201,11 @@
                     el('button', { type: 'button', class: 'btn small', 'aria-label': 'Nach hinten', text: '→', onclick: function () { moveMerge(i, 1); } }),
                     el('button', { type: 'button', class: 'btn small', 'aria-label': 'Drehen', text: '↻', onclick: function () { it.rot = (it.rot + 90) % 360; mRenderThumb(it).then(renderMerge); } }),
                     el('button', { type: 'button', class: 'btn small', 'aria-label': 'Entfernen', text: '✕', onclick: function () { merge.items.splice(i, 1); renderMerge(); } })
-                ])
+                ]),
+                el('label', { class: 'pick' }, [cb, el('span', { text: 'wählen' })])
             ]);
+            card.classList.toggle('sel', !!it.sel);
+            cb.addEventListener('change', function () { it.sel = cb.checked; card.classList.toggle('sel', it.sel); });
             card.querySelectorAll('button')[0].disabled = (i === 0);
             card.querySelectorAll('button')[2].disabled = (i === merge.items.length - 1);
             var th = card.querySelector('.thumb');
@@ -210,8 +215,7 @@
         var files = {};
         merge.items.forEach(function (it) { files[it.kind === 'pdf' ? 's' + it.src : 'i' + it.id] = 1; });
         $('merge-info').textContent = merge.items.length ? merge.items.length + ' Seite(n) aus ' + Object.keys(files).length + ' Datei(en)' : '';
-        $('merge-go').disabled = merge.busy || merge.items.length === 0;
-        $('merge-clear').disabled = merge.busy || merge.items.length === 0;
+        ['merge-go', 'merge-go-sel', 'merge-zip', 'merge-reset', 'merge-clear'].forEach(function (id) { $(id).disabled = merge.busy || merge.items.length === 0; });
     }
 
     function moveMerge(i, d) {
@@ -311,7 +315,7 @@
                     var sid = merge.nextSrc++;
                     merge.srcs[sid] = { bytes: bytes, pdfjs: pdfjs, name: f.name };
                     for (var p = 0; p < pdfjs.numPages; p++) {
-                        added.push({ id: merge.nextId++, kind: 'pdf', src: sid, index: p, name: f.name, rot: 0, token: 0, canvas: document.createElement('canvas') });
+                        added.push({ id: merge.nextId++, kind: 'pdf', src: sid, index: p, name: f.name, rot: 0, sel: false, token: 0, canvas: document.createElement('canvas') });
                     }
                 } else if (isImage(f)) {
                     var loaded = await loadImage(f);
@@ -324,7 +328,7 @@
                     bctx.fillRect(0, 0, base.width, base.height);
                     bctx.drawImage(loaded.img, 0, 0, base.width, base.height);
                     URL.revokeObjectURL(loaded.url);
-                    added.push({ id: merge.nextId++, kind: 'img', file: f, name: f.name, rot: 0, token: 0, base: base, canvas: document.createElement('canvas') });
+                    added.push({ id: merge.nextId++, kind: 'img', file: f, name: f.name, rot: 0, sel: false, token: 0, base: base, canvas: document.createElement('canvas') });
                 } else skipped++;
             } catch (e) { errors.push(friendlyError(e, f.name)); }
         }
@@ -348,35 +352,32 @@
         renderMerge();
     });
 
-    $('merge-go').addEventListener('click', async function () {
-        merge.busy = true;
-        renderMerge();
+    // Baut aus den Karten (in dieser Reihenfolge) eine PDF
+    async function buildPdf(items, quiet) {
         var current = '';
+        var mode = $('merge-pagemode').value;
+        var maxSide = parseInt($('merge-maxside').value, 10);
+        var out = await PDFDocument.create();
+        // Die benötigten Seiten jeder PDF werden auf einmal kopiert, so bleibt die Datei klein
+        var copied = {};
+        var bySrc = {};
+        items.forEach(function (it) { if (it.kind === 'pdf') (bySrc[it.src] = bySrc[it.src] || []).push(it.index); });
+        var srcIds = Object.keys(bySrc);
         try {
-            var mode = $('merge-pagemode').value;
-            var maxSide = parseInt($('merge-maxside').value, 10);
-            var out = await PDFDocument.create();
-            // Die benötigten Seiten jeder PDF werden auf einmal kopiert, so bleibt die Datei klein
-            var copied = {};
-            var bySrc = {};
-            merge.items.forEach(function (it) { if (it.kind === 'pdf') (bySrc[it.src] = bySrc[it.src] || []).push(it.index); });
-            var srcIds = Object.keys(bySrc);
             for (var s = 0; s < srcIds.length; s++) {
                 var sid = srcIds[s];
                 current = merge.srcs[sid].name;
-                setStatus('merge-status', 'Lese „' + current + '“ …');
-                await tick();
+                if (!quiet) { setStatus('merge-status', 'Lese „' + current + '“ …'); await tick(); }
                 var doc = await PDFDocument.load(merge.srcs[sid].bytes);
                 var idx = bySrc[sid].slice().sort(function (a, b) { return a - b; });
                 var pages = await out.copyPages(doc, idx);
                 copied[sid] = {};
                 idx.forEach(function (n, j) { copied[sid][n] = pages[j]; });
             }
-            for (var i = 0; i < merge.items.length; i++) {
-                var it = merge.items[i];
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
                 current = it.name;
-                setStatus('merge-status', 'Verarbeite Seite ' + (i + 1) + ' von ' + merge.items.length + ' …');
-                await tick();
+                if (!quiet) { setStatus('merge-status', 'Verarbeite Seite ' + (i + 1) + ' von ' + items.length + ' …'); await tick(); }
                 var page;
                 if (it.kind === 'pdf') {
                     page = copied[it.src][it.index];
@@ -404,178 +405,63 @@
                     if (it.rot) page.setRotation(degrees(it.rot));
                 }
             }
-            var bytes = await out.save();
-            saveBytes(bytes, 'zusammengefuegt.pdf', 'application/pdf');
-            setStatus('merge-status', 'Fertig: zusammengefuegt.pdf (' + out.getPageCount() + ' Seiten, ' + fmtSize(bytes.length) + ').');
+            return { bytes: await out.save(), count: out.getPageCount() };
         } catch (e) {
-            setStatus('merge-status', friendlyError(e, current), true);
+            e.fileName = current;
+            throw e;
         }
+    }
+
+    async function runExport(label, fn) {
+        merge.busy = true;
+        renderMerge();
+        var current = '';
+        try { await fn(); } catch (e) { setStatus('merge-status', friendlyError(e, e.fileName || current), true); }
         merge.busy = false;
         renderMerge();
-    });
-
-    /* =========================================================
-       2. Seiten bearbeiten
-       ========================================================= */
-
-    var pg = { name: '', bytes: null, pdf: null, pages: [], busy: false };
-
-    function pgButtons() {
-        var has = pg.pages.length > 0 && !pg.busy;
-        $('pages-save').disabled = !has;
-        $('pages-save-sel').disabled = !has;
-        $('pages-zip').disabled = !has;
-        $('pages-reset').disabled = !pg.pdf || pg.busy;
     }
 
-    async function renderThumb(p) {
-        var token = ++p.token;
-        var page = await pg.pdf.getPage(p.index + 1);
-        var rotation = (page.rotate + p.rot) % 360;
-        var base = page.getViewport({ scale: 1, rotation: rotation });
-        var scale = 220 / Math.max(base.width, base.height);
-        var vp = page.getViewport({ scale: scale, rotation: rotation });
-        var tmp = document.createElement('canvas');
-        tmp.width = Math.floor(vp.width);
-        tmp.height = Math.floor(vp.height);
-        var ctx = tmp.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, tmp.width, tmp.height);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
-        if (token !== p.token) return;
-        p.canvas.width = tmp.width;
-        p.canvas.height = tmp.height;
-        p.canvas.getContext('2d').drawImage(tmp, 0, 0);
-    }
-
-    function renderGrid() {
-        var grid = $('pages-grid');
-        grid.textContent = '';
-        pg.pages.forEach(function (p, i) {
-            var cb = el('input', { type: 'checkbox', 'aria-label': 'Seite ' + (i + 1) + ' wählen' });
-            cb.checked = p.sel;
-            var card = el('div', { class: 'card' + (p.sel ? ' sel' : '') }, [
-                el('div', { class: 'thumb' }, [p.canvas]),
-                el('div', { class: 'label', text: 'Seite ' + (i + 1) + (p.index !== i ? ' (vorher ' + (p.index + 1) + ')' : '') }),
-                el('div', { class: 'ctrl' }, [
-                    el('button', { type: 'button', class: 'btn small', 'aria-label': 'Nach vorn', text: '←', onclick: function () { movePage(i, -1); } }),
-                    el('button', { type: 'button', class: 'btn small', 'aria-label': 'Nach hinten', text: '→', onclick: function () { movePage(i, 1); } }),
-                    el('button', { type: 'button', class: 'btn small', 'aria-label': 'Drehen', text: '↻', onclick: function () { p.rot = (p.rot + 90) % 360; renderThumb(p); } }),
-                    el('button', { type: 'button', class: 'btn small', 'aria-label': 'Löschen', text: '✕', onclick: function () { pg.pages.splice(i, 1); renderGrid(); } })
-                ]),
-                el('label', { class: 'pick' }, [cb, el('span', { text: 'wählen' })])
-            ]);
-            card.querySelectorAll('button')[0].disabled = (i === 0);
-            card.querySelectorAll('button')[1].disabled = (i === pg.pages.length - 1);
-            cb.addEventListener('change', function () { p.sel = cb.checked; card.classList.toggle('sel', p.sel); });
-            grid.append(card);
+    $('merge-go').addEventListener('click', function () {
+        runExport('alle', async function () {
+            var r = await buildPdf(merge.items);
+            saveBytes(r.bytes, 'zusammengefuegt.pdf', 'application/pdf');
+            setStatus('merge-status', 'Fertig: zusammengefuegt.pdf (' + r.count + ' Seiten, ' + fmtSize(r.bytes.length) + ').');
         });
-        $('pages-info').textContent = pg.pdf ? '„' + pg.name + '“ – ' + pg.pages.length + ' Seite(n) im Ergebnis' : '';
-        pgButtons();
-    }
-
-    function movePage(i, d) {
-        var j = i + d;
-        if (j < 0 || j >= pg.pages.length) return;
-        var t = pg.pages[i];
-        pg.pages[i] = pg.pages[j];
-        pg.pages[j] = t;
-        renderGrid();
-    }
-
-    async function setupPages() {
-        pg.pages = [];
-        for (var i = 0; i < pg.pdf.numPages; i++) {
-            pg.pages.push({ index: i, rot: 0, sel: false, token: 0, canvas: document.createElement('canvas') });
-        }
-        renderGrid();
-        var all = pg.pages.slice();
-        for (var k = 0; k < all.length; k++) {
-            try { await renderThumb(all[k]); } catch (e) { /* Vorschau fehlt, Seite bleibt nutzbar */ }
-        }
-    }
-
-    bindDrop('pages-drop', 'pages-input', async function (files) {
-        var f = files[0];
-        if (!isPdf(f)) { setStatus('pages-status', 'Bitte eine PDF-Datei auswählen.', true); return; }
-        pg.busy = true;
-        pgButtons();
-        setStatus('pages-status', 'Lade „' + f.name + '“ …');
-        try {
-            var bytes = await readBytes(f);
-            await PDFDocument.load(bytes); // prüft, ob die Datei bearbeitbar ist
-            if (pg.pdf) { try { pg.pdf.destroy(); } catch (e) { /* egal */ } }
-            pg.pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
-            pg.bytes = bytes;
-            pg.name = baseName(f.name);
-            await setupPages();
-            setStatus('pages-status', '');
-        } catch (e) {
-            pg.pdf = null; pg.pages = []; pg.bytes = null;
-            renderGrid();
-            setStatus('pages-status', friendlyError(e, f.name), true);
-        }
-        pg.busy = false;
-        pgButtons();
     });
 
-    async function exportPages(list) {
-        var src = await PDFDocument.load(pg.bytes);
-        var out = await PDFDocument.create();
-        for (var i = 0; i < list.length; i++) {
-            var cp = (await out.copyPages(src, [list[i].index]))[0];
-            if (list[i].rot) cp.setRotation(degrees((cp.getRotation().angle + list[i].rot) % 360));
-            out.addPage(cp);
-        }
-        return out.save();
-    }
-
-    $('pages-save').addEventListener('click', async function () {
-        pg.busy = true; pgButtons();
-        try {
-            setStatus('pages-status', 'Speichere …');
-            await tick();
-            var bytes = await exportPages(pg.pages);
-            saveBytes(bytes, pg.name + '-bearbeitet.pdf', 'application/pdf');
-            setStatus('pages-status', 'Gespeichert: ' + pg.name + '-bearbeitet.pdf (' + fmtSize(bytes.length) + ').');
-        } catch (e) { setStatus('pages-status', friendlyError(e, pg.name), true); }
-        pg.busy = false; pgButtons();
+    $('merge-go-sel').addEventListener('click', function () {
+        var sel = merge.items.filter(function (it) { return it.sel; });
+        if (!sel.length) { setStatus('merge-status', 'Bitte zuerst Karten mit dem Häkchen „wählen“ markieren.', true); return; }
+        runExport('auswahl', async function () {
+            var r = await buildPdf(sel);
+            saveBytes(r.bytes, 'auswahl.pdf', 'application/pdf');
+            setStatus('merge-status', 'Fertig: auswahl.pdf (' + r.count + ' Seiten, ' + fmtSize(r.bytes.length) + ').');
+        });
     });
 
-    $('pages-save-sel').addEventListener('click', async function () {
-        var sel = pg.pages.filter(function (p) { return p.sel; });
-        if (!sel.length) { setStatus('pages-status', 'Bitte zuerst Seiten mit dem Häkchen „wählen“ markieren.', true); return; }
-        pg.busy = true; pgButtons();
-        try {
-            var bytes = await exportPages(sel);
-            saveBytes(bytes, pg.name + '-auswahl.pdf', 'application/pdf');
-            setStatus('pages-status', 'Gespeichert: ' + pg.name + '-auswahl.pdf (' + sel.length + ' Seite(n)).');
-        } catch (e) { setStatus('pages-status', friendlyError(e, pg.name), true); }
-        pg.busy = false; pgButtons();
-    });
-
-    $('pages-zip').addEventListener('click', async function () {
-        pg.busy = true; pgButtons();
-        try {
+    $('merge-zip').addEventListener('click', function () {
+        runExport('zip', async function () {
             var files = {};
-            var digits = String(pg.pages.length).length;
-            for (var i = 0; i < pg.pages.length; i++) {
-                setStatus('pages-status', 'Seite ' + (i + 1) + ' von ' + pg.pages.length + ' …');
+            var digits = String(merge.items.length).length;
+            for (var i = 0; i < merge.items.length; i++) {
+                setStatus('merge-status', 'Seite ' + (i + 1) + ' von ' + merge.items.length + ' …');
                 await tick();
+                var it = merge.items[i];
                 var n = String(i + 1);
                 while (n.length < digits) n = '0' + n;
-                files[pg.name + '-Seite-' + n + '.pdf'] = await exportPages([pg.pages[i]]);
+                var r = await buildPdf([it], true);
+                files['Seite-' + n + '-' + baseName(it.name) + (it.kind === 'pdf' ? '-S' + (it.index + 1) : '') + '.pdf'] = r.bytes;
             }
-            saveBytes(fflate.zipSync(files, { level: 0 }), pg.name + '-Seiten.zip', 'application/zip');
-            setStatus('pages-status', 'Gespeichert: ' + pg.name + '-Seiten.zip');
-        } catch (e) { setStatus('pages-status', friendlyError(e, pg.name), true); }
-        pg.busy = false; pgButtons();
+            saveBytes(fflate.zipSync(files, { level: 0 }), 'seiten-einzeln.zip', 'application/zip');
+            setStatus('merge-status', 'Gespeichert: seiten-einzeln.zip (' + merge.items.length + ' Dateien).');
+        });
     });
 
-    $('pages-reset').addEventListener('click', async function () {
-        pg.busy = true; pgButtons();
-        await setupPages();
-        pg.busy = false; pgButtons();
+    $('merge-reset').addEventListener('click', function () {
+        merge.items.sort(function (x, y) { return x.id - y.id; });
+        merge.items.forEach(function (it) { if (it.rot) { it.rot = 0; mRenderThumb(it); } });
+        setStatus('merge-status', 'Ursprüngliche Reihenfolge wiederhergestellt, Drehungen zurückgenommen.');
+        renderMerge();
     });
 
     /* =========================================================

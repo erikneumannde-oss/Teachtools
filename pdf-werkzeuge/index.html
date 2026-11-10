@@ -139,16 +139,15 @@
 
 <main>
     <div class="tabs" role="tablist">
-        <button type="button" data-tab="merge" class="active">Zusammenfügen</button>
-        <button type="button" data-tab="pages">Seiten bearbeiten</button>
+        <button type="button" data-tab="merge" class="active">Seiten ordnen und zusammenfügen</button>
         <button type="button" data-tab="imgs">Bilder verkleinern</button>
         <button type="button" data-tab="shrink">PDF verkleinern</button>
     </div>
 
     <!-- 1. Zusammenfügen -->
     <section id="tab-merge" class="panel active">
-        <h2>PDFs und Bilder zu einer PDF zusammenfügen</h2>
-        <p class="hint">PDFs, Fotos oder Scans hinzufügen. Jede PDF-Seite und jedes Bild erscheint als eigene Karte. Die Karten lassen sich am Griff ⠿ ziehen, mit den Pfeilen verschieben, drehen und entfernen. Die Reihenfolge hier ist die Reihenfolge in der neuen PDF. Word-Dateien bitte vorher als PDF speichern.</p>
+        <h2>Seiten ordnen und zu einer PDF zusammenfügen</h2>
+        <p class="hint">PDFs, Fotos oder Scans hinzufügen. Jede PDF-Seite und jedes Bild erscheint als eigene Karte. Die Karten lassen sich am Griff ⠿ ziehen, mit den Pfeilen verschieben, drehen und entfernen. Mit dem Häkchen „wählen“ lassen sich einzelne Karten markieren. Die Reihenfolge hier ist die Reihenfolge in der neuen PDF. Word-Dateien bitte vorher als PDF speichern.</p>
         <label class="drop" id="merge-drop">
             <input type="file" id="merge-input" multiple accept="application/pdf,image/*">
             <span>Dateien auswählen (oder hierher ziehen)</span>
@@ -171,29 +170,13 @@
             </label>
         </div>
         <div class="actions">
-            <button type="button" class="btn primary" id="merge-go" disabled>Zusammenfügen und speichern</button>
+            <button type="button" class="btn primary" id="merge-go" disabled>Alle Seiten als PDF speichern</button>
+            <button type="button" class="btn" id="merge-go-sel" disabled>Nur gewählte speichern</button>
+            <button type="button" class="btn" id="merge-zip" disabled>Jede Seite einzeln (ZIP)</button>
+            <button type="button" class="btn" id="merge-reset" disabled>Ursprüngliche Reihenfolge</button>
             <button type="button" class="btn" id="merge-clear" disabled>Liste leeren</button>
         </div>
         <p class="status" id="merge-status" role="status"></p>
-    </section>
-
-    <!-- 2. Seiten bearbeiten -->
-    <section id="tab-pages" class="panel">
-        <h2>Seiten sortieren, drehen, löschen und teilen</h2>
-        <p class="hint">Eine PDF auswählen. Mit den Knöpfen unter jeder Seite verschieben, drehen oder löschen. Mit dem Häkchen lassen sich einzelne Seiten für „Nur gewählte speichern“ markieren.</p>
-        <label class="drop" id="pages-drop">
-            <input type="file" id="pages-input" accept="application/pdf">
-            <span>PDF auswählen (oder hierher ziehen)</span>
-        </label>
-        <p id="pages-info" class="hint"></p>
-        <div class="grid" id="pages-grid"></div>
-        <div class="actions">
-            <button type="button" class="btn primary" id="pages-save" disabled>Alle Seiten als PDF speichern</button>
-            <button type="button" class="btn" id="pages-save-sel" disabled>Nur gewählte speichern</button>
-            <button type="button" class="btn" id="pages-zip" disabled>Jede Seite einzeln (ZIP)</button>
-            <button type="button" class="btn" id="pages-reset" disabled>Zurücksetzen</button>
-        </div>
-        <p class="status" id="pages-status" role="status"></p>
     </section>
 
     <!-- 3. Bilder verkleinern -->
