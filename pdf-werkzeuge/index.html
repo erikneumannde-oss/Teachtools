@@ -108,6 +108,13 @@
         .card canvas { max-width: 100%; max-height: 170px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); background: white; }
         .card .label { font-size: 0.85rem; margin: 6px 0; color: #555; }
         .card .ctrl { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; }
+        .card .src { font-size: 0.75rem; color: #888; overflow-wrap: anywhere; min-height: 1.1em; }
+        .card .handle { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+        .card .thumb { touch-action: auto; }
+        .card.dragging { opacity: 0.35; }
+        .card.drop-before { box-shadow: -6px 0 0 #27ae60; }
+        .card.drop-after { box-shadow: 6px 0 0 #27ae60; }
+        .ghost { position: fixed; z-index: 100; pointer-events: none; opacity: 0.92; box-shadow: 0 8px 20px rgba(0,0,0,0.35); background: #fff; transform: rotate(2deg); }
         .card .pick { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.9rem; }
         .card .pick input { width: 22px; height: 22px; }
 
@@ -141,12 +148,13 @@
     <!-- 1. Zusammenfügen -->
     <section id="tab-merge" class="panel active">
         <h2>PDFs und Bilder zu einer PDF zusammenfügen</h2>
-        <p class="hint">Mehrere PDFs, Fotos oder Scans auswählen, mit den Pfeilen in die gewünschte Reihenfolge bringen und als eine Datei speichern.</p>
+        <p class="hint">PDFs, Fotos oder Scans hinzufügen. Jede PDF-Seite und jedes Bild erscheint als eigene Karte. Die Karten lassen sich am Griff ⠿ ziehen, mit den Pfeilen verschieben, drehen und entfernen. Die Reihenfolge hier ist die Reihenfolge in der neuen PDF. Word-Dateien bitte vorher als PDF speichern.</p>
         <label class="drop" id="merge-drop">
             <input type="file" id="merge-input" multiple accept="application/pdf,image/*">
             <span>Dateien auswählen (oder hierher ziehen)</span>
         </label>
-        <ul class="filelist" id="merge-list"></ul>
+        <p id="merge-info" class="hint"></p>
+        <div class="grid" id="merge-grid"></div>
         <div class="opts">
             <label>Seitengröße für Bilder
                 <select id="merge-pagemode">
