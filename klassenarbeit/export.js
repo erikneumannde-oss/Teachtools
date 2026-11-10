@@ -1,4 +1,4 @@
-/* PDF-Übersicht der Arbeitauswerter. Wird erst beim ersten Export geladen. */
+/* PDF-Übersicht der Arbeitenauswerter. Wird erst beim ersten Export geladen. */
 (function () {
     'use strict';
 
@@ -53,7 +53,7 @@
 
         // Kopf
         text(a.name, M, H - M - 14, 16, bold, ink, 'left', W - 2 * M - 90);
-        text('Arbeitauswerter · ' + (a.tend ? 'mit Tendenz' : 'ohne Tendenz') + ' · Gesamtpunktzahl ' + fmtT(a.max), M, H - M - 30, 9, font, grey, 'left', W - 2 * M);
+        text('Arbeitenauswerter · ' + (a.tend ? 'mit Tendenz' : 'ohne Tendenz') + ' · Gesamtpunktzahl ' + fmtT(a.max), M, H - M - 30, 9, font, grey, 'left', W - 2 * M);
         text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, grey, 'right');
         const topY = H - M - 44;
         text('Notenrechner-Tools · Auswertung', M, M - 14, 7, font, grey, 'left');
@@ -139,6 +139,140 @@
     }
 
 
+    /* ---------- Arbeit mit Kriterien (Sek I) ---------- */
+
+    async function buildKrit(a, ev) {
+        if (!window.PDFLib) await loadScript('../lib/pdf-lib.min.js');
+        if (!window.fontkit) await loadScript('../lib/fontkit.umd.min.js');
+        const PDFLib = window.PDFLib, rgb = PDFLib.rgb;
+        const [regBytes, boldBytes] = await Promise.all([fetchBytes('../lib/fonts/DejaVuSans.ttf'), fetchBytes('../lib/fonts/DejaVuSans-Bold.ttf')]);
+        const doc = await PDFLib.PDFDocument.create();
+        doc.registerFontkit(window.fontkit);
+        const font = await doc.embedFont(regBytes, { subset: true });
+        const bold = await doc.embedFont(boldBytes, { subset: true });
+        const W = 841.89, H = 595.28, M = 32;
+        const page = doc.addPage([W, H]);
+        const ink = rgb(0.13, 0.16, 0.2), grey = rgb(0.45, 0.48, 0.52), line = rgb(0.72, 0.76, 0.8);
+        const headBg = rgb(0.9, 0.93, 0.96), zebra = rgb(0.965, 0.975, 0.985), accent = rgb(0.18, 0.5, 0.76), navy = rgb(0.17, 0.24, 0.31);
+        const noteRgb = { 1: rgb(0.153, 0.682, 0.376), 2: rgb(0.482, 0.714, 0.38), 3: rgb(0.831, 0.675, 0.05), 4: rgb(0.902, 0.569, 0.22), 5: rgb(0.827, 0.329, 0), 6: rgb(0.753, 0.224, 0.169) };
+        function fit(t, f, size, maxW) {
+            if (f.widthOfTextAtSize(t, size) <= maxW) return t;
+            let s = t;
+            while (s.length > 1 && f.widthOfTextAtSize(s + '…', size) > maxW) s = s.slice(0, -1);
+            return s + '…';
+        }
+        function text(t, x, y, size, f, color, align, maxW) {
+            if (t === '' || t == null) return;
+            const s = maxW ? fit(String(t), f, size, maxW) : String(t);
+            const w = f.widthOfTextAtSize(s, size);
+            page.drawText(s, { x: align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, y: y, size: size, font: f, color: color || ink });
+        }
+
+        const wsum = a.crit.reduce((x, c) => x + (c.weight > 0 ? c.weight : 0), 0);
+        const pctOf = c => (wsum > 0 && c.weight > 0 ? Math.round(c.weight / wsum * 100) : 0);
+        text(a.name, M, H - M - 14, 16, bold, ink, 'left', W - 2 * M - 90);
+        const lead = a.crit.find(c => c.id === a.lead);
+        text('Arbeitenauswerter · ' + (a.tend ? 'mit Tendenz' : 'ohne Tendenz') + ' · ' + a.crit.map(c => c.name + ' ' + pctOf(c) + ' %').join(' · ')
+            + (lead ? ' · Leitkriterium: ' + lead.name : ''), M, H - M - 30, 8.5, font, grey, 'left', W - 2 * M);
+        text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, grey, 'right');
+        const topY = H - M - 42;
+        text('Notenrechner-Tools · Auswertung' + (lead ? ' · * durch das Leitkriterium begrenzt' : ''), M, M - 14, 7, font, grey, 'left');
+
+        // Spalten
+        const cols = [{ h: 'Nr.', w: 22 }];
+        if (!a.useNumbers) cols.push({ h: 'Name', w: 110, name: true });
+        const groups = [];
+        a.crit.forEach(c => {
+            const pts = c.mode === 'points', subs = pts && c.subs.length;
+            const start = cols.length;
+            if (!pts) cols.push({ h: 'Note', w: 60, note: true });
+            else {
+                if (subs) c.subs.forEach(s => cols.push({ h: s.name + ' (' + fmtT(s.max) + ')', w: 34, small: true }));
+                else cols.push({ h: 'von ' + fmtT(c.max), w: 38, small: true });
+                if (subs) cols.push({ h: 'Σ ' + fmtT(KA.critMax(c)), w: 34 });
+                cols.push({ h: 'Note', w: 32, note: true });
+            }
+            groups.push({ c: c, from: start, to: cols.length - 1 });
+        });
+        cols.push({ h: 'Gesamt', w: 44, total: true });
+        const tableMax = W - 2 * M - 190;
+        const sumW = cols.reduce((x, c) => x + c.w, 0);
+        const scale = Math.min(1.25, tableMax / sumW);
+        const xs = [M];
+        cols.forEach(c => xs.push(xs[xs.length - 1] + c.w * scale));
+        const right = xs[xs.length - 1];
+        const hh = 15;
+        const avail = topY - (M + 8) - 2 * hh;
+        const n = Math.max(a.students.length, 1);
+        const rowH = Math.min(17, avail / n);
+        const fs = Math.max(4.5, Math.min(9, rowH * 0.58));
+
+        page.drawRectangle({ x: M, y: topY - 2 * hh, width: right - M, height: 2 * hh, color: headBg });
+        page.drawRectangle({ x: M, y: topY - 2 * hh, width: right - M, height: 1.2, color: accent });
+        cols.forEach((c, i) => {
+            const mid = (xs[i] + xs[i + 1]) / 2;
+            if (c.name) text(c.h, xs[i] + 4, topY - hh - 3.5, 7.5, bold, ink, 'left');
+            else if (i === 0 || c.total) text(c.h, mid, topY - hh - 3.5, 7.5, bold, ink, 'center', xs[i + 1] - xs[i] - 2);
+            else text(c.h, mid, topY - 2 * hh + 5, 6.5, bold, ink, 'center', xs[i + 1] - xs[i] - 2);
+        });
+        groups.forEach(g => {
+            const x0 = xs[g.from], x1 = xs[g.to + 1];
+            text(g.c.name + ' · ' + pctOf(g.c) + ' %', (x0 + x1) / 2, topY - hh + 4.5, 7.5, bold, ink, 'center', x1 - x0 - 3);
+        });
+
+        let y = topY - 2 * hh;
+        a.students.forEach((s, i) => {
+            const yb = y - rowH;
+            if (i % 2 === 1) page.drawRectangle({ x: M, y: yb, width: right - M, height: rowH, color: zebra });
+            const ty = yb + (rowH - fs) / 2 + fs * 0.18;
+            const r = ev.rows[i];
+            let k = 0;
+            const mid = () => (xs[k] + xs[k + 1]) / 2;
+            text(String(i + 1), mid(), ty, fs, font, grey, 'center'); k++;
+            if (!a.useNumbers) { text(s.name, xs[k] + 4, ty, fs, font, ink, 'left', cols[k].w * scale - 8); k++; }
+            a.crit.forEach(c => {
+                const pts = c.mode === 'points', subs = pts && c.subs.length;
+                const vals = (s.k && s.k[c.id]) || [];
+                const t = r.teil[c.id];
+                if (!pts) { const g = vals[0]; text(g || '', mid(), ty, fs, bold, g ? noteRgb[KA.baseNote(g)] : ink, 'center'); k++; return; }
+                const nIn = Math.max(1, c.subs.length);
+                for (let q = 0; q < nIn; q++) { text(vals[q] == null ? '' : fmtT(vals[q]), mid(), ty, fs, font, ink, 'center'); k++; }
+                if (subs) { text(t.sum == null ? '' : fmtT(t.sum), mid(), ty, fs, font, grey, 'center'); k++; }
+                text(t.grade || '', mid(), ty, fs, bold, t.grade ? noteRgb[KA.baseNote(t.grade)] : ink, 'center'); k++;
+            });
+            text(r.grade ? r.grade + (r.capped ? '*' : '') : '', mid(), ty, fs, bold, r.grade ? noteRgb[KA.baseNote(r.grade)] : ink, 'center');
+            y = yb;
+        });
+        const bottom = y;
+        page.drawLine({ start: { x: M, y: bottom }, end: { x: right, y: bottom }, thickness: 0.8, color: line });
+        page.drawLine({ start: { x: M, y: topY }, end: { x: right, y: topY }, thickness: 0.8, color: line });
+        xs.forEach(x => page.drawLine({ start: { x: x, y: topY - hh }, end: { x: x, y: bottom }, thickness: 0.4, color: line }));
+        [xs[0], xs[xs.length - 1]].concat(groups.map(g => xs[g.from]), [right]).forEach(x => page.drawLine({ start: { x: x, y: topY }, end: { x: x, y: bottom }, thickness: 0.7, color: line }));
+
+        // Rechts: Durchschnitt und Notenspiegel
+        const rx = right + 22, rw = W - M - rx;
+        let ry = topY;
+        page.drawRectangle({ x: rx, y: ry - 64, width: rw, height: 64, color: navy });
+        text('Notendurchschnitt', rx + 10, ry - 18, 8, font, rgb(0.8, 0.85, 0.9), 'left');
+        text(ev.avg == null ? '–' : fmt(ev.avg, 2), rx + 10, ry - 46, 24, bold, rgb(1, 1, 1), 'left');
+        text(ev.n + ' von ' + a.students.length + ' bewertet', rx + rw - 8, ry - 22, 7.5, font, rgb(0.9, 0.93, 0.96), 'right');
+        ry -= 64 + 22;
+        text('Notenspiegel', rx, ry, 9, bold, ink, 'left');
+        ry -= 8;
+        const mx = Math.max(1, ...Object.values(ev.counts));
+        for (let k = 1; k <= 6; k++) {
+            ry -= 20;
+            page.drawRectangle({ x: rx, y: ry, width: 18, height: 16, color: noteRgb[k] });
+            text(String(k), rx + 9, ry + 4.5, 9, bold, rgb(1, 1, 1), 'center');
+            const bw = rw - 18 - 6 - 54;
+            page.drawRectangle({ x: rx + 24, y: ry, width: bw, height: 16, color: rgb(0.894, 0.914, 0.933) });
+            if (ev.counts[k] > 0) page.drawRectangle({ x: rx + 24, y: ry, width: Math.max(4, bw * ev.counts[k] / mx), height: 16, color: noteRgb[k] });
+            text(ev.counts[k] + ' · ' + (ev.n ? Math.round(ev.counts[k] / ev.n * 100) : 0) + ' %', rx + rw, ry + 4.5, 8, font, ink, 'right');
+        }
+        if (a.tend) { ry -= 12; text('Tendenzen zählen zur ganzen Note.', rx, ry, 6.5, font, grey, 'left', rw); }
+        return await doc.save();
+    }
+
     /* ---------- Oberstufe ---------- */
 
     async function init(W, H) {
@@ -178,7 +312,7 @@
         const be = a.variant === 'be';
         const wTxt = be
             ? 'Fachlicher Teil: BE (gesamt ' + fmtT(a.beMax) + ') · Anteil fachlich ' + fmtT(100 - a.wSpr) + ' % · sprachlich ' + fmtT(a.wSpr) + ' %'
-            : 'Fachlicher Teil: ' + a.afbNames.map((n, k) => n + ' ' + fmtT(a.afbW[k]) + ' %').join(' · ') + ' · sprachlich ' + fmtT(a.wSpr) + ' %';
+            : 'Fachlicher Teil: ' + a.afbNames.map((n, k) => n + ' ' + fmtT(a.afbW[k]) + ' %').join(' · ') + ' (am fachlichen Teil) · fachlich ' + fmtT(100 - a.wSpr) + ' % · sprachlich ' + fmtT(a.wSpr) + ' %';
         text(a.name, M, H - M - 14, 16, bold, C.ink, 'left', W - 2 * M - 90);
         text('Klausurauswertung · Notenpunkte · ' + wTxt, M, H - M - 30, 8.5, font, C.grey, 'left', W - 2 * M);
         text('Stand: ' + new Date().toLocaleDateString('de-DE'), W - M, H - M - 14, 8, font, C.grey, 'right');
@@ -308,5 +442,5 @@
         return await doc.save();
     }
 
-    window.KAExport = { build: build, buildKlausur: buildKlausur, buildBedarf: buildBedarf };
+    window.KAExport = { build: build, buildKrit: buildKrit, buildKlausur: buildKlausur, buildBedarf: buildBedarf };
 })();

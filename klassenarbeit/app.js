@@ -2,7 +2,7 @@
     'use strict';
 
     const KA = window.KA;
-    const MAX_NAME = 60, MAX_WORKS = 40, MAX_STUDENTS = 200;
+    const MAX_NAME = 60, MAX_WORKS = 40, MAX_STUDENTS = 200, MAX_CRIT = 10, MAX_SUBCRIT = 8;
     const LS_KEY = 'klassenarbeit.v1', LS_AUTO = 'klassenarbeit.auto';
     const NOTE_COLORS = { 1: '#27ae60', 2: '#7bb661', 3: '#d4ac0d', 4: '#e69138', 5: '#d35400', 6: '#c0392b' };
 
@@ -84,15 +84,39 @@
     /* ---------- Datenmodell ---------- */
 
     const isK = a => !!a && a.type === 'klausur';
+    const isKr = a => !!a && a.type === 'kriterien';
     const AFB_DEFAULT = ['Anforderungsbereich I', 'Anforderungsbereich II', 'Anforderungsbereich III'];
-    const newStudent = (name) => ({ id: uid(), name: name, pts: null, be: null, spr: null, afb: [null, null, null] });
+    const newStudent = (name) => ({ id: uid(), name: name, pts: null, be: null, spr: null, afb: [null, null, null], k: {} });
+    const newCrit = (n, weight) => ({ id: 'k' + uid().slice(1, 8), name: 'Kriterium ' + n, weight: weight, mode: 'points', max: 20, subs: [] });
+
+    // Eingaben je Kriterium auf die aktuelle Struktur bringen (Anzahl der Felder, Art der Eingabe)
+    function reshape(a) {
+        if (!isKr(a)) return;
+        a.students.forEach(s => {
+            const old = s.k && typeof s.k === 'object' ? s.k : {};
+            const k = {};
+            a.crit.forEach(c => {
+                const n = c.mode === 'grade' ? 1 : Math.max(1, c.subs.length);
+                const src = Array.isArray(old[c.id]) ? old[c.id] : [];
+                const arr = [];
+                for (let i = 0; i < n; i++) {
+                    const v = src[i];
+                    if (c.mode === 'grade') { const g = typeof v === 'string' ? KA.parseGrade(a.tend, v) : null; arr.push(g || null); }
+                    else arr.push(num(v) && v >= 0 && v <= 99999 ? KA.round2(v) : null);
+                }
+                k[c.id] = arr;
+            });
+            s.k = k;
+        });
+    }
 
     function newWork(name, type) {
         return {
             id: uid(), name: name, max: 30, tend: true, useNumbers: false, unit: 'percent', tendEdited: false,
-            type: type === 'klausur' ? 'klausur' : 'arbeit',
-            variant: 'be', beMax: 100, wSpr: 20, afbNames: AFB_DEFAULT.slice(), afbW: [20, 40, 20],
+            type: type === 'klausur' ? 'klausur' : type === 'kriterien' ? 'kriterien' : 'arbeit',
+            variant: 'be', beMax: 100, wSpr: 20, afbNames: AFB_DEFAULT.slice(), afbW: [25, 50, 25], afbRel: true,
             thr: { plain: KA.DEFAULT_PLAIN.slice(), tend: KA.tendFromPlain(KA.DEFAULT_PLAIN) },
+            crit: [newCrit(1, 40), newCrit(2, 30), newCrit(3, 30)], lead: null,
             students: []
         };
     }
@@ -107,13 +131,38 @@
             a.max = num(src.max) ? clamp(KA.round2(src.max), 1, 1000) : 30;
             a.tend = src.tend !== false;
             a.useNumbers = src.useNumbers === true;
-            a.type = src.type === 'klausur' ? 'klausur' : 'arbeit';
+            a.type = src.type === 'klausur' ? 'klausur' : src.type === 'kriterien' ? 'kriterien' : 'arbeit';
             a.variant = src.variant === 'ab' ? 'ab' : 'be';
             a.beMax = num(src.beMax) ? clamp(Math.round(src.beMax), 1, 1000) : 100;
             a.wSpr = num(src.wSpr) ? clamp(KA.round2(src.wSpr), 0, 100) : 20;
             if (Array.isArray(src.afbNames) && src.afbNames.length === 3) a.afbNames = src.afbNames.map((n, k) => cleanStr(n, 30) || AFB_DEFAULT[k]);
             if (Array.isArray(src.afbW) && src.afbW.length === 3 && src.afbW.every(num)) a.afbW = src.afbW.map(v => clamp(KA.round2(v), 0, 100));
-            a.unit = src.unit === 'points' ? 'points' : 'percent';
+            // Ältere Daten: Die Anteile der Bereiche enthielten den sprachlichen Teil (Summe mit ihm 100 %). Jetzt beziehen sie sich auf den fachlichen Teil.
+            if (src.afbRel !== true) {
+                const s0 = a.afbW.reduce((x, y) => x + y, 0);
+                if (a.wSpr > 0 && a.wSpr < 100 && Math.abs(s0 + a.wSpr - 100) < 0.02 && s0 > 0) a.afbW = a.afbW.map(v => KA.round2(v * 100 / s0));
+            }
+            a.afbRel = true;
+            a.unit = src.unit === 'points' && a.type !== 'kriterien' ? 'points' : 'percent';
+            if (a.type === 'kriterien' && Array.isArray(src.crit) && src.crit.length) {
+                const usedIds = new Set();
+                const mkId = (v, p) => { const id = typeof v === 'string' && /^[A-Za-z0-9]{1,24}$/.test(v) && !usedIds.has(v) ? v : p + uid().slice(1, 8); usedIds.add(id); return id; };
+                a.crit = src.crit.slice(0, MAX_CRIT).map((c, i) => {
+                    c = c && typeof c === 'object' ? c : {};
+                    return {
+                        id: mkId(c.id, 'k'),
+                        name: cleanStr(c.name, 40) || 'Kriterium ' + (i + 1),
+                        weight: num(c.weight) ? clamp(KA.round2(c.weight), 0, 100) : 0,
+                        mode: c.mode === 'grade' ? 'grade' : 'points',
+                        max: num(c.max) ? clamp(KA.round2(c.max), 1, 1000) : 20,
+                        subs: (Array.isArray(c.subs) ? c.subs : []).slice(0, MAX_SUBCRIT).map((s, j) => {
+                            s = s && typeof s === 'object' ? s : {};
+                            return { id: mkId(s.id, 's'), name: cleanStr(s.name, 30) || 'Teil ' + (j + 1), max: num(s.max) ? clamp(KA.round2(s.max), 1, 1000) : 10 };
+                        })
+                    };
+                });
+            }
+            a.lead = typeof src.lead === 'string' && a.crit.some(c => c.id === src.lead) ? src.lead : null;
             a.tendEdited = src.tendEdited === true;
             const okArr = (arr, n) => Array.isArray(arr) && arr.length === n && arr.every(v => num(v) && v >= 0 && v <= 10000);
             if (src.thr && okArr(src.thr.plain, 5)) a.thr.plain = src.thr.plain.map(KA.round2);
@@ -126,9 +175,11 @@
                     pts: num(s.pts) && s.pts >= 0 && s.pts <= 9999 ? KA.round2(s.pts) : null,
                     be: num(s.be) && s.be >= 0 && s.be <= 9999 ? Math.round(s.be) : null,
                     spr: np(s.spr),
-                    afb: Array.isArray(s.afb) && s.afb.length === 3 ? s.afb.map(np) : [null, null, null]
+                    afb: Array.isArray(s.afb) && s.afb.length === 3 ? s.afb.map(np) : [null, null, null],
+                    k: s.k && typeof s.k === 'object' ? s.k : {}
                 });
             });
+            reshape(a);
             out.push(a);
         });
         return out.length ? out : null;
@@ -244,12 +295,14 @@
         let kind = 'arbeit';
         const body = el('div', { class: 'kind-pick' }, [
             radio('kind', 'a', 'Klassenarbeit (Sek I, Noten 1 bis 6)', true, () => { kind = 'arbeit'; }),
+            radio('kind', 'r', 'Klassenarbeit mit Kriterien (Sek I, zum Beispiel Deutsch)', false, () => { kind = 'kriterien'; }),
             radio('kind', 'k', 'Klausur (Oberstufe, Notenpunkte)', false, () => { kind = 'klausur'; })
         ]);
         const picked = await modal({ title: 'Neue Arbeit', input: '', body: body, ok: 'Anlegen', collect: v => ({ name: v, kind: kind }) });
         if (!picked) return;
         works.push(newWork(picked.name.slice(0, MAX_NAME), picked.kind));
         cur = works.length - 1;
+        reshape(works[cur]);
         markDirty();
         renderAll();
         $('det-arbeit').open = true;
@@ -281,6 +334,7 @@
         box.append(el('label', { text: 'Name der Arbeit' }, [name]));
 
         if (isK(a)) { renderArbeitK(box, a); return; }
+        if (isKr(a)) { renderArbeitKr(box, a); return; }
 
         const max = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(a.max), 'aria-label': 'Gesamtpunktzahl' });
         max.addEventListener('change', () => {
@@ -331,6 +385,144 @@
         box.append(el('div', { class: 'btn-row' }, [dup, del]));
     }
 
+    function hasCritData(a, c) {
+        return a.students.some(s => ((s.k && s.k[c.id]) || []).some(v => v != null));
+    }
+
+    function renderArbeitKr(box, a) {
+        box.append(el('div', { class: 'section-title', text: 'Notenform' }));
+        const setTend = t => {
+            if (t === a.tend) return;
+            a.tend = t;
+            if (t && !a.tendEdited) a.thr.tend = KA.tendFromPlain(a.thr.plain, 100);
+            reshape(a);
+            markDirty();
+            renderAll();
+        };
+        box.append(radio('tend', '1', 'Mit Tendenz (1+, 1, 1-, 2+ … 5-, 6)', a.tend, () => setTend(true)));
+        box.append(radio('tend', '0', 'Ohne Tendenz (1 bis 6)', !a.tend, () => setTend(false)));
+
+        box.append(el('div', { class: 'section-title', text: 'Kriterien' }));
+        const numIn = (value, label, set, opts) => {
+            opts = opts || {};
+            const inp = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(value), 'aria-label': label });
+            inp.addEventListener('change', () => {
+                const v = KA.parsePoints(inp.value);
+                if (v === '' || v === null || v > (opts.max || 1000) || v < (opts.min == null ? 0 : opts.min)) { inp.value = fmtT(value); return; }
+                set(v);
+                reshape(a);
+                markDirty();
+                renderAll();
+            });
+            return inp;
+        };
+        const textIn = (value, label, max, set) => {
+            const inp = el('input', { type: 'text', class: 'field', maxlength: String(max), value: value, 'aria-label': label });
+            inp.addEventListener('change', () => {
+                const v = inp.value.replace(/\s+/g, ' ').trim();
+                if (!v) { inp.value = value; return; }
+                set(v);
+                markDirty();
+                renderTable();
+                renderResult();
+                renderArbeitKrLead();
+            });
+            return inp;
+        };
+
+        a.crit.forEach((c, ci) => {
+            const wrap = el('div', { class: 'crit-box' });
+            const del = el('button', { type: 'button', class: 'btn icon danger', 'aria-label': c.name + ' entfernen', text: '×' });
+            del.addEventListener('click', async () => {
+                if (a.crit.length <= 1) { infoDialog('Nicht möglich', 'Es muss mindestens ein Kriterium bleiben.'); return; }
+                if (hasCritData(a, c) && !(await confirmDialog('Kriterium entfernen?', 'Die Eingaben zu „' + c.name + '“ gehen verloren.', 'Entfernen'))) return;
+                a.crit.splice(ci, 1);
+                if (a.lead === c.id) a.lead = null;
+                reshape(a);
+                markDirty();
+                renderAll();
+            });
+            wrap.append(el('div', { class: 'crit-head' }, [
+                textIn(c.name, 'Name des Kriteriums ' + (ci + 1), 40, v => { c.name = v; }),
+                numIn(c.weight, 'Anteil von ' + c.name + ' in Prozent', v => { c.weight = v; }, { max: 100 }),
+                el('span', { class: 'info', text: '%' }),
+                del
+            ]));
+            const mode = el('select', { class: 'field', 'aria-label': 'Eingabe bei ' + c.name });
+            mode.append(el('option', { value: 'points', text: 'Punkte' }), el('option', { value: 'grade', text: 'Note direkt' }));
+            mode.value = c.mode;
+            mode.addEventListener('change', async () => {
+                if (hasCritData(a, c) && !(await confirmDialog('Eingabeart ändern?', 'Die bisherigen Eingaben zu „' + c.name + '“ gehen verloren.', 'Ändern'))) { mode.value = c.mode; return; }
+                c.mode = mode.value;
+                reshape(a);
+                markDirty();
+                renderAll();
+            });
+            wrap.append(el('label', {}, ['Eingabe', mode]));
+            if (c.mode === 'points') {
+                if (!c.subs.length) wrap.append(el('label', {}, ['Gesamtpunktzahl', numIn(c.max, 'Gesamtpunktzahl von ' + c.name, v => { c.max = v; }, { min: 1 })]));
+                c.subs.forEach((s, si) => {
+                    const sdel = el('button', { type: 'button', class: 'btn icon danger', 'aria-label': 'Teilkriterium ' + s.name + ' entfernen', text: '×' });
+                    sdel.addEventListener('click', async () => {
+                        if (hasCritData(a, c) && !(await confirmDialog('Teilkriterium entfernen?', 'Die Eingaben zu „' + c.name + '“ werden dabei zurückgesetzt, soweit sie dieses Teilkriterium betreffen.', 'Entfernen'))) return;
+                        c.subs.splice(si, 1);
+                        a.students.forEach(st => { if (st.k && Array.isArray(st.k[c.id])) st.k[c.id].splice(si, 1); });
+                        reshape(a);
+                        markDirty();
+                        renderAll();
+                    });
+                    wrap.append(el('div', { class: 'crit-head sub' }, [
+                        textIn(s.name, 'Name des Teilkriteriums', 30, v => { s.name = v; }),
+                        numIn(s.max, 'Punkte von ' + s.name, v => { s.max = v; }, { min: 1 }),
+                        el('span', { class: 'info', text: 'P.' }),
+                        sdel
+                    ]));
+                });
+                if (c.subs.length) wrap.append(el('p', { class: 'small-text', text: 'Gesamtpunktzahl von „' + c.name + '“: ' + fmtT(KA.critMax(c)) }));
+                if (c.subs.length < MAX_SUBCRIT) {
+                    const addSub = el('button', { type: 'button', class: 'btn small', text: '+ Teilkriterium' });
+                    addSub.addEventListener('click', () => {
+                        c.subs.push({ id: 's' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), max: 10 });
+                        reshape(a);
+                        markDirty();
+                        renderAll();
+                    });
+                    wrap.append(addSub);
+                }
+            }
+            box.append(wrap);
+        });
+        const sum = KA.round2(a.crit.reduce((x, c) => x + c.weight, 0));
+        box.append(el('p', { class: 'small-text' + (sum !== 100 ? ' warn-text' : ''), text: sum === 100 ? 'Die Anteile ergeben 100 %.' : 'Die Anteile ergeben zusammen ' + fmtT(sum) + ' %. Sie werden im Verhältnis zueinander verrechnet. Ein Anteil von 0 nimmt das Kriterium aus der Berechnung.' }));
+        if (a.crit.length < MAX_CRIT) {
+            const add = el('button', { type: 'button', class: 'btn small', text: 'Kriterium hinzufügen' });
+            add.addEventListener('click', () => {
+                a.crit.push(newCrit(a.crit.length + 1, 0));
+                reshape(a);
+                markDirty();
+                renderAll();
+            });
+            box.append(el('div', { class: 'btn-row' }, [add]));
+        }
+
+        box.append(el('div', { class: 'section-title', text: 'Leitkriterium' }));
+        const lead = el('select', { class: 'field', 'aria-label': 'Leitkriterium' });
+        lead.append(el('option', { value: '', text: 'Keines' }));
+        a.crit.forEach(c => lead.append(el('option', { value: c.id, text: c.name })));
+        lead.value = a.lead || '';
+        lead.addEventListener('change', () => { a.lead = lead.value || null; markDirty(); renderTable(); renderResult(); });
+        box.append(lead);
+        box.append(el('p', { class: 'small-text', text: 'Hat eine Person im Leitkriterium eine 5 oder 6, kann die Gesamtnote nicht besser sein als diese ganze Note.' }));
+        function renderArbeitKrLead() { /* Namen im Auswahlfeld aktuell halten */
+            Array.from(lead.options).forEach(o => { const c = a.crit.find(x => x.id === o.value); if (c) o.textContent = c.name; });
+        }
+
+        box.append(el('div', { class: 'section-title', text: 'Anzeige' }));
+        box.append(radio('disp', 'n', 'Namen', !a.useNumbers, () => { a.useNumbers = false; markDirty(); renderTable(); }));
+        box.append(radio('disp', 'z', 'Nummern statt Namen', a.useNumbers, () => { a.useNumbers = true; markDirty(); renderTable(); }));
+        box.append(workButtons(a));
+    }
+
     function pctInput(label, get, set, extra) {
         const inp = el('input', { type: 'text', class: 'field', inputmode: 'decimal', value: fmtT(get()), 'aria-label': label });
         inp.addEventListener('change', () => {
@@ -362,7 +554,7 @@
             box.append(pctInput('Anteil sprachlicher Teil in Prozent', () => a.wSpr, v => { a.wSpr = v; }));
             box.append(el('p', { class: 'small-text', text: 'Fachlicher Teil: ' + fmtT(100 - a.wSpr) + ' %. Aus den BE werden Notenpunkte nach dem Schlüssel der VOGO berechnet, danach mit den sprachlichen Notenpunkten verrechnet. Ab ,5 wird aufgerundet.' }));
         } else {
-            box.append(el('div', { class: 'section-title', text: 'Anteile in Prozent' }));
+            box.append(el('div', { class: 'section-title', text: 'Anteile am fachlichen Teil in Prozent' }));
             a.afbNames.forEach((n, k) => {
                 const name = el('input', { type: 'text', class: 'field afb-name', maxlength: '30', value: n, 'aria-label': 'Name Anforderungsbereich ' + (k + 1) });
                 name.addEventListener('change', () => {
@@ -389,11 +581,12 @@
                 markDirty();
                 renderAll();
             });
-            box.append(el('div', { class: 'afb-row' }, [el('span', { class: 'afb-fix', text: 'Sprachlicher Teil' }), spr, el('span', { class: 'info', text: '%' })]));
-            const sum = KA.round2(a.afbW.reduce((x, y) => x + y, 0) + a.wSpr);
-            box.append(el('p', { class: 'small-text' + (sum !== 100 ? ' warn-text' : ''), text: sum === 100
-                ? 'Die Notenpunkte der Bereiche werden gewichtet gemittelt und ab ,5 aufgerundet. Danach werden sie mit dem sprachlichen Teil verrechnet.'
-                : 'Die Anteile ergeben zusammen ' + fmtT(sum) + ' %. Sie werden im Verhältnis zueinander verrechnet.' }));
+            box.append(el('div', { class: 'afb-row' }, [el('span', { class: 'afb-fix', text: 'Sprachlicher Teil an der Gesamtnote' }), spr, el('span', { class: 'info', text: '%' })]));
+            const sum = KA.round2(a.afbW.reduce((x, y) => x + y, 0));
+            box.append(el('p', { class: 'small-text' + (sum !== 100 ? ' warn-text' : ''), text: (sum === 100
+                ? 'Aus den Notenpunkten der Bereiche wird die fachliche Note gewichtet berechnet und ab ,5 aufgerundet. '
+                : 'Die Anteile der Bereiche ergeben zusammen ' + fmtT(sum) + ' %. Sie werden im Verhältnis zueinander verrechnet. ')
+                + 'Gesamt: ' + fmtT(100 - a.wSpr) + ' % fachlich plus ' + fmtT(a.wSpr) + ' % sprachlich, ab ,5 aufgerundet.' }));
         }
 
         box.append(el('div', { class: 'section-title', text: 'Anzeige' }));
@@ -443,7 +636,8 @@
         const vals = a.tend ? a.thr.tend : a.thr.plain;
         const lab = KA.labels(a.tend);
 
-        box.append(el('div', { class: 'section-title', text: 'Eingabe in' }));
+        if (isKr(a)) box.append(el('p', { class: 'small-text', text: 'Der Schlüssel gilt für jedes Kriterium mit Punkten: Der Anteil der erreichten Punkte am Kriterium ergibt die Teilnote.' }));
+        else box.append(el('div', { class: 'section-title', text: 'Eingabe in' }));
         const setUnit = u => {
             if (u === a.unit) return;
             const conv = v => u === 'points' ? KA.round2(v * a.max / 100) : KA.round2(v / a.max * 100);
@@ -453,8 +647,10 @@
             markDirty();
             renderKey();
         };
-        box.append(radio('unit', 'p', 'Prozent', a.unit === 'percent', () => setUnit('percent')));
-        box.append(radio('unit', 'z', 'Punkten (von ' + fmtT(a.max) + ')', a.unit === 'points', () => setUnit('points')));
+        if (!isKr(a)) {
+            box.append(radio('unit', 'p', 'Prozent', a.unit === 'percent', () => setUnit('percent')));
+            box.append(radio('unit', 'z', 'Punkten (von ' + fmtT(a.max) + ')', a.unit === 'points', () => setUnit('points')));
+        }
 
         box.append(el('div', { class: 'section-title', text: 'Mindestens für die Note' }));
         box.append(el('div', { class: 'keyhead' }, [el('span', { text: 'Note' }), el('span', { text: a.unit === 'points' ? 'ab Punkten' : 'ab Prozent' }), el('span', { text: a.unit === 'points' ? 'entspricht' : 'entspricht' })]));
@@ -471,12 +667,12 @@
                 renderTable();
                 renderResult();
             });
-            const other = a.unit === 'points' ? fmtT(v / a.max * 100) + ' %' : fmtT(v * a.max / 100) + ' Punkte';
+            const other = isKr(a) ? '' : (a.unit === 'points' ? fmtT(v / a.max * 100) + ' %' : fmtT(v * a.max / 100) + ' Punkte');
             box.append(el('div', { class: 'keyrow' }, [el('span', { class: 'kn', text: lab[i] }), inp, el('span', { class: 'info', text: other })]));
         });
         box.append(el('div', { class: 'keyrow' }, [el('span', { class: 'kn', text: lab[lab.length - 1] }), el('span', { class: 'info', text: 'darunter' }), el('span')]));
         if (!desc) box.append(el('p', { class: 'small-text', text: 'Die Grenzen sollten von oben nach unten kleiner werden. Markierte Felder liegen nicht darunter.' }));
-        if (a.unit === 'percent') box.append(el('p', { class: 'small-text', text: 'Die Prozentwerte werden auf die Gesamtpunktzahl umgerechnet. Prozentwerte mit Nachkommastellen sind möglich.' }));
+        if (a.unit === 'percent' && !isKr(a)) box.append(el('p', { class: 'small-text', text: 'Die Prozentwerte werden auf die Gesamtpunktzahl umgerechnet. Prozentwerte mit Nachkommastellen sind möglich.' }));
         const reset = el('button', { type: 'button', class: 'btn small', text: 'Voreinstellung (92 / 81 / 67 / 50 / 30 %)' });
         reset.addEventListener('click', async () => {
             if (!(await confirmDialog('Voreinstellung laden?', 'Der Notenschlüssel dieser Arbeit wird auf 92 / 81 / 67 / 50 / 30 Prozent gesetzt. Bei Tendenz werden die Stufen gedrittelt.', 'Laden'))) return;
@@ -690,12 +886,127 @@
         modal({ title: 'Benötigte BE', body: body, ok: 'Schließen', cancel: false });
     }
 
+    function renderTableKr(a) {
+        const wrap = $('tablewrap');
+        reshape(a);
+        const head = el('tr', {}, [el('th', { text: 'Nr.' })]);
+        const sub = el('tr', { class: 'subhead' }, [el('th')]);
+        if (!a.useNumbers) { head.append(el('th', { class: 'name', text: 'Name' })); sub.append(el('th')); }
+        const wsum = a.crit.reduce((x, c) => x + (c.weight > 0 ? c.weight : 0), 0);
+        a.crit.forEach(c => {
+            const pts = c.mode === 'points', subs = pts && c.subs.length;
+            const n = pts ? Math.max(1, c.subs.length) : 1;
+            const pct = wsum > 0 && c.weight > 0 ? Math.round(c.weight / wsum * 100) : 0;
+            head.append(el('th', { class: 'cat', colspan: String(n + (subs ? 1 : 0) + (pts ? 1 : 0)), text: c.name + ' · ' + pct + ' %' + (a.lead === c.id ? ' · Leit' : '') }));
+            if (!pts) sub.append(el('th', { text: 'Note' }));
+            else if (subs) c.subs.forEach(s => sub.append(el('th', { class: 'afbh', text: s.name + ' (' + fmtT(s.max) + ')' })));
+            else sub.append(el('th', { text: 'von ' + fmtT(c.max) }));
+            if (subs) sub.append(el('th', { text: 'Σ ' + fmtT(KA.critMax(c)) }));
+            if (pts) sub.append(el('th', { text: 'Note' }));
+        });
+        head.append(el('th', { text: 'Gesamt' }), el('th', { 'aria-label': 'Zeile entfernen' }));
+        sub.append(el('th'), el('th'));
+
+        const tb = el('tbody');
+        a.students.forEach((s, i) => {
+            const tr = el('tr', { 'data-sid': s.id });
+            const who = () => (a.useNumbers ? 'Nr. ' + (i + 1) : (s.name || 'Nr. ' + (i + 1)));
+            tr.append(el('td', { class: 'num', text: String(i + 1) }));
+            if (!a.useNumbers) {
+                const ni = el('input', { type: 'text', class: 'ni', maxlength: String(MAX_NAME), value: s.name, 'aria-label': 'Name ' + (i + 1), autocomplete: 'off' });
+                ni.addEventListener('input', () => { s.name = ni.value.slice(0, MAX_NAME); markDirty(); });
+                ni.addEventListener('change', () => { s.name = ni.value.replace(/\s+/g, ' ').trim(); ni.value = s.name; });
+                tr.append(el('td', { class: 'name-in' }, [ni]));
+            }
+            if (!s.k) s.k = {};
+            a.crit.forEach(c => {
+                const pts = c.mode === 'points', subs = pts && c.subs.length;
+                const n = pts ? Math.max(1, c.subs.length) : 1;
+                if (!Array.isArray(s.k[c.id])) s.k[c.id] = new Array(n).fill(null);
+                for (let q = 0; q < n; q++) {
+                    const label = (pts ? (subs ? c.subs[q].name : c.name) : c.name + ' Note') + ' ' + who();
+                    const show = v => (pts ? fmtT(v) : v);
+                    const parse = pts ? KA.parsePoints : v => KA.parseGrade(a.tend, v);
+                    const inp = el('input', { type: 'text', class: 'pi', 'data-c': c.id, 'data-q': String(q), inputmode: pts ? 'decimal' : 'text', autocomplete: 'off', maxlength: pts ? '7' : '2', 'aria-label': label });
+                    const get = () => s.k[c.id][q];
+                    inp.value = get() == null ? '' : show(get());
+                    inp.addEventListener('input', () => {
+                        const v = parse(inp.value);
+                        if (v === null) return;
+                        s.k[c.id][q] = v === '' ? null : v;
+                        markDirty();
+                        fillRowKr(tr, s);
+                        renderResult();
+                    });
+                    inp.addEventListener('change', () => {
+                        const v = parse(inp.value);
+                        if (v === null) {
+                            inp.classList.add('bad');
+                            setTimeout(() => inp.classList.remove('bad'), 900);
+                            inp.value = get() == null ? '' : show(get());
+                            announce('Ungültige Eingabe');
+                        } else inp.value = v === '' ? '' : show(v);
+                    });
+                    inp.addEventListener('focus', () => inp.select());
+                    inp.addEventListener('keydown', e => {
+                        if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); moveFocus(tr, 1); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(tr, -1); }
+                    });
+                    tr.append(el('td', { class: 'g pc-in' }, [inp]));
+                }
+                if (subs) tr.append(el('td', { class: 'calc', 'data-ks': c.id }));
+                if (pts) tr.append(el('td', { class: 'calc strong', 'data-kc': c.id }));
+            });
+            tr.append(el('td', { class: 'calc strong kr-total' }));
+            const rm = el('button', { type: 'button', 'aria-label': 'Zeile ' + (i + 1) + ' entfernen', text: '×' });
+            rm.addEventListener('click', async () => {
+                const filled = a.crit.some(c => hasCritData({ students: [s] }, c));
+                if ((s.name || filled) && !(await confirmDialog('Zeile entfernen?', 'Die Zeile ' + (i + 1) + (s.name ? ' („' + s.name + '“)' : '') + ' wird mit ihren Eingaben entfernt.', 'Entfernen'))) return;
+                a.students = a.students.filter(x => x !== s);
+                markDirty();
+                renderTable();
+                renderResult();
+            });
+            tr.append(el('td', { class: 'rm' }, [rm]));
+            fillRowKr(tr, s);
+            tb.append(tr);
+        });
+        wrap.append(el('table', { class: 'nt nt-k' }, [el('thead', {}, [head, sub]), tb]));
+        const lead = a.crit.find(c => c.id === a.lead);
+        $('hint').textContent = a.students.length
+            ? 'Punkte mit Komma oder Punkt eintragen, bei „Note direkt“ die Note.' + (a.tend ? ' Tendenzen sind möglich.' : '') + ' Eine Zeile zählt, sobald alle Kriterien mit Anteil ausgefüllt sind.'
+                + (lead ? ' Ein * bei der Gesamtnote bedeutet: durch das Leitkriterium „' + lead.name + '“ begrenzt.' : '')
+            : 'Noch keine Zeilen. Rechts unter „Schülerinnen und Schüler“ Namen eintragen, eine CSV- oder TXT-Datei importieren oder leere Zeilen für Nummern hinzufügen.';
+    }
+
+    function fillRowKr(tr, s) {
+        const a = A();
+        const r = KA.kritRow(a, s);
+        a.crit.forEach(c => {
+            const t = r.teil[c.id];
+            const cs = tr.querySelector('[data-ks="' + c.id + '"]');
+            if (cs) cs.textContent = t.sum == null ? '' : fmtT(t.sum);
+            const cg = tr.querySelector('[data-kc="' + c.id + '"]');
+            if (cg) noteCell(cg, t.grade);
+            tr.querySelectorAll('input[data-c="' + c.id + '"]').forEach(inp => {
+                const q = parseInt(inp.dataset.q, 10);
+                const max = c.mode === 'points' ? (c.subs.length ? c.subs[q].max : c.max) : null;
+                const v = s.k[c.id][q];
+                inp.classList.toggle('over', max != null && v != null && v > max + 1e-9);
+            });
+        });
+        const tot = tr.querySelector('.kr-total');
+        noteCell(tot, r.grade);
+        if (r.grade && r.capped) { tot.textContent = r.grade + '*'; tot.title = 'Durch das Leitkriterium begrenzt'; } else tot.removeAttribute('title');
+    }
+
     function renderTable() {
         const wrap = $('tablewrap');
         wrap.textContent = '';
         const a = A();
         if (!a) return;
         if (isK(a)) { renderTableK(a); return; }
+        if (isKr(a)) { renderTableKr(a); return; }
         const head = el('tr', {}, [el('th', { text: 'Nr.' })]);
         if (!a.useNumbers) head.append(el('th', { class: 'name', text: 'Name' }));
         head.append(el('th', { text: 'Punkte (von ' + fmtT(a.max) + ')' }), el('th', { text: '%' }), el('th', { text: 'Note' }), el('th', { 'aria-label': 'Zeile entfernen' }));
@@ -764,7 +1075,7 @@
 
     /* ---------- Auswertung ---------- */
 
-    const evalA = a => (isK(a) ? KA.evaluateKlausur(a) : KA.evaluate(a));
+    const evalA = a => (isK(a) ? KA.evaluateKlausur(a) : isKr(a) ? KA.evaluateKrit(a) : KA.evaluate(a));
 
     function renderResult() {
         const box = $('result');
@@ -922,7 +1233,8 @@
         try {
             if (!exportReady) exportReady = loadScript('export.js');
             await exportReady;
-            const bytes = isK(a) ? await window.KAExport.buildKlausur(a, KA.evaluateKlausur(a)) : await window.KAExport.build(a, KA.evaluate(a));
+            const bytes = isK(a) ? await window.KAExport.buildKlausur(a, KA.evaluateKlausur(a))
+                : isKr(a) ? await window.KAExport.buildKrit(a, KA.evaluateKrit(a)) : await window.KAExport.build(a, KA.evaluate(a));
             saveBytes(bytes, 'Auswertung-' + safeName(a.name) + '-' + today() + '.pdf', 'application/pdf');
         } catch (err) {
             exportReady = null;
@@ -959,7 +1271,7 @@
         const a = A();
         $('bedarf').hidden = !(isK(a) && a.variant === 'be');
         $('det-key').hidden = !has || (isK(a) && a.variant === 'ab');
-        $('det-key').querySelector('summary').textContent = isK(a) ? 'Notenpunkte aus BE' : 'Notenschlüssel';
+        $('det-key').querySelector('summary').textContent = isK(a) ? 'Notenpunkte aus BE' : isKr(a) ? 'Notenschlüssel für die Kriterien' : 'Notenschlüssel';
         renderArbeit();
         renderKey();
         renderTable();

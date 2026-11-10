@@ -716,7 +716,7 @@
 
 
     /* =========================================================
-       Noten aus dem Arbeitauswerter
+       Noten aus dem Arbeitenauswerter
        ========================================================= */
 
     const NOTE_PTS = {
@@ -754,7 +754,7 @@
         const list = raw && raw.format === 'teachtools-noten' && Array.isArray(raw.grades)
             ? raw.grades.filter(x => x && typeof x.name === 'string' && typeof x.note === 'string' && NOTE_PTS[x.note] != null).slice(0, MAX_STUDENTS)
             : null;
-        if (!list || !list.length) { infoDialog('Datei nicht lesbar', 'Das ist keine Noten-Datei aus dem Arbeitauswerter.'); return; }
+        if (!list || !list.length) { infoDialog('Datei nicht lesbar', 'Das ist keine Noten-Datei aus dem Arbeitenauswerter.'); return; }
 
         // Zuordnung über die Namen
         const byKey = new Map();

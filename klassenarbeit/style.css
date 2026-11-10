@@ -348,7 +348,7 @@ table.nt { border-spacing: 4px; }
 .catrow.sub .field { background: #faf6ec; }
 .subadd { margin: 0 0 12px 18px; min-height: 36px; font-size: 0.85rem; }
 
-/* ===== Arbeitauswerter ===== */
+/* ===== Arbeitenauswerter ===== */
 .result { border-top: 4px solid var(--blue); padding: 14px 16px; margin-bottom: 0; }
 .result h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--navy); }
 .result-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 18px; align-items: start; }
@@ -408,3 +408,9 @@ table.nt { border-spacing: 4px; }
 .need-table th { background: #f1ece2; font-weight: 700; }
 .need-table tr.now td { background: #fbe9ec; font-weight: 700; }
 .need-box { max-height: 60vh; overflow: auto; }
+
+/* ===== Kriterien ===== */
+.crit-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 8px 0; display: grid; gap: 8px; background: #fff; }
+.crit-head { display: grid; grid-template-columns: 1fr 70px auto 44px; gap: 6px; align-items: center; }
+.crit-head.sub { margin-left: 14px; }
+.crit-head .btn.icon { min-width: 44px; }

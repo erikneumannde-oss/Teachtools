@@ -1,4 +1,4 @@
-/* Rechenlogik der Arbeitauswerter (ohne Oberfläche, im Browser und in Node nutzbar) */
+/* Rechenlogik der Arbeitenauswerter (ohne Oberfläche, im Browser und in Node nutzbar) */
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
     else root.KA = factory();
@@ -120,9 +120,11 @@
         let wF, wS;
         if (a.variant === 'ab') {
             const ok = s.afb.every(v => v != null);
-            wF = a.afbW.reduce((x, y) => x + y, 0);
+            // Die Anteile der Bereiche beziehen sich auf den fachlichen Teil; der sprachliche Teil ist ein eigener Anteil an der Gesamtnote
+            const wAfb = a.afbW.reduce((x, y) => x + y, 0);
+            wF = 100 - a.wSpr;
             wS = a.wSpr;
-            if (ok && wF > 0) fach = roundHalfUp(s.afb.reduce((x, v, i) => x + v * a.afbW[i], 0) / wF);
+            if (ok && wAfb > 0) fach = roundHalfUp(s.afb.reduce((x, v, i) => x + v * a.afbW[i], 0) / wAfb);
         } else {
             const w = weightsBE(a);
             wF = w.f; wS = w.s;
@@ -177,7 +179,84 @@
         return v <= 15 ? v : null;
     }
 
+    /* ---------- Sek I: Arbeit mit Kriterien ---------- */
+
+    // Eingabe einer Note: '' = leer, null = ungültig. Ohne Tendenz zählt nur die ganze Note.
+    function parseGrade(tend, input) {
+        const s = String(input == null ? '' : input).trim().replace(/[−–—‐‑]/g, '-');
+        if (s === '') return '';
+        const m = /^([1-6])\s*([+-])?$/.exec(s);
+        if (!m) return null;
+        if (!tend || m[1] === '6') return m[1];
+        return m[1] + (m[2] || '');
+    }
+
+    // Höchstpunktzahl eines Kriteriums: Summe der Teilkriterien, sonst die eigene
+    function critMax(c) {
+        return c.subs && c.subs.length ? c.subs.reduce((x, s) => x + s.max, 0) : c.max;
+    }
+
+    // Note zu einem Prozentwert (der Schlüssel gilt für den Punkteanteil jedes Kriteriums)
+    function gradeForPct(a, pct) {
+        if (pct == null || !isFinite(pct)) return null;
+        const lab = labels(a.tend);
+        const th = a.tend ? a.thr.tend : a.thr.plain;
+        for (let i = 0; i < th.length; i++) if (pct >= th[i] - 1e-9) return lab[i];
+        return lab[lab.length - 1];
+    }
+
+    // Ergebnis einer Person: Teilnoten je Kriterium, Gesamtnote
+    function kritRow(a, s) {
+        const teil = {};
+        a.crit.forEach(c => {
+            const vals = (s.k && s.k[c.id]) || [];
+            if (c.mode === 'grade') {
+                teil[c.id] = { sum: null, grade: vals[0] || null };
+                return;
+            }
+            const n = c.subs && c.subs.length ? c.subs.length : 1;
+            let sum = 0, ok = true;
+            for (let i = 0; i < n; i++) { if (vals[i] == null || !isFinite(vals[i])) ok = false; else sum += vals[i]; }
+            const max = critMax(c);
+            teil[c.id] = ok && max > 0 ? { sum: round2(sum), grade: gradeForPct(a, sum / max * 100) } : { sum: ok ? round2(sum) : null, grade: null };
+        });
+        const used = a.crit.filter(c => c.weight > 0);
+        const wsum = used.reduce((x, c) => x + c.weight, 0);
+        let grade = null, capped = false;
+        if (used.length && wsum > 0 && used.every(c => teil[c.id].grade)) {
+            if (a.tend) {
+                const P = used.reduce((x, c) => x + c.weight * PTS[teil[c.id].grade], 0) / wsum;
+                const pts = Math.max(0, Math.min(15, Math.ceil(P - 0.5 - 1e-9)));
+                grade = TEND[15 - pts];
+            } else {
+                const m = used.reduce((x, c) => x + c.weight * baseNote(teil[c.id].grade), 0) / wsum;
+                grade = String(Math.max(1, Math.min(6, Math.floor(m + 0.5 + 1e-9))));
+            }
+            // Leitkriterium: bei 5 oder 6 kann die Gesamtnote nicht besser sein als diese ganze Note
+            const lead = a.crit.find(c => c.id === a.lead);
+            if (lead && teil[lead.id].grade) {
+                const lv = baseNote(teil[lead.id].grade);
+                if (lv >= 5 && baseNote(grade) < lv) { grade = String(lv); capped = true; }
+            }
+        }
+        return { teil: teil, grade: grade, capped: capped };
+    }
+
+    function evaluateKrit(a) {
+        const rows = a.students.map(s => Object.assign({ id: s.id }, kritRow(a, s)));
+        const graded = rows.filter(r => r.grade != null);
+        const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        graded.forEach(r => { counts[baseNote(r.grade)]++; });
+        let avg = null;
+        if (graded.length) {
+            avg = a.tend ? noteFromPoints(graded.reduce((x, r) => x + PTS[r.grade], 0) / graded.length)
+                : graded.reduce((x, r) => x + baseNote(r.grade), 0) / graded.length;
+        }
+        return { rows: rows, n: graded.length, counts: counts, avg: avg, avgPts: null };
+    }
+
     return {
+        parseGrade: parseGrade, critMax: critMax, gradeForPct: gradeForPct, kritRow: kritRow, evaluateKrit: evaluateKrit,
         BE_PCT: BE_PCT, roundHalfUp: roundHalfUp, beToNP: beToNP, beNeeded: beNeeded, klausurRow: klausurRow,
         evaluateKlausur: evaluateKlausur, needTable: needTable, npLabel: npLabel, parseBE: parseBE, npBase: npBase, parseNP: parseNP,
         TEND: TEND, PLAIN: PLAIN, PTS: PTS, DEFAULT_PLAIN: DEFAULT_PLAIN,
