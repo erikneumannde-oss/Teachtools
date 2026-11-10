@@ -90,7 +90,7 @@
             root.textContent = '';
             root.append(box);
             root.hidden = false;
-            const first = input || (opts.body && opts.body.querySelector('input')) || ok;
+            const first = input || (opts.body && opts.body.querySelector('input, textarea')) || (opts.body && opts.body.tagName === 'TEXTAREA' ? opts.body : null) || ok;
             first.focus();
             if (input) input.select();
         });
@@ -169,6 +169,33 @@
 
     function findStudent(id) { return G().students.find(s => s.id === id); }
 
+    // Bemerkungen zu einzelnen Noten: st.notes[Spalten-ID][Platz] = Text
+    const MAX_NOTE = 300;
+    // gespeichert als { t: Text, d: 'JJJJ-MM-TT' } (Datum, an dem die Bemerkung gemacht wurde)
+    const getNote = (st, cat, i) => (st.notes && st.notes[cat] && st.notes[cat][i] && st.notes[cat][i].t) || '';
+    const getNoteDate = (st, cat, i) => (st.notes && st.notes[cat] && st.notes[cat][i] && st.notes[cat][i].d) || '';
+    const isoToday = () => new Date().toLocaleDateString('sv-SE');
+    const isoDe = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d.slice(8) + '.' + d.slice(5, 7) + '.' + d.slice(0, 4) : '';
+    function setNote(st, cat, i, text, date) {
+        const t = cleanStr(text, MAX_NOTE);
+        if (t) {
+            if (!st.notes) st.notes = {};
+            if (!st.notes[cat]) st.notes[cat] = {};
+            st.notes[cat][i] = { t: t, d: /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? date : isoToday() };
+        } else if (st.notes && st.notes[cat]) {
+            delete st.notes[cat][i];
+            if (!Object.keys(st.notes[cat]).length) delete st.notes[cat];
+            if (!Object.keys(st.notes).length) delete st.notes;
+        }
+    }
+    function cutNotes(st, cat, n) {
+        if (!st.notes || !st.notes[cat]) return;
+        Object.keys(st.notes[cat]).forEach(k => { if (parseInt(k, 10) >= n) delete st.notes[cat][k]; });
+        if (!Object.keys(st.notes[cat]).length) delete st.notes[cat];
+        if (!Object.keys(st.notes).length) delete st.notes;
+    }
+    let showNotes = false;
+
     function markDirty() {
         dirty = true;
         updateStatus();
@@ -239,6 +266,17 @@
                         st.grades[c.id].push(v === null ? '' : v);
                     }
                 });
+                if (s.notes && typeof s.notes === 'object') {
+                    catList(g).forEach(c => {
+                        const src2 = s.notes[c.id];
+                        if (!src2 || typeof src2 !== 'object') return;
+                        for (let i = 0; i < c.slots; i++) {
+                            const v = src2[i];
+                            if (v && typeof v === 'object') setNote(st, c.id, i, v.t, v.d);
+                            else if (typeof v === 'string') setNote(st, c.id, i, v);
+                        }
+                    });
+                }
                 if (stufe === 'sek1') {
                     const f = g.tendency
                         ? (typeof s.final === 'string' && NR.TEND.indexOf(s.final) !== -1 ? s.final : null)
@@ -522,7 +560,7 @@
                 if (!isSub && g.categories.length <= 1) { infoDialog('Nicht möglich', 'Es muss mindestens eine Kategorie bleiben.'); return; }
                 if (hasGradesIn(c) && !(await confirmDialog((isSub ? 'Unterkategorie' : 'Kategorie') + ' entfernen?', 'Die Noten in „' + c.name + '“ gehen verloren.', 'Entfernen'))) return;
                 const doomed = leavesOf(c).map(l => l.id);
-                g.students.forEach(st => doomed.forEach(id => { delete st.grades[id]; }));
+                g.students.forEach(st => doomed.forEach(id => { delete st.grades[id]; if (st.notes) { delete st.notes[id]; if (!Object.keys(st.notes).length) delete st.notes; } }));
                 const idx = list.indexOf(c);
                 list.splice(idx, 1);
                 if (isSub && !list.length) { delete parent.subs; parent.slots = 3; }
@@ -541,7 +579,7 @@
                 if (!c.subs || !c.subs.length) {
                     // Die bisherigen Noten der Kategorie wandern in die erste Unterkategorie
                     const first = { id: 'c' + uid().slice(1, 8), name: 'Teil 1', weight: 50, slots: c.slots };
-                    g.students.forEach(st => { if (st.grades[c.id]) { st.grades[first.id] = st.grades[c.id]; delete st.grades[c.id]; } });
+                    g.students.forEach(st => { if (st.grades[c.id]) { st.grades[first.id] = st.grades[c.id]; delete st.grades[c.id]; } if (st.notes && st.notes[c.id]) { st.notes[first.id] = st.notes[c.id]; delete st.notes[c.id]; } });
                     c.subs = [first];
                     c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 3 });
                 } else {
@@ -577,7 +615,7 @@
             g.course = c;
             if (fixed) {
                 g.slots.k = fixed;
-                g.students.forEach(st => { st.grades.k = (st.grades.k || []).slice(0, fixed); });
+                g.students.forEach(st => { st.grades.k = (st.grades.k || []).slice(0, fixed); cutNotes(st, 'k', fixed); });
             }
             g.students.forEach(st => { delete st.dec; });
             markDirty();
@@ -935,7 +973,19 @@
                     if (coarse) { inp.setAttribute('readonly', ''); inp.setAttribute('inputmode', 'none'); }
                     else inp.setAttribute('inputmode', mode === 'points' ? 'numeric' : 'text');
                     inp.value = arr[i] || '';
-                    tr.append(el('td', { class: 'g' }, [inp]));
+                    const td = el('td', { class: 'g' }, [inp]);
+                    const has = !!getNote(st, s.cat.id, i);
+                    if (has || showNotes) {
+                        const nb = el('button', {
+                            type: 'button', class: 'nb' + (has ? ' has' : ''), tabindex: '-1',
+                            'data-sid': st.id, 'data-cat': s.cat.id, 'data-i': String(i),
+                            'aria-label': 'Bemerkung ' + (has ? 'bearbeiten' : 'hinzufügen') + ': ' + st.name + ', ' + s.cat.name + ' ' + (i + 1),
+                            text: has ? '✎' : '+'
+                        });
+                        if (has) nb.title = getNote(st, s.cat.id, i) + ' (' + isoDe(getNoteDate(st, s.cat.id, i)) + ')';
+                        td.append(nb);
+                    }
+                    tr.append(td);
                 }
             } else {
                 const td = el('td', { class: 'calc', 'data-k': s.t + (s.cat ? ':' + s.cat.id : '') });
@@ -1039,9 +1089,9 @@
         const n = c.slots + d;
         if (n < 1 || n > MAX_SLOTS) return;
         if (d < 0) {
-            const used = g.students.some(st => (st.grades[catId] || [])[c.slots - 1]);
+            const used = g.students.some(st => (st.grades[catId] || [])[c.slots - 1] || getNote(st, catId, c.slots - 1));
             if (used && !(await confirmDialog('Spalte entfernen?', 'Die letzte Spalte von „' + c.name + '“ enthält Noten. Sie gehen verloren.', 'Entfernen'))) return;
-            g.students.forEach(st => { if (st.grades[catId]) st.grades[catId].length = n; });
+            g.students.forEach(st => { if (st.grades[catId]) st.grades[catId].length = n; cutNotes(st, catId, n); });
         }
         if (g.stufe === 'sek1') c.slots = n; else g.slots[catId] = n;
         markDirty();
@@ -1118,7 +1168,29 @@
         if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); applyInput(t, true); moveFocus(t, 1, 0); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); applyInput(t, true); moveFocus(t, -1, 0); }
     });
-    tw.addEventListener('click', e => {
+    tw.addEventListener('click', async e => {
+        const nbtn = e.target.closest('button.nb');
+        if (nbtn) {
+            const st = findStudent(nbtn.dataset.sid), cat = nbtn.dataset.cat, i = parseInt(nbtn.dataset.i, 10);
+            if (!st) return;
+            const g = G();
+            const ta = el('textarea', { class: 'field', rows: '4', maxlength: String(MAX_NOTE), 'aria-label': 'Bemerkung' });
+            ta.value = getNote(st, cat, i);
+            const di = el('input', { type: 'date', class: 'field', 'aria-label': 'Datum der Bemerkung' });
+            di.value = getNoteDate(st, cat, i) || isoToday();
+            const body = el('div', { class: 'import-box' }, [el('label', {}, ['Bemerkung', ta]), el('label', {}, ['Datum der Bemerkung', di])]);
+            const grade = ((st.grades && st.grades[cat]) || [])[i];
+            const r = await modal({
+                title: 'Bemerkung zur Note', ok: 'Speichern',
+                text: st.name + ' · ' + (fullName(g, cat) || cat) + ' ' + (i + 1) + (grade ? ' · Note ' + grade : ''),
+                body: body, collect: () => ({ v: ta.value, d: di.value })
+            });
+            if (!r) return;
+            setNote(st, cat, i, r.v, r.d);
+            markDirty();
+            renderTable();
+            return;
+        }
         const b = e.target.closest('button[data-dec]');
         if (!b) return;
         const st = findStudent(b.dataset.sid);
@@ -1305,12 +1377,22 @@
     let exportReady = null;
     async function exportPdf(which) {
         if (!groups.length) return;
-        const btns = [$('pdf-group'), $('pdf-all')];
+        const btns = [$('pdf-group'), $('pdf-all'), $('pdf-students'), $('pdf-student')];
         btns.forEach(b => { b.disabled = true; });
         try {
             if (!exportReady) exportReady = loadScript('export.js');
             await exportReady;
             const list = which === 'all' ? groups : [G()];
+            if (which === 'students' || which === 'student') {
+                const g = G();
+                const sts = which === 'student' ? g.students.filter(s => s.id === selId) : g.students;
+                if (!sts.length) { infoDialog('Keine Person gewählt', 'Tippen Sie in der Tabelle auf einen Namen.'); btns.forEach(b => { b.disabled = false; }); return; }
+                const sbytes = await window.NRExport.buildStudents(g, sts);
+                const base = which === 'student' ? sts[0].name : g.name + '-je-Schueler';
+                saveBytes(sbytes, 'Noten-' + base.replace(/[^\w\-äöüÄÖÜß]+/g, '_') + '-' + today() + '.pdf', 'application/pdf');
+                btns.forEach(b => { b.disabled = false; });
+                return;
+            }
             const bytes = await window.NRExport.build(list);
             const name = which === 'all' ? 'Notenuebersicht-' + today() + '.pdf' : 'Noten-' + G().name.replace(/[^\w\-äöüÄÖÜß]+/g, '_') + '-' + today() + '.pdf';
             saveBytes(bytes, name, 'application/pdf');
@@ -1321,6 +1403,13 @@
         btns.forEach(b => { b.disabled = false; });
     }
 
+    $('toggle-notes').addEventListener('click', () => {
+        showNotes = !showNotes;
+        $('toggle-notes').setAttribute('aria-pressed', String(showNotes));
+        renderTable();
+    });
+    $('pdf-students').addEventListener('click', () => exportPdf('students'));
+    $('pdf-student').addEventListener('click', () => exportPdf('student'));
     $('pdf-group').addEventListener('click', () => exportPdf('one'));
     $('pdf-all').addEventListener('click', () => exportPdf('all'));
 

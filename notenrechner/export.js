@@ -48,7 +48,7 @@
     }
 
     // Liefert { groups: [{label, span}], heads: [..], w: [Gewichte], bold: [Spalte fett?], rows: [[Texte]] }
-    function layoutFor(g) {
+    function layoutFor(g, only) {
         const cols = [];           // { head, weight, bold, get(st, ctx) }
         const heads = [];          // Gruppenköpfe über den Spalten
         const sek1 = g.stufe === 'sek1';
@@ -110,9 +110,9 @@
             addSingle('Note', 1.5, true, (st, ctx) => ctx.s2.note || '');
         }
 
-        const rows = g.students.map(st => {
+        const rows = (only || g.students).map(st => {
             const ctx = sek1 ? { calc: NR.calcSek1(g, st) } : { s2: NR.calcSek2(g, st) };
-            return { name: st.name, cells: cols.map(c => c.get(st, ctx)) };
+            return { name: st.name, st: st, cells: cols.map(c => c.get(st, ctx)) };
         });
         return { cols: cols, heads: heads, rows: rows };
     }
@@ -239,5 +239,140 @@
         return await doc.save();
     }
 
-    window.NRExport = { build: build };
+    /* ---------- Je Person: Noten und Bemerkungen in einer Tabelle ---------- */
+
+    async function buildStudents(g, students) {
+        if (!window.PDFLib) await loadScript('../lib/pdf-lib.min.js');
+        if (!window.fontkit) await loadScript('../lib/fontkit.umd.min.js');
+        const PDFLib = window.PDFLib, rgb = PDFLib.rgb;
+        const [regBytes, boldBytes] = await Promise.all([fetchBytes('../lib/fonts/DejaVuSans.ttf'), fetchBytes('../lib/fonts/DejaVuSans-Bold.ttf')]);
+        const doc = await PDFLib.PDFDocument.create();
+        doc.registerFontkit(window.fontkit);
+        const font = await doc.embedFont(regBytes, { subset: true });
+        const bold = await doc.embedFont(boldBytes, { subset: true });
+        const dateStr = new Date().toLocaleDateString('de-DE');
+        const ink = rgb(0.13, 0.16, 0.2), grey = rgb(0.45, 0.48, 0.52), line = rgb(0.72, 0.76, 0.8);
+        const headBg = rgb(0.9, 0.93, 0.96), zebra = rgb(0.965, 0.975, 0.985), accent = rgb(0.18, 0.5, 0.76);
+        const W = 595.28, H = 841.89, M = 48;
+        const FS = 9.5, LH = 13, PAD = 5;
+
+        const L = layoutFor(g, students);
+        const cl = catList(g);
+        const nameOf = id => {
+            if (g.stufe === 'sek1') {
+                for (const c of g.categories) {
+                    if (c.id === id) return c.name;
+                    for (const s of (c.subs || [])) if (s.id === id) return c.name + ' › ' + s.name;
+                }
+            }
+            const x = cl.find(k => k.id === id);
+            return x ? x.name : '';
+        };
+        const wrapText = (t, f, size, maxW) => {
+            const out = [];
+            let cur = '';
+            String(t).split(' ').forEach(w => {
+                const test = cur ? cur + ' ' + w : w;
+                if (cur && f.widthOfTextAtSize(test, size) > maxW) { out.push(cur); cur = w; } else cur = test;
+            });
+            if (cur) out.push(cur);
+            return out.length ? out : [''];
+        };
+        const LABELS = { 'Ø': 'Durchschnitt', 'Rechn.': 'Rechnerische Note', 'Note': 'Note', 'AT': 'Allgemeiner Teil (AT)', 'Klausur': 'Klausur', 'Σ Kl.': 'Klausuren', 'Punkte': 'Notenpunkte' };
+
+        const colX = [M, M + 125, M + 165, M + 215, M + 280];     // Bereich | Nr. | Note | Datum | Bemerkung
+        const right = W - M;
+        const remarkW = right - colX[4] - 2 * PAD;
+
+        L.rows.forEach(r => {
+            const st = r.st;
+            // Zeilen der Tabelle
+            const items = [];
+            cl.forEach(c => {
+                for (let i = 0; i < c.slots; i++) {
+                    const gr = ((st.grades && st.grades[c.id]) || [])[i] || '';
+                    const nobj = (st.notes && st.notes[c.id] && st.notes[c.id][i]) || null;
+                    const nt = nobj ? nobj.t : '';
+                    const dd = nobj && /^\d{4}-\d{2}-\d{2}$/.test(nobj.d || '') ? nobj.d.slice(8) + '.' + nobj.d.slice(5, 7) + '.' + nobj.d.slice(0, 4) : '';
+                    if (gr || nt) items.push({ area: nameOf(c.id), nr: String(i + 1), grade: gr, note: nt, date: dd });
+                }
+            });
+            // Ergebnisse
+            const results = [];
+            L.heads.forEach(h => {
+                const single = h.from === h.to && !L.cols[h.from].head;
+                if (single) {
+                    const v = r.cells[h.from];
+                    if (v === '' || v == null) return;
+                    let label = LABELS[h.label] || h.label;
+                    if (g.stufe === 'sek1' && /^Ø /.test(h.label)) label = h.label.replace(/^Ø /, 'Durchschnitt ');
+                    results.push({ label: label, value: v, strong: !!L.cols[h.from].bold });
+                } else {
+                    for (let i = h.from; i <= h.to; i++) {
+                        if (L.cols[i].head === 'Ø' && r.cells[i]) results.push({ label: 'Durchschnitt ' + h.label.replace(/ · \d+ %$/, ''), value: r.cells[i], strong: false });
+                    }
+                }
+            });
+
+            let page = null, y = 0, pageNo = 0;
+            const text = (t, x, yy, size, f, color, align) => {
+                if (t === '' || t == null) return;
+                const w = f.widthOfTextAtSize(t, size);
+                page.drawText(t, { x: align === 'center' ? x - w / 2 : x, y: yy, size: size, font: f, color: color || ink });
+            };
+            function newPage() {
+                page = doc.addPage([W, H]);
+                pageNo++;
+                text(st.name, M, H - M - 12, 18, bold, ink);
+                text(g.name + ' · ' + groupTitle(g), M, H - M - 30, 9, font, grey);
+                text('Stand: ' + dateStr, right - font.widthOfTextAtSize('Stand: ' + dateStr, 8), H - M - 12, 8, font, grey);
+                y = H - M - 52;
+                if (items.length) tableHead();
+            }
+            function tableHead() {
+                page.drawRectangle({ x: M, y: y - 20, width: right - M, height: 20, color: headBg });
+                page.drawRectangle({ x: M, y: y - 20, width: right - M, height: 1.2, color: accent });
+                text('Bereich', colX[0] + PAD, y - 14, 8.5, bold, ink);
+                text('Nr.', colX[1] + (colX[2] - colX[1]) / 2, y - 14, 8.5, bold, ink, 'center');
+                text(g.stufe === 'sek2' ? 'Punkte' : 'Note', colX[2] + (colX[3] - colX[2]) / 2, y - 14, 8.5, bold, ink, 'center');
+                text('Datum', colX[3] + PAD, y - 14, 8.5, bold, ink);
+                text('Bemerkung', colX[4] + PAD, y - 14, 8.5, bold, ink);
+                y -= 20;
+            }
+            newPage();
+            if (!items.length) { text('Noch keine Noten oder Bemerkungen eingetragen.', M, y - 6, 10, font, grey); y -= 24; }
+            items.forEach((it, idx) => {
+                const areaLines = wrapText(it.area, font, FS, colX[1] - colX[0] - 2 * PAD);
+                const noteLines = it.note ? wrapText(it.note, font, FS, remarkW) : [''];
+                const n = Math.max(areaLines.length, noteLines.length);
+                const h = n * LH + 2 * PAD - 2;
+                if (y - h < M + 20) { newPage(); }
+                if (idx % 2 === 1) page.drawRectangle({ x: M, y: y - h, width: right - M, height: h, color: zebra });
+                areaLines.forEach((t, k) => text(t, colX[0] + PAD, y - PAD - 8 - k * LH + 1, FS, font, ink));
+                text(it.nr, colX[1] + (colX[2] - colX[1]) / 2, y - PAD - 7, FS, font, ink, 'center');
+                text(it.grade, colX[2] + (colX[3] - colX[2]) / 2, y - PAD - 7, FS, bold, ink, 'center');
+                if (it.note) text(it.date, colX[3] + PAD, y - PAD - 7, FS - 1, font, grey);
+                noteLines.forEach((t, k) => text(t, colX[4] + PAD, y - PAD - 8 - k * LH + 1, FS, font, ink));
+                y -= h;
+                page.drawLine({ start: { x: M, y: y }, end: { x: right, y: y }, thickness: 0.4, color: line });
+            });
+            y -= 22;
+            // Ergebnisse
+            if (results.length) {
+                if (y - (results.length * 16 + 20) < M + 20) newPage();
+                text('Ergebnis', M, y, 11, bold, ink);
+                y -= 16;
+                results.forEach(res => {
+                    text(res.label, M + PAD, y, 9.5, res.strong ? bold : font, ink);
+                    text(res.value, colX[2] + 40, y, 9.5, res.strong ? bold : font, ink, 'center');
+                    y -= 15;
+                });
+                if (g.stufe === 'sek1' && /\*$/.test(String((results.find(x => x.label === 'Note') || {}).value || ''))) text('* Note nach pädagogischem Ermessen gesetzt.', M, y - 4, 8, font, grey);
+                if (g.stufe === 'sek2' && results.some(x => /\?$/.test(x.value))) text('Ein „?“ bedeutet: Entscheidung bei x,5 steht noch aus.', M, y - 4, 8, font, grey);
+            }
+        });
+        return await doc.save();
+    }
+
+    window.NRExport = { build: build, buildStudents: buildStudents };
 })();
