@@ -329,6 +329,183 @@
         zeitAus = setTimeout(schliesseBubble, 40000);
     }
 
+    /* ---------- Rechtschreibung (nur dort, wo Freitext steht) ---------- */
+    const REC = TUT.recht || null;
+    let recWorker = null, recLaden = null, recId = 0, recWarten = {}, recGeprueft = '', recAbgelehnt = '', recErsatz = null;
+    const WOERTER = 'pinni-woerter', RECHT_AUS = 'pinni-recht-aus';
+    function eigeneWoerter() {
+        try { const a = JSON.parse(ls('get', WOERTER) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+    }
+    function wortMerken(w) {
+        const a = eigeneWoerter(), k = w.toLowerCase();
+        if (a.indexOf(k) < 0) { a.push(k); ls('set', WOERTER, JSON.stringify(a.slice(-500))); }
+    }
+    function recFragen(msg) {
+        return new Promise((ok, fehl) => {
+            const id = ++recId; msg.id = id;
+            recWarten[id] = { ok, fehl };
+            recWorker.postMessage(msg);
+        });
+    }
+    function recBereit() {
+        if (recLaden) return recLaden;
+        recLaden = new Promise((ok, fehl) => {
+            try {
+                recWorker = new Worker(basis + 'lib/rechtschreibung/worker.js');
+            } catch (e) { fehl(e); return; }
+            recWorker.onmessage = e => {
+                const w = recWarten[e.data.id]; if (!w) return;
+                delete recWarten[e.data.id];
+                if (e.data.fehler) w.fehl(new Error(e.data.fehler)); else w.ok(e.data);
+            };
+            recWorker.onerror = e => fehl(new Error(e.message || 'Worker'));
+            recFragen({ laden: 1, nspell: basis + 'lib/rechtschreibung/nspell.js', aff: basis + 'lib/rechtschreibung/de.aff', dic: basis + 'lib/rechtschreibung/de.dic' }).then(ok, fehl);
+        });
+        recLaden.catch(() => { recLaden = null; });
+        return recLaden;
+    }
+    const recFelder = () => REC.felder.map(s => document.querySelector(s)).filter(Boolean);
+    const recText = () => recFelder().map(f => f.value || '').join('\u0001');
+    const recHatText = () => recFelder().some(f => (f.value || '').trim().length >= 15);
+    function recNamen() {
+        const set = new Set();
+        const quellen = (REC.namen || []).concat(['#names-input', '#paste']);
+        quellen.forEach(s => document.querySelectorAll(s).forEach(f => String(f.value || '').split(/[^\p{L}'’-]+/u).forEach(w => { if (w) set.add(w.toLowerCase()); })));
+        return set;
+    }
+    const WORT = /\p{L}+(?:[-'’]\p{L}+)*/gu;
+    const TITEL = /^(herr|herrn|frau|familie|dr|prof|fam)$/i;
+    async function recSuche() {
+        const namen = recNamen(), eigene = new Set(eigeneWoerter()), kandidaten = [];
+        recFelder().forEach(f => {
+            const t = f.value || '';
+            let m, davor = '';
+            WORT.lastIndex = 0;
+            while ((m = WORT.exec(t))) {
+                const w = m[0];
+                const skip = w.length < 3 || w === w.toUpperCase() || namen.has(w.toLowerCase()) || eigene.has(w.toLowerCase()) || TITEL.test(davor);
+                davor = w;
+                if (!skip) kandidaten.push({ feld: f, start: m.index, wort: w });
+            }
+        });
+        const einmalig = Array.from(new Set(kandidaten.map(k => k.wort)));
+        if (!einmalig.length) return [];
+        const r = await recFragen({ pruefe: einmalig });
+        const falsch = new Set(r.falsch);
+        return kandidaten.filter(k => falsch.has(k.wort));
+    }
+    function recAnbieten(weiter, mitReiter) {
+        zumHeim();
+        const b = neueBubble();
+        wer(b);
+        b.appendChild(el('p', 'pinni-text', mitReiter ? 'Soll ich vor dem Erzeugen kurz die Rechtschreibung prüfen? Namen lasse ich in Ruhe.' : zufall([
+            'Du hast schon einiges geschrieben. Soll ich einmal über die Rechtschreibung schauen? Namen lasse ich in Ruhe.',
+            'Magst du, dass ich die Rechtschreibung kurz prüfe? Das geht schnell, und Namen überspringe ich.'
+        ])));
+        const l = el('div', 'pinni-opts');
+        l.appendChild(opt('Ja, bitte prüfen', () => { recStart(weiter); }));
+        l.appendChild(opt(weiter ? 'Nein, direkt erzeugen' : 'Nein, danke', () => { recAbgelehnt = recText(); schliesseBubble(); if (weiter) weiter(); }));
+        b.appendChild(l);
+        const lk = el('div', 'pinni-links', null);
+        lk.appendChild(link('Nicht mehr fragen', () => { ls('set', RECHT_AUS, '1'); schliesseBubble(); if (weiter) weiter(); }));
+        b.appendChild(lk);
+        xKnopf();
+        bubbleAmHeim();
+        zeitAus = setTimeout(schliesseBubble, 40000);
+    }
+    async function recStart(weiter) {
+        antwort('Ich schlage kurz nach …', null, 600000);
+        let funde;
+        try {
+            await recBereit();
+            funde = await recSuche();
+        } catch (e) {
+            stimmung('traurig', 2500);
+            antwort('Die Rechtschreibprüfung hat gerade nicht geklappt. Du kannst es später noch einmal versuchen.', weiter ? b2 => {
+                const l = el('div', 'pinni-opts'); l.appendChild(opt('Trotzdem erzeugen', () => { schliesseBubble(); weiter(); })); b2.appendChild(l);
+            } : null);
+            return;
+        }
+        recGeprueft = recText();
+        if (!funde.length) {
+            stimmung('lieb', 6000);
+            if (weiter) { antwort('Keine Fehler gefunden, super! Ich erzeuge jetzt.', null, 2200, () => { schliesseBubble(); weiter(); }); }
+            else antwort('Alles in Ordnung, ich habe keinen Fehler gefunden. Gut geschrieben!', null, 7000);
+            return;
+        }
+        recDialog(funde, 0, weiter, 0);
+    }
+    function kontext(b, f, w) {
+        const t = f.value || '', a = Math.max(0, w.start - 35), e = Math.min(t.length, w.start + w.wort.length + 35);
+        const p = el('p', 'pinni-kontext');
+        p.append(document.createTextNode((a > 0 ? '… ' : '') + t.slice(a, w.start).replace(/\s+/g, ' ')));
+        p.appendChild(el('mark', 'pinni-markiert', w.wort));
+        p.append(document.createTextNode(t.slice(w.start + w.wort.length, e).replace(/\s+/g, ' ') + (e < t.length ? ' …' : '')));
+        b.appendChild(p);
+    }
+    async function recDialog(funde, i, weiter, geaendert) {
+        if (i >= funde.length) {
+            recGeprueft = recText();
+            stimmung('lieb', 7000);
+            antwort(geaendert ? 'Fertig! ' + (geaendert === 1 ? 'Ein Wort ist' : geaendert + ' Wörter sind') + ' jetzt korrigiert.' : 'Fertig, es bleibt alles, wie du es geschrieben hast.', weiter ? b2 => {
+                const l = el('div', 'pinni-opts'); l.appendChild(opt('Jetzt erzeugen', () => { schliesseBubble(); weiter(); })); b2.appendChild(l);
+            } : null);
+            return;
+        }
+        const w = funde[i], f = w.feld;
+        if ((f.value || '').substr(w.start, w.wort.length) !== w.wort) return recDialog(funde, i + 1, weiter, geaendert);
+        zumHeim();
+        const b = neueBubble();
+        wer(b);
+        b.appendChild(el('p', 'pinni-zaehler', 'Wort ' + (i + 1) + ' von ' + funde.length));
+        kontext(b, f, w);
+        const vor = el('div', 'pinni-opts');
+        const info = el('p', 'pinni-hinweis', 'Ich suche Vorschläge …');
+        b.appendChild(info);
+        b.appendChild(vor);
+        const reihe = el('div', 'pinni-antw');
+        const weiterBtn = el('button', 'pinni-pille', 'So lassen');
+        const merkBtn = el('button', 'pinni-pille', 'Merken');
+        weiterBtn.type = merkBtn.type = 'button';
+        weiterBtn.addEventListener('click', () => recDialog(funde, i + 1, weiter, geaendert));
+        merkBtn.addEventListener('click', () => { wortMerken(w.wort); recDialog(funde, i + 1, weiter, geaendert); });
+        reihe.append(weiterBtn, merkBtn);
+        b.appendChild(reihe);
+        xKnopf(() => { recGeprueft = recText(); });
+        bubbleAmHeim();
+        zeitAus = setTimeout(schliesseBubble, 120000);
+        let liste = [];
+        try { liste = (await recFragen({ vorschlag: w.wort })).liste || []; } catch (e) { liste = []; }
+        if (!bubble || !info.isConnected) return;
+        info.textContent = liste.length ? 'Meinst du:' : 'Dazu habe ich keinen Vorschlag. Vielleicht ein Eigenname oder Fachwort?';
+        liste.forEach(v => vor.appendChild(opt(v, () => {
+            const t = f.value, neu = t.slice(0, w.start) + v + t.slice(w.start + w.wort.length), d = v.length - w.wort.length;
+            f.value = neu;
+            f.dispatchEvent(new Event('input', { bubbles: true }));
+            funde.forEach(o => { if (o.feld === f && o.start > w.start) o.start += d; });
+            recDialog(funde, i + 1, weiter, geaendert + 1);
+        })));
+        bubbleAmHeim();
+    }
+    if (REC) {
+        let vorgeladen = false;
+        document.addEventListener('focusin', e => {
+            if (vorgeladen || !e.target.matches || !REC.felder.some(s => e.target.matches(s))) return;
+            vorgeladen = true;
+            setTimeout(() => recBereit().catch(() => {}), 1500);
+        });
+        let durchlassen = false;
+        document.addEventListener('click', e => {
+            if (durchlassen || aktiv || csvOffen || ausgeblendet || ls('get', RECHT_AUS) === '1') return;
+            const ziel = e.target.closest && e.target.closest((REC.erzeugen || []).join(','));
+            if (!ziel || !recHatText()) return;
+            const jetzt = recText();
+            if (jetzt === recGeprueft || jetzt === recAbgelehnt) return;
+            e.preventDefault(); e.stopImmediatePropagation();
+            recAnbieten(() => { durchlassen = true; try { ziel.click(); } finally { durchlassen = false; } }, true);
+        }, true);
+    }
+
     /* ---------- Gelegentliche Bemerkungen ---------- */
     let letzteAktion = Date.now(), naechsteBem = Date.now() + 40000, letzteBem = '';
     ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { letzteAktion = Date.now(); }, { passive: true, capture: true }));
@@ -338,6 +515,10 @@
         let t = zufall(pool), n = 0;
         while (t === letzteBem && n++ < 5) t = zufall(pool);
         letzteBem = t;
+        if (REC && ls('get', RECHT_AUS) !== '1' && recHatText() && recText() !== recGeprueft && recText() !== recAbgelehnt && Math.random() < 0.4) {
+            recAnbieten(null, false);
+            return;
+        }
         if (Math.random() < 0.25) {
             zumHeim();
             const b = neueBubble();

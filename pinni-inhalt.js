@@ -128,7 +128,13 @@ window.PinniInhalt = {
     },
 
     brief: {
+        recht: {
+            felder: ['#t-reason', '#u-bem', '#f-text', '#f-subject', '#u-fach', '#u-art'],
+            namen: ['#e-wert', '#s-familie-in', '#s-institution-in', '#s-strasse', '#s-ort', '#t-first', '#u-first', '#f-names', '#f-kuerzel'],
+            erzeugen: ['#btn-preview', '#btn-docx', '#btn-pdf']
+        },
         tipps: [
+            'Ich kann die Rechtschreibung deines Textes prüfen, bevor du den Brief erzeugst. Namen lasse ich dabei in Ruhe.',
             'Die Kontrolle weist dich auf fehlende Angaben hin, bevor du den Brief erstellst.',
             'Eine leere Zeile im Text erzeugt einen neuen Absatz.'
         ],
