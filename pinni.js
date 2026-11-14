@@ -40,13 +40,19 @@
         '<ellipse cx="50" cy="88" rx="33" ry="8" fill="#c92f48" stroke="#2a1f5c" stroke-width="3.5"/>' +
         '<path d="M17 72 C17 38 31 13 50 13 C69 13 83 38 83 72 C83 84 70 90 50 90 C30 90 17 84 17 72Z" fill="url(#pinni-grad)" stroke="#2a1f5c" stroke-width="3.5" stroke-linejoin="round"/>' +
         '<path d="M28 44 C30 31 38 24 46 22" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".85"/>' +
-        '<g class="pinni-eyes">' +
+        '<g class="pinni-eyes pinni-augen">' +
         '<ellipse cx="39" cy="56" rx="7.5" ry="9.5" fill="#fff" stroke="#2a1f5c" stroke-width="2"/>' +
         '<ellipse cx="61" cy="56" rx="7.5" ry="9.5" fill="#fff" stroke="#2a1f5c" stroke-width="2"/>' +
         '<circle cx="40.5" cy="58" r="5" fill="#2a1f5c"/><circle cx="62.5" cy="58" r="5" fill="#2a1f5c"/>' +
         '<circle cx="42" cy="55.5" r="1.7" fill="#fff"/><circle cx="64" cy="55.5" r="1.7" fill="#fff"/></g>' +
         '<ellipse cx="28" cy="71" rx="5.5" ry="3.6" fill="#f58aa0" opacity=".9"/><ellipse cx="72" cy="71" rx="5.5" ry="3.6" fill="#f58aa0" opacity=".9"/>' +
-        '<path d="M42 72 Q50 81 58 72" fill="none" stroke="#2a1f5c" stroke-width="2.8" stroke-linecap="round"/>' +
+        '<path class="pinni-mund" d="M42 72 Q50 81 58 72" fill="none" stroke="#2a1f5c" stroke-width="2.8" stroke-linecap="round"/>' +
+        '<g class="pinni-x-traurig"><path d="M43 79 Q50 71 57 79" fill="none" stroke="#2a1f5c" stroke-width="2.8" stroke-linecap="round"/>' +
+        '<path d="M31 46 L45 42 M69 46 L55 42" fill="none" stroke="#2a1f5c" stroke-width="2.6" stroke-linecap="round"/>' +
+        '<path class="pinni-traene" d="M34 63 C31 68 30 71 34 72 C38 71 37 68 34 63Z" fill="#7cc4ff" stroke="#2a1f5c" stroke-width="1.2"/></g>' +
+        '<g class="pinni-x-lieb"><path d="M32 59 Q39 50 46 59 M54 59 Q61 50 68 59" fill="none" stroke="#2a1f5c" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M40 71 Q50 85 60 71Z" fill="#fff" stroke="#2a1f5c" stroke-width="2.6" stroke-linejoin="round"/>' +
+        '<ellipse cx="27" cy="70" rx="6.5" ry="4.2" fill="#ff6f91" opacity=".85"/><ellipse cx="73" cy="70" rx="6.5" ry="4.2" fill="#ff6f91" opacity=".85"/></g>' +
         '<path d="M19 76 Q8 80 6 91" fill="none" stroke="#2a1f5c" stroke-width="4.2" stroke-linecap="round"/><circle cx="6" cy="92" r="3.6" fill="#2a1f5c"/>' +
         '<g class="pinni-arm-wave"><path d="M81 72 Q93 64 94 46" fill="none" stroke="#2a1f5c" stroke-width="4.2" stroke-linecap="round"/><circle cx="94" cy="44" r="3.6" fill="#2a1f5c"/></g>' +
         '<g class="pinni-arm-point"><path d="M81 72 L99 72" fill="none" stroke="#2a1f5c" stroke-width="4.2" stroke-linecap="round"/><circle cx="100" cy="72" r="3.6" fill="#2a1f5c"/></g>' +
@@ -94,6 +100,15 @@
     }
     const klemme = (v, a, b) => Math.max(a, Math.min(b, v));
 
+    let stimmungZeit = 0;
+    function stimmung(art, ms) {
+        clearTimeout(stimmungZeit);
+        fig.classList.remove('traurig', 'lieb');
+        if (art) {
+            fig.classList.add(art);
+            if (ms) stimmungZeit = setTimeout(() => fig.classList.remove(art), ms);
+        }
+    }
     function schliesseBubble() {
         if (bubble) { bubble.remove(); bubble = null; }
         clearTimeout(zeitAus);
@@ -192,6 +207,38 @@
         'Gut, dass es dich gibt. Wirklich.',
         'Danke für deine Arbeit. Das sieht man nicht immer, aber es zählt.'
     ];
+    const FRAGEN = [
+        'Wie geht es dir gerade? Alles gut bei dir?',
+        'Kurz nachgefragt: Hattest du heute schon einen schönen Moment?',
+        'Na, wie läuft dein Tag? Geht es dir gut?',
+        'Ich wollte nur wissen, ob es dir gut geht.',
+        'Hast du heute schon etwas getrunken? Und: Geht es dir gut?',
+        'Hand aufs Herz, oder auf die Nadel: Wie geht es dir?',
+        'Geht es dir gut? Ich frage nicht nur aus Höflichkeit.',
+        'Wie war deine Woche bisher? Alles im grünen Bereich?'
+    ];
+    const JA = [
+        'Das freut mich wirklich! Dann machen wir einfach so weiter.',
+        'Wie schön! Das hebt auch meine Laune. Und ich hab nur eine Nadel.',
+        'Prima! Genieß das Gefühl, das hast du dir verdient.',
+        'Das höre ich gern. Gute Laune ist die halbe Arbeit.',
+        'Super! Dann kann ja nichts mehr schiefgehen.',
+        'Das macht mich froh. Danke, dass du es mir erzählt hast.',
+        'Freut mich! Sag Bescheid, wenn ich dir etwas abnehmen kann.'
+    ];
+    const NEIN_ZUERST = ['Oh …', 'Ach, das tut mir leid …', 'Oje …', 'Hm … das mag ich gar nicht hören …'];
+    const TROST = [
+        'Das ist okay. Nicht jeder Tag ist ein guter, und du musst heute nicht alles schaffen.',
+        'Ich bin hier und hefte die Dinge für dich an. Eins nach dem anderen, in deinem Tempo.',
+        'Manchmal hilft schon ein Glas Wasser und ein tiefer Atemzug. Probier es kurz aus.',
+        'Du gibst jeden Tag viel für andere. Heute darfst du ruhig etwas milder mit dir sein.',
+        'Schlechte Tage gehen vorbei, versprochen. Und morgen sieht vieles schon anders aus.',
+        'Wenn du magst, mach eine kleine Pause. Die Zettel laufen dir nicht weg.',
+        'Du bist mehr als deine Liste. Danke, dass du trotzdem hier bist.',
+        'Ich drück dir die Daumen. Oder zumindest die Nadel.',
+        'Das wird wieder. Und bis dahin bin ich an deiner Seite, so gut eine Pinnnadel das kann.',
+        'Vielleicht hilft es, mit jemandem zu reden, der dich mag. Du bist es wert.'
+    ];
     const zufall = l => l[Math.floor(Math.random() * l.length)];
 
     /* ---------- Einstellungen: ausgeblendet, leiser ---------- */
@@ -225,20 +272,58 @@
     const merken = () => ls('set', FLAG, '1');
 
     /* ---------- Menü: etwas Nettes, dann Auswahl ---------- */
+    /* Frage "Geht es dir gut?" mit zwei kleinen Antworten; Reaktion mit Gesichtsausdruck */
+    function wohlbefinden(b, nachher) {
+        const reihe = el('div', 'pinni-antw');
+        const ja = el('button', 'pinni-pille', 'Ja, danke');
+        const nein = el('button', 'pinni-pille', 'Nicht so gut');
+        ja.type = nein.type = 'button';
+        ja.addEventListener('click', () => {
+            merken();
+            stimmung('lieb', 9000);
+            antwort(zufall(JA), nachher);
+        });
+        nein.addEventListener('click', () => {
+            merken();
+            stimmung('traurig', 2600);
+            antwort(zufall(NEIN_ZUERST), null, 2400, () => {
+                stimmung('lieb', 11000);
+                antwort(zufall(TROST), nachher);
+            });
+        });
+        reihe.append(ja, nein);
+        b.appendChild(reihe);
+    }
+    function antwort(text, nachher, ms, weiter) {
+        zumHeim();
+        const b = neueBubble();
+        wer(b);
+        b.appendChild(el('p', 'pinni-text', text));
+        if (nachher) nachher(b);
+        xKnopf(() => stimmung(null));
+        bubbleAmHeim();
+        zeitAus = setTimeout(weiter || schliesseBubble, ms || (nachher ? 40000 : 9000 + text.length * 40));
+    }
+    function menuePunkte(b) {
+        const liste = el('div', 'pinni-opts');
+        liste.appendChild(opt('Tutorial starten', () => { merken(); startFuehrung(); }));
+        if (TUT.csv) liste.appendChild(opt('CSV-Datei aus WebUntis holen', () => { merken(); csvFuehrung(null); }));
+        liste.appendChild(opt('Pinni ausblenden', () => { merken(); ausblenden(); }));
+        b.appendChild(liste);
+        b.appendChild(el('div', 'pinni-links', null)).appendChild(leiseLink());
+    }
     function menue(erstmals) {
         if (aktiv || csvOffen) return;
         zumHeim();
         const b = neueBubble();
         wer(b);
+        const wurf = Math.random();
+        const frage = !erstmals && wurf < 0.4;
         if (erstmals) b.appendChild(el('p', 'pinni-text', 'Hallo, ich bin Pinni! Soll ich dir zeigen, wie das hier funktioniert?'));
-        else b.appendChild(el('p', 'pinni-text', zufall(Math.random() < 0.5 ? MUT : SPRUECHE)));
-        const liste = el('div', 'pinni-opts');
-        const o1 = opt('Tutorial starten', () => { merken(); startFuehrung(); });
-        liste.appendChild(o1);
-        if (TUT.csv) liste.appendChild(opt('CSV-Datei aus WebUntis holen', () => { merken(); csvFuehrung(null); }));
-        liste.appendChild(opt('Pinni ausblenden', () => { merken(); ausblenden(); }));
-        b.appendChild(liste);
-        b.appendChild(el('div', 'pinni-links', null)).appendChild(leiseLink());
+        else if (frage) b.appendChild(el('p', 'pinni-text', zufall(FRAGEN)));
+        else b.appendChild(el('p', 'pinni-text', zufall(wurf < 0.7 ? MUT : SPRUECHE)));
+        if (frage) wohlbefinden(b, menuePunkte);
+        menuePunkte(b);
         xKnopf(merken);
         bubbleAmHeim();
         zeitAus = setTimeout(schliesseBubble, 40000);
@@ -253,6 +338,17 @@
         let t = zufall(pool), n = 0;
         while (t === letzteBem && n++ < 5) t = zufall(pool);
         letzteBem = t;
+        if (Math.random() < 0.25) {
+            zumHeim();
+            const b = neueBubble();
+            wer(b);
+            b.appendChild(el('p', 'pinni-text', zufall(FRAGEN)));
+            wohlbefinden(b, null);
+            xKnopf();
+            bubbleAmHeim();
+            zeitAus = setTimeout(schliesseBubble, 25000);
+            return;
+        }
         kurz([t], 6500 + t.length * 45, true);
     }
     setInterval(() => {
