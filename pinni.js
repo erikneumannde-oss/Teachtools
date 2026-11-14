@@ -115,6 +115,31 @@
         'Ich hab einen Plan: erst anheften, dann abheften.',
         'Ich sehe zwar rund aus, aber meine Ideen haben Hand und Fuß. Na ja, Nadel.'
     ];
+    const MUT = [
+        'Du machst das gut. Schritt für Schritt kommt alles an seinen Platz.',
+        'Das war schon eine ganze Menge Organisation. Das kann sich sehen lassen!',
+        'Du hast viel um die Ohren und kriegst es trotzdem hin. Das verdient Respekt.',
+        'Ein Fehler lässt sich hier fast immer rückgängig machen. Probier einfach aus.',
+        'Du bist auf dem richtigen Weg. Und falls nicht: Ich hefte eine neue Karte an.',
+        'Eine kleine Pause zwischendurch hat noch niemandem geschadet. Du hast sie dir verdient.',
+        'Heute schon etwas geschafft? Dann ist das ein guter Tag.',
+        'Gute Lehrkräfte sind selten fertig, aber du bist ziemlich weit. Weiter so!',
+        'Du denkst an so viele Dinge gleichzeitig. Ich ziehe den Hut. Na ja, den Kopf.',
+        'Kein Grund zur Eile. Gut gemacht ist besser als schnell gemacht.',
+        'Deine Schülerinnen und Schüler haben Glück mit dir.',
+        'Jede abgehakte Aufgabe ist ein kleiner Sieg. Dieser hier zählt auch.',
+        'Atme kurz durch. Du hast mehr geschafft, als du denkst.',
+        'Du darfst stolz auf dich sein. Ich bin es jedenfalls.',
+        'Das sieht doch schon richtig gut aus!',
+        'Wenn etwas nicht gleich klappt, ist das völlig normal. Beim nächsten Versuch sitzt es.',
+        'Dein Einsatz ist Gold wert, und das ist noch untertrieben.',
+        'Heute ist ein guter Tag, um etwas von der Liste zu streichen.',
+        'Du bist nicht allein damit. Ich hänge hier und drücke die Daumen. Oder die Nadel.',
+        'Ein Schritt nach dem anderen. Du bist schon mittendrin.',
+        'Gut, dass es dich gibt. Wirklich.',
+        'Danke für deine Arbeit. Das sieht man nicht immer, aber es zählt.'
+    ];
+    const zufall = l => l[Math.floor(Math.random() * l.length)];
 
     function frage(erstmals) {
         if (aktiv) return;
@@ -124,7 +149,7 @@
             b.appendChild(el('h3', null, 'Hallo, ich bin Pinni!'));
             b.appendChild(el('p', null, 'Soll ich dir zeigen, wie das hier funktioniert?'));
         } else {
-            b.appendChild(el('p', null, SPRUECHE[Math.floor(Math.random() * SPRUECHE.length)]));
+            b.appendChild(el('p', null, zufall(Math.random() < 0.5 ? MUT : SPRUECHE)));
             b.appendChild(el('p', null, 'Brauchst du eine Führung durch dieses Werkzeug?'));
         }
         const bt = el('div', 'pinni-btns');
@@ -132,7 +157,7 @@
         const nein = knopf('Nein, danke', '', () => {
             ls('set', FLAG, '1');
             const b2 = neueBubble();
-            b2.appendChild(el('p', null, 'Alles klar! Tipp mich einfach an, wenn du mich brauchst.'));
+            b2.appendChild(el('p', null, 'Alles klar, du schaffst das! Tipp mich einfach an, wenn du mich brauchst.'));
             bubbleAmHeim();
             zeitAus = setTimeout(schliesseBubble, 3200);
         });
@@ -197,8 +222,9 @@
         if (abschied) {
             const b = neueBubble();
             b.appendChild(el('p', null, TUT.ende || 'Das war es schon. Tipp mich an, wenn du mich noch einmal brauchst.'));
+            b.appendChild(el('p', null, zufall(MUT)));
             bubbleAmHeim();
-            zeitAus = setTimeout(schliesseBubble, 5000);
+            zeitAus = setTimeout(schliesseBubble, 7000);
         }
         fig.focus({ preventScroll: true });
     }
