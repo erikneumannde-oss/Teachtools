@@ -86,14 +86,17 @@
             text(p, st.birth || '', 134, 157.5, 10, reg);
             line(p, 130.7, 298.0, 170.6);
             // Halbjahr und Stufe
+            // Wie im Vordruck: kurze Linie um die Ziffer, der Satz läuft direkt weiter
             const w1 = text(p, 'Diese Angaben beziehen sich auf das ', L, 185.4, 10, reg);
-            text(p, String(info.half || ''), 295.75, 184.0, 10, reg, { center: true });
-            line(p, 251.4, 340.1, 196.6);
-            text(p, '. Schulhalbjahr der Jahrgangsstufe', 340.4, 185.4, 10, reg);
-            text(p, String(info.stufe || ''), 517, 184.0, 10, reg, { center: true });
-            line(p, 508, 526, 196.6);
-            text(p, '.', 528.1, 185.4, 10, reg);
-            void w1;
+            const xa = L + w1, LW = 11;
+            line(p, xa, xa + LW, 196.6);
+            text(p, String(info.half || ''), xa + LW / 2, 184.0, 10, reg, { center: true });
+            const x2 = xa + LW + 0.3;
+            const w2 = text(p, '. Schulhalbjahr der Jahrgangsstufe ', x2, 185.4, 10, reg);
+            const xb = x2 + w2, SW = 18;
+            line(p, xb, xb + SW, 196.6);
+            text(p, String(info.stufe || ''), xb + SW / 2, 184.0, 10, reg, { center: true });
+            text(p, '.', xb + SW + 2.1, 185.4, 10, reg);
             // Tabelle
             const T0 = 211.6, TB = ROWS[ROWS.length - 1];
             ROWS.concat([T0]).forEach(y => line(p, TX0, TX1, y));
