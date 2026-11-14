@@ -103,8 +103,41 @@
         bubble = el('div', 'pinni-bubble');
         bubble.setAttribute('role', 'dialog');
         bubble.setAttribute('aria-live', 'polite');
+        const innen = el('div', 'pinni-inner');
+        bubble.appendChild(innen);
         wurzel.appendChild(bubble);
-        return bubble;
+        return innen;
+    }
+    function wer(b) { b.appendChild(el('p', 'pinni-wer', 'Pinni')); }
+    function xKnopf(onClose) {
+        const x = el('button', 'pinni-x', '×');
+        x.type = 'button'; x.setAttribute('aria-label', 'Schließen');
+        x.addEventListener('click', () => { schliesseBubble(); if (onClose) onClose(); });
+        bubble.appendChild(x);
+    }
+    function opt(text, fn) {
+        const b = el('button', 'pinni-opt');
+        b.type = 'button';
+        b.append(el('span', 'pinni-dot'), document.createTextNode(text));
+        b.addEventListener('click', fn);
+        return b;
+    }
+    function link(text, fn) {
+        const b = el('button', 'pinni-link', text);
+        b.type = 'button';
+        b.addEventListener('click', fn);
+        return b;
+    }
+    /* Kurze Sprechblase am Heimplatz (Bemerkung, Abschied) */
+    function kurz(texte, ms, mitLinks) {
+        zumHeim();
+        const b = neueBubble();
+        wer(b);
+        texte.forEach(t => b.appendChild(el('p', 'pinni-text', t)));
+        if (mitLinks) b.appendChild(el('div', 'pinni-links', null)).appendChild(leiseLink());
+        xKnopf();
+        bubbleAmHeim();
+        zeitAus = setTimeout(schliesseBubble, ms);
     }
     function knopf(text, cls, fn) {
         const b = el('button', 'pinni-btn' + (cls ? ' ' + cls : ''), text);
@@ -117,8 +150,12 @@
         const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
         let t = h.t - bh - 8;
         if (t < 8) t = h.t + s.h + 8;
-        bubble.style.left = Math.round(klemme(h.l + s.w - bw, 8, Math.max(8, vw - bw - 8))) + 'px';
+        const l = Math.round(klemme(h.l + s.w - bw, 8, Math.max(8, vw - bw - 8)));
+        bubble.style.left = l + 'px';
         bubble.style.top = Math.round(klemme(t, 8, Math.max(8, vh - bh - 8))) + 'px';
+        bubble.classList.add('heim');
+        bubble.classList.toggle('darunter', t > h.t);
+        bubble.style.setProperty('--tx', Math.round(klemme(h.l + s.w / 2 - l, 18, Math.max(18, bw - 18))) + 'px');
     }
 
     /* ---------- Frage und Menü ---------- */
@@ -157,36 +194,77 @@
     ];
     const zufall = l => l[Math.floor(Math.random() * l.length)];
 
-    function frage(erstmals) {
-        if (aktiv) return;
+    /* ---------- Einstellungen: ausgeblendet, leiser ---------- */
+    const AUS = 'pinni-aus', LEISE = 'pinni-leise';
+    let ausgeblendet = ls('get', AUS) === '1', leise = ls('get', LEISE) === '1';
+    const zurueckBtn = el('button', 'pinni-back');
+    zurueckBtn.type = 'button';
+    zurueckBtn.setAttribute('aria-label', 'Pinni wieder holen');
+    zurueckBtn.title = 'Pinni wieder holen';
+    zurueckBtn.append(document.createTextNode('📌'), el('span', 'pinni-hol', 'Pinni holen'));
+    wurzel.appendChild(zurueckBtn);
+    function wendeAusAn() { wurzel.classList.toggle('aus', ausgeblendet); }
+    function ausblenden() {
+        ausgeblendet = true; ls('set', AUS, '1');
+        schliesseBubble();
+        wendeAusAn();
+    }
+    function holen() {
+        ausgeblendet = false; ls('set', AUS, '0');
+        wendeAusAn();
+        zumHeim();
+        menue(false);
+    }
+    zurueckBtn.addEventListener('click', holen);
+    function leiseLink() {
+        return link(leise ? 'Pinni darf wieder öfter erzählen' : 'Weniger reden', () => {
+            leise = !leise; ls('set', LEISE, leise ? '1' : '0');
+            kurz([leise ? 'Alles klar, ich rede weniger. Du kannst mich jederzeit antippen.' : 'Schön, ich erzähle wieder öfter.'], 3500);
+        });
+    }
+    const merken = () => ls('set', FLAG, '1');
+
+    /* ---------- Menü: etwas Nettes, dann Auswahl ---------- */
+    function menue(erstmals) {
+        if (aktiv || csvOffen) return;
         zumHeim();
         const b = neueBubble();
-        if (erstmals) {
-            b.appendChild(el('h3', null, 'Hallo, ich bin Pinni!'));
-            b.appendChild(el('p', null, 'Soll ich dir zeigen, wie das hier funktioniert?'));
-        } else {
-            b.appendChild(el('p', null, zufall(Math.random() < 0.5 ? MUT : SPRUECHE)));
-            b.appendChild(el('p', null, 'Brauchst du eine Führung durch dieses Werkzeug?'));
-        }
-        if (TUT.csv) b.appendChild(el('p', null, 'Auch bei der CSV-Datei aus WebUntis helfe ich dir.'));
-        const bt = el('div', 'pinni-btns');
-        const ja = knopf(TUT.csv ? 'Führung' : 'Ja, gern', 'primaer', () => { if (erstmals) ls('set', FLAG, '1'); startFuehrung(); });
-        const nein = knopf('Nein, danke', '', () => {
-            ls('set', FLAG, '1');
-            const b2 = neueBubble();
-            b2.appendChild(el('p', null, 'Alles klar, du schaffst das! Tipp mich einfach an, wenn du mich brauchst.'));
-            bubbleAmHeim();
-            zeitAus = setTimeout(schliesseBubble, 3200);
-        });
-        if (TUT.csv) {
-            const c = knopf('CSV aus WebUntis', '', () => { if (erstmals) ls('set', FLAG, '1'); csvFuehrung(null); });
-            bt.append(ja, c, nein);
-        } else bt.append(ja, nein);
-        b.appendChild(bt);
+        wer(b);
+        if (erstmals) b.appendChild(el('p', 'pinni-text', 'Hallo, ich bin Pinni! Soll ich dir zeigen, wie das hier funktioniert?'));
+        else b.appendChild(el('p', 'pinni-text', zufall(Math.random() < 0.5 ? MUT : SPRUECHE)));
+        const liste = el('div', 'pinni-opts');
+        const o1 = opt('Tutorial starten', () => { merken(); startFuehrung(); });
+        liste.appendChild(o1);
+        if (TUT.csv) liste.appendChild(opt('CSV-Datei aus WebUntis holen', () => { merken(); csvFuehrung(null); }));
+        liste.appendChild(opt('Pinni ausblenden', () => { merken(); ausblenden(); }));
+        b.appendChild(liste);
+        b.appendChild(el('div', 'pinni-links', null)).appendChild(leiseLink());
+        xKnopf(merken);
         bubbleAmHeim();
-        ja.focus({ preventScroll: true });
-        if (erstmals) zeitAus = setTimeout(schliesseBubble, 25000);
+        zeitAus = setTimeout(schliesseBubble, 40000);
     }
+
+    /* ---------- Gelegentliche Bemerkungen ---------- */
+    let letzteAktion = Date.now(), naechsteBem = Date.now() + 40000, letzteBem = '';
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { letzteAktion = Date.now(); }, { passive: true, capture: true }));
+    function bemerkung() {
+        const pool = MUT.concat(SPRUECHE);
+        (TUT.tipps || []).forEach(t => { pool.push('Tipp: ' + t); pool.push('Tipp: ' + t); });
+        let t = zufall(pool), n = 0;
+        while (t === letzteBem && n++ < 5) t = zufall(pool);
+        letzteBem = t;
+        kurz([t], 6500 + t.length * 45, true);
+    }
+    setInterval(() => {
+        if (aktiv || csvOffen || bubble || ausgeblendet || leise || griff || document.hidden) return;
+        const a = document.activeElement;
+        if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+        if (document.querySelector('.modal, .pinni-lightbox')) return;
+        const jetzt = Date.now();
+        if (jetzt < naechsteBem || jetzt - letzteAktion < 15000) return;
+        naechsteBem = jetzt + (60 + Math.random() * 50) * 1000;
+        bemerkung();
+    }, 4000);
 
     let gezogen = false, griff = null;
     fig.addEventListener('pointerdown', e => {
@@ -229,7 +307,7 @@
         if (aktiv || csvOffen) return;
         if (gezogen) { gezogen = false; return; }
         if (bubble) { schliesseBubble(); return; }
-        frage(false);
+        menue(false);
     });
 
     /* ---------- Führung ---------- */
@@ -287,13 +365,7 @@
         fig.tabIndex = 0;
         schliesseBubble();
         zumHeim();
-        if (abschied) {
-            const b = neueBubble();
-            b.appendChild(el('p', null, TUT.ende || 'Das war es schon. Tipp mich an, wenn du mich noch einmal brauchst.'));
-            b.appendChild(el('p', null, zufall(MUT)));
-            bubbleAmHeim();
-            zeitAus = setTimeout(schliesseBubble, 7000);
-        }
+        if (abschied) kurz([TUT.ende || 'Das war es schon. Tipp mich an, wenn du mich noch einmal brauchst.', zufall(MUT)], 8000);
         fig.focus({ preventScroll: true });
     }
 
@@ -342,7 +414,14 @@
         b.appendChild(el('p', 'pinni-schritt', 'Schritt ' + (i + 1) + ' von ' + liste.length));
         if (s.title) b.appendChild(el('h3', null, s.title));
         b.appendChild(el('p', null, s.text));
-        if (s.preview) b.appendChild(fenster(s.preview));
+        if (s.preview) {
+            if (window.innerHeight < 440) {
+                // Niedriges Fenster (Handy quer): kein Vorschaufenster in der Sprechblase, das Bild lässt sich groß öffnen
+                const vk = knopf('Vorschau ansehen', '', () => lightbox(basis + s.preview.src, s.preview.title));
+                vk.classList.add('pinni-vorschau');
+                b.appendChild(vk);
+            } else b.appendChild(fenster(s.preview));
+        }
         const tat = !!s.fertig;
         if (tat) b.appendChild(el('p', 'pinni-hinweis', s.hinweis || 'Es geht weiter, sobald du es gemacht hast.'));
         if (s.csv) b.appendChild(el('p', null, 'Soll ich dir erklären, wie du für Klassen der Sekundarstufe I ganz leicht eine CSV-Datei bekommst? Für die Oberstufe funktioniert das leider nicht so einfach.'));
@@ -437,13 +516,25 @@
             for (const n of reihe) { p = cand[n](); if (p) break; }
             if (!p) {
                 // Kein freier Platz: Pinni und Sprechblase unten, die Markierung bleibt oben sichtbar
-                p = { pl: 8, pt: vh - ph - 8, bl: klemme(8 + pw + 4, 8, vw - bw - 8), bt: vh - bh - 8 };
-                if (vw < 520) { p.pt = vh - bh - ph - 12; p.bt = vh - bh - 8; p.bl = 8; }
+                // Kein freier Platz neben oder über dem Ziel: die vier Ecken probieren, die am wenigsten verdeckt
+                let best = null;
+                [[false, false], [true, false], [false, true], [true, true]].forEach(([rechts, unten]) => {
+                    const bl = rechts ? Math.max(8, vw - bw - 8) : klemme(8 + pw + 4, 8, Math.max(8, vw - bw - 8));
+                    const bt = unten ? Math.max(8, vh - bh - 8) : 8;
+                    const ix = Math.max(0, Math.min(bl + bw, R.right) - Math.max(bl, R.left)), iy = Math.max(0, Math.min(bt + bh, R.bottom) - Math.max(bt, R.top));
+                    const verdeckt = ix * iy;
+                    if (!best || verdeckt < best.v) best = { v: verdeckt, bl, bt, rechts, unten };
+                });
+                let pl = best.bl - pw - 4;
+                if (pl < 8) pl = klemme(best.bl + bw + 4, 8, Math.max(8, vw - pw - 8));
+                p = { pl, pt: best.unten ? Math.max(8, vh - ph - 8) : 8, bl: best.bl, bt: best.bt };
+                if (vw < 520) { p.pl = 8; p.pt = best.unten ? Math.max(8, vh - bh - ph - 12) : bh + 12; p.bl = 8; }
             }
         } else {
             const bl = (vw - bw) / 2, bt = Math.max(8, (vh - bh) / 2 + ph / 2 - 10);
             p = { pl: klemme(bl + 6, 8, vw - pw - 8), pt: Math.max(8, bt - ph + 8), bl, bt };
         }
+        bubble.classList.remove('heim', 'darunter');
         bubble.style.left = Math.round(p.bl) + 'px';
         bubble.style.top = Math.round(p.bt) + 'px';
         setFig(p.pl, p.pt);
@@ -502,7 +593,9 @@
         const bt = el('div', 'pinni-btns');
         txt.append(nr, t, bt);
         koerper.append(mini, txt);
-        panel.append(bar, img, koerper);
+        const haupt = el('div', 'pinni-big-main');
+        haupt.append(img, koerper);
+        panel.append(bar, haupt);
         bg.appendChild(panel);
         wurzel.appendChild(bg);
         csvRoot = bg;
@@ -569,8 +662,9 @@
 
     function los() {
         document.body.appendChild(wurzel);
+        wendeAusAn();
         zumHeim();
-        if (!ls('get', FLAG)) setTimeout(() => { if (!aktiv && !bubble) frage(true); }, ruhig() ? 600 : 1400);
+        if (!ls('get', FLAG) && !ausgeblendet) setTimeout(() => { if (!aktiv && !bubble && !ausgeblendet) menue(true); }, ruhig() ? 600 : 1400);
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', los); else los();
 

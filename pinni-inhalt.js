@@ -1,6 +1,10 @@
 /* Inhalte der Pinni-Führungen. Jeder Schritt: sel (Markierung, leer = Mitte), text, optional tab/open (vorher anklicken/aufklappen), preview. */
 window.PinniInhalt = {
     start: {
+        tipps: [
+            'Rosa Zettel sind Links zu anderen Seiten. Sie öffnen sich in einem neuen Fenster.',
+            'Alle Eingaben bleiben im Browser. Es wird nichts übertragen.'
+        ],
         ende: 'Das war die Pinnwand. Die Zettel kennst du jetzt, den Rest zeige ich dir in jedem Werkzeug gern noch einmal.',
         steps: [
             { text: 'Ich bin Pinni und halte hier alles zusammen. Nur meine Witze halten manchmal nicht, die sind ziemlich spitz. Wenn ich im Weg bin, fass mich einfach an und zieh mich an einen anderen Platz. Ich zeige dir kurz, was es hier gibt.' },
@@ -20,6 +24,10 @@ window.PinniInhalt = {
     },
 
     sitzplan: {
+        tipps: [
+            'Wenn du einen Namen auf einen besetzten Platz ziehst, tauschen die beiden die Plätze.',
+            'Mit „Rückgängig“ nimmst du den letzten Schritt zurück.'
+        ],
         csv: true,
         ende: 'Das war der Sitzplanersteller. Jetzt sitzt hoffentlich jede und jeder am richtigen Platz.',
         steps: [
@@ -37,6 +45,10 @@ window.PinniInhalt = {
     },
 
     gruppen: {
+        tipps: [
+            'Mit „Neu mischen“ würfelst du die Gruppen neu.',
+            'Wer fehlt, wird in der Namensliste angetippt und dann nicht eingeteilt.'
+        ],
         csv: true,
         ende: 'Das war es. Auf gute Zusammenarbeit, ich hefte mich an niemanden.',
         steps: [
@@ -50,6 +62,10 @@ window.PinniInhalt = {
     },
 
     timer: {
+        tipps: [
+            'Die Zeitampel zeigt gelb in den letzten Minuten und rot bei Ablauf.',
+            'Ein Tipp auf eine Lampe schaltet die Geräuschampel von Hand.'
+        ],
         ende: 'Das war es. Die Zeit läuft, ich nicht. Ich bleibe hier stehen.',
         steps: [
             { text: 'Hier gibt es Timer, Stoppuhr und Geräuschampel. Ich passe auf die Zeit auf, auch wenn ich selbst nie rechtzeitig zum Abheften komme.' },
@@ -63,6 +79,10 @@ window.PinniInhalt = {
     },
 
     notenrechner: {
+        tipps: [
+            'Die Beratung zeigt, welche Note möglich ist. Die Entscheidung bleibt bei dir.',
+            'Zu jeder Note kannst du eine Bemerkung schreiben, das Datum wird automatisch gespeichert.'
+        ],
         csv: true,
         ende: 'Das war der Notenrechner. Noten sind übrigens das Einzige, was ich lieber an der Wand als im Kopf habe.',
         steps: [
@@ -83,6 +103,10 @@ window.PinniInhalt = {
     },
 
     klassenarbeit: {
+        tipps: [
+            'Die Noten lassen sich als Datei für den Notenrechner ablegen.',
+            'Der Notenschlüssel lässt sich anpassen.'
+        ],
         csv: true,
         ende: 'Das war der Arbeitenauswerter. Alle Punkte sind jetzt gut angeheftet.',
         steps: [
@@ -104,6 +128,10 @@ window.PinniInhalt = {
     },
 
     brief: {
+        tipps: [
+            'Die Kontrolle weist dich auf fehlende Angaben hin, bevor du den Brief erstellst.',
+            'Eine leere Zeile im Text erzeugt einen neuen Absatz.'
+        ],
         ende: 'Das war der Briefgenerator. Und denk dran: Ein Brief ohne Anrede ist wie ich ohne Nadel.',
         steps: [
             { text: 'Willkommen beim Briefgenerator! Ich zeige dir, wie aus ein paar Angaben ein fertiger Brief wird. Mit mir bleibt alles auf dem Punkt.' },
@@ -120,6 +148,10 @@ window.PinniInhalt = {
     },
 
     asv: {
+        tipps: [
+            'Du kannst jederzeit in einen früheren Schritt zurückspringen und etwas ändern.',
+            'Die Datei für das Kollegium lässt sich in Schritt 1 wieder laden.'
+        ],
         csv: true,
         ende: 'Das war der ASV-Generierer. Jetzt sind alle Kreuze an der richtigen Stelle, ich habe extra nachgezählt.',
         steps: [
@@ -144,6 +176,10 @@ window.PinniInhalt = {
     },
 
     'pdf-werkzeuge': {
+        tipps: [
+            'Alles passiert auf deinem Gerät, die Dateien werden nirgends hochgeladen.',
+            'Die Karten lassen sich ziehen, drehen und entfernen.'
+        ],
         ende: 'Das war es. Seiten zusammenzuheften ist ja quasi mein Beruf.',
         steps: [
             { text: 'Hier fügst du PDFs und Bilder zusammen, ordnest Seiten und verkleinerst Dateien. Zusammenhalten kann ich gut.' },
