@@ -495,7 +495,7 @@
         const img = el('img', 'pinni-big-img');
         const koerper = el('div', 'pinni-big-body');
         const mini = el('div', 'pinni-big-pinni');
-        mini.innerHTML = SVG.replace('<svg ', '<svg class="pinni-mini" ');
+        mini.innerHTML = SVG.replace(/pinni-grad/g, 'pinni-grad-mini').replace('<svg ', '<svg class="pinni-mini" ');
         const txt = el('div', 'pinni-big-text');
         const nr = el('p', 'pinni-schritt');
         const t = el('p', 'pinni-big-satz');
