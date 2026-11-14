@@ -1,0 +1,76 @@
+/* Pinni, die Reißzwecken-Assistentin. Nur Klassen, keine Inline-Stile im Markup (wegen der strengen CSP). */
+.pinni-root, .pinni-root * { box-sizing: border-box; }
+.pinni-root { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+.pinni-block { position: fixed; inset: 0; z-index: 99990; background: transparent; }
+.pinni-spot {
+    position: fixed; z-index: 99991; pointer-events: none; border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(30, 26, 52, 0.62), 0 0 0 3px #fff, 0 0 0 6px #e00427;
+    transition: left .55s ease, top .55s ease, width .55s ease, height .55s ease, opacity .3s;
+}
+.pinni-spot.leer { box-shadow: 0 0 0 9999px rgba(30, 26, 52, 0.62); }
+
+.pinni-fig {
+    position: fixed; z-index: 99995; width: 64px; height: 76px; padding: 0; margin: 0;
+    background: none; border: 0; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(30, 26, 52, .35));
+    transition: left .75s cubic-bezier(.5, 0, .2, 1), top .75s cubic-bezier(.5, 0, .2, 1), width .3s, height .3s;
+    -webkit-tap-highlight-color: transparent;
+}
+.pinni-fig.gross { width: 84px; height: 100px; cursor: default; }
+.pinni-fig:focus-visible { outline: 3px solid #f1b400; outline-offset: 3px; border-radius: 12px; }
+.pinni-fig svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.pinni-flip svg { transform: scaleX(-1); }
+.pinni-body { animation: pinni-bob 3.2s ease-in-out infinite; transform-origin: 50px 100px; }
+.pinni-eyes { animation: pinni-blink 5s infinite; transform-origin: 50px 52px; }
+.pinni-arm-wave { animation: pinni-wave 1.6s ease-in-out infinite; transform-origin: 81px 72px; }
+.pinni-arm-point { display: none; }
+.pinni-fig.zeigt .pinni-arm-wave { display: none; }
+.pinni-fig.zeigt .pinni-arm-point { display: inline; }
+@keyframes pinni-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes pinni-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+@keyframes pinni-wave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(14deg); } }
+
+.pinni-bubble {
+    position: fixed; z-index: 99996; width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 20px); overflow: auto;
+    background: #fffdf8; color: #2a2e36; border: 2px solid #2a1f5c; border-radius: 14px;
+    padding: 12px 14px 12px; box-shadow: 0 6px 20px rgba(30, 26, 52, .3);
+    font-size: 15px; line-height: 1.45; animation: pinni-pop .25s ease-out;
+}
+@keyframes pinni-pop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.pinni-bubble h3 { margin: 0 0 4px; font-size: 16px; color: #2a1f5c; }
+.pinni-bubble p { margin: 0 0 8px; }
+.pinni-schritt { font-size: 12px; color: #6b6478; margin: 0 0 4px; }
+.pinni-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pinni-btns .pinni-spacer { flex: 1; }
+.pinni-btn {
+    font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; padding: 6px 14px; border-radius: 9px;
+    border: 2px solid #2a1f5c; background: #fff; color: #2a1f5c; cursor: pointer;
+}
+.pinni-btn.primaer { background: #c70a24; border-color: #c70a24; color: #fff; }
+.pinni-btn:hover:not(:disabled) { filter: brightness(.95); }
+.pinni-btn:disabled { opacity: .45; cursor: default; }
+.pinni-btn:focus-visible { outline: 3px solid #f1b400; outline-offset: 2px; }
+
+.pinni-win { margin: 2px 0 10px; border: 2px solid #2a1f5c; border-radius: 9px; overflow: hidden; background: #fff; animation: pinni-pop .3s ease-out; }
+.pinni-win-bar { display: flex; align-items: center; gap: 6px; background: #2a1f5c; color: #fff; padding: 4px 8px; font-size: 12px; }
+.pinni-win-bar span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pinni-win-bar i { width: 9px; height: 9px; border-radius: 50%; background: #f58aa0; display: inline-block; }
+.pinni-win-bar button { background: none; border: 0; color: #fff; font-size: 15px; cursor: pointer; padding: 0 4px; min-width: 28px; min-height: 24px; }
+.pinni-win-img { display: block; width: 100%; max-height: 200px; object-fit: contain; object-position: top; background: #eee; cursor: zoom-in; }
+.pinni-win-cap { margin: 0; padding: 4px 8px; font-size: 12px; color: #555; background: #f6f3ec; }
+
+.pinni-lightbox {
+    position: fixed; inset: 0; z-index: 99999; background: rgba(20, 16, 40, .86); display: flex; align-items: center;
+    justify-content: center; padding: 16px; cursor: zoom-out;
+}
+.pinni-lightbox img { max-width: 100%; max-height: 100%; background: #fff; box-shadow: 0 8px 30px rgba(0, 0, 0, .5); }
+.pinni-lightbox button {
+    position: absolute; top: 10px; right: 10px; font-size: 20px; min-width: 44px; min-height: 44px; border-radius: 50%;
+    border: 0; background: #fff; color: #2a1f5c; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pinni-fig, .pinni-spot { transition: none; }
+    .pinni-body, .pinni-eyes, .pinni-arm-wave, .pinni-bubble, .pinni-win { animation: none; }
+}
+@media print { .pinni-root, .pinni-block, .pinni-spot, .pinni-fig, .pinni-bubble, .pinni-lightbox { display: none !important; } }

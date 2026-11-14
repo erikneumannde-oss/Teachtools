@@ -1,9 +1,9 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v34';
+const CACHE = 'teachtools-v35';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
-  './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
+  './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinni.js', './pinni-inhalt.js', './pinni.css', './pinni/vorschau/brief-elternbrief.png', './pinni/vorschau/notenrechner-pdf.png', './pinni/vorschau/klassenarbeit-uebersicht.png', './pinni/vorschau/sitzplan-druck.png', './pinni/vorschau/pdf-karten.png', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './pdf-werkzeuge/', './pdf-werkzeuge/index.html', './pdf-werkzeuge/app.js',
   './sitzplan/', './sitzplan/index.html', './sitzplan/app.js', './sitzplan/style.css',
