@@ -3,7 +3,7 @@ window.PinniInhalt = {
     start: {
         ende: 'Das war die Pinnwand. Die Zettel kennst du jetzt, den Rest zeige ich dir in jedem Werkzeug gern noch einmal.',
         steps: [
-            { text: 'Ich bin Pinni und halte hier alles zusammen. Nur meine Witze halten manchmal nicht, die sind ziemlich spitz. Ich zeige dir kurz, was es hier gibt.' },
+            { text: 'Ich bin Pinni und halte hier alles zusammen. Nur meine Witze halten manchmal nicht, die sind ziemlich spitz. Wenn ich im Weg bin, fass mich einfach an und zieh mich an einen anderen Platz. Ich zeige dir kurz, was es hier gibt.' },
             { sel: '.paper', title: 'Die Pinnwand', text: 'Hier liegen kleine Werkzeuge für den Schulalltag. Es gibt keine Anmeldung, und alle Eingaben bleiben im Browser. Es wird nichts übertragen.' },
             { sel: '.note[href*="notenrechner"]', title: 'Zettel öffnen', text: 'Jeder Zettel ist ein Werkzeug. Antippen öffnet es. Beim Notenrechner geht es um Noten für Sek I und Sek II, mit Beratung und PDF.',
               preview: { src: 'pinni/vorschau/notenrechner-pdf.png', title: 'Notenrechner: PDF je Person', cap: 'Beispiel mit erfundenen Daten.' } },
@@ -11,6 +11,8 @@ window.PinniInhalt = {
               preview: { src: 'pinni/vorschau/klassenarbeit-uebersicht.png', title: 'Arbeitenauswerter: Übersicht als PDF', cap: 'Beispiel mit erfundenen Daten.' } },
             { sel: '.note[href*="brief"]', title: 'Briefgenerator', text: 'Briefe im Briefkopf der Schule, als Word-Datei oder als PDF.',
               preview: { src: 'pinni/vorschau/brief-elternbrief.png', title: 'Briefgenerator: Elternbrief', cap: 'Beispiel mit erfundenen Daten.' } },
+            { sel: '.note[href*="asv"]', title: 'ASV-Generierer', text: 'Hier entstehen die Blätter zum Arbeits- und Sozialverhalten für die Zeugnisse, je Kind eins. Die Klassenleitung kann sich die Einschätzungen des Kollegiums per Datei zusammentragen lassen.',
+              preview: { src: 'pinni/vorschau/asv-ausgefuellt.png', title: 'ASV-Generierer: ausgefülltes Blatt', cap: 'Beispiel mit erfundenen Angaben.' } },
             { sel: '.note[href*="sitzplan"]', title: 'Weitere Werkzeuge', text: 'Dazu kommen der Sitzplanersteller, die PDF- und Bildwerkzeuge, Gruppen und Zufall sowie Timer, Stoppuhr und Geräuschampel. In jedem davon kann ich dich wieder durchführen.' },
             { sel: '.note[data-tag="Extern"]', title: 'Rosa Zettel', text: 'Rosa Zettel sind Links zu anderen Seiten. Sie öffnen sich in einem neuen Fenster und stehen immer ganz hinten.' },
             { sel: '.impressum-link', text: 'Impressum und Datenschutz stehen hier. Dort ist auch erklärt, dass nichts übertragen wird.' }
@@ -18,11 +20,12 @@ window.PinniInhalt = {
     },
 
     sitzplan: {
+        csv: true,
         ende: 'Das war der Sitzplanersteller. Jetzt sitzt hoffentlich jede und jeder am richtigen Platz.',
         steps: [
             { text: 'Willkommen beim Sitzplanersteller! Ich zeige dir, wie Namen auf ihre Plätze kommen. Beim Platzieren bin ich ganz in meinem Element: Ich hefte gern an.' },
             { sel: '.plans-bar', title: 'Pläne', text: 'Jeder Plan hat einen eigenen Reiter, zum Beispiel für jede Klasse. Mit dem Plus legst du einen neuen Plan an.' },
-            { sel: '#det-names > summary', open: '#det-names', title: 'Namen eintragen', text: 'Hier kommen die Namen hinein, ein Name pro Zeile. Du kannst auch eine Liste aus einer CSV- oder TXT-Datei importieren.' },
+            { sel: '#det-names > summary', open: '#det-names', title: 'Namen eintragen', text: 'Hier kommen die Namen hinein, ein Name pro Zeile. Du kannst auch eine Liste aus einer CSV- oder TXT-Datei importieren.', csv: true },
             { sel: '#pool-wrap', title: 'Noch nicht platziert', text: 'Alle Namen, die noch keinen Platz haben, warten hier.' },
             { sel: '#gridscroll', title: 'Der Raum', text: 'Namen antippen und dann einen freien Platz antippen. Ein besetzter Platz tauscht die Namen. Am Rechner kannst du auch ziehen, auf dem Handy oder Tablet nach kurzem Halten.' },
             { sel: '#zoom-fit', title: 'Größe und Rückgängig', text: 'Mit Plus, Minus und „Anpassen“ stellst du die Ansicht ein. Ein Fehler lässt sich mit „Rückgängig“ zurücknehmen.' },
@@ -34,10 +37,11 @@ window.PinniInhalt = {
     },
 
     gruppen: {
+        csv: true,
         ende: 'Das war es. Auf gute Zusammenarbeit, ich hefte mich an niemanden.',
         steps: [
             { text: 'Hier teilst du Gruppen ein oder ziehst Namen. Ich bin für Gruppenarbeit gut geeignet: Ich halte nämlich zusammen.' },
-            { sel: '#det-names > summary', open: '#det-names', title: 'Zuerst die Namen', text: 'Trage die Namen ein, ein Name pro Zeile, oder importiere eine CSV- oder TXT-Datei. Fehlende Personen tippst du in der Liste an, dann werden sie nicht eingeteilt.' },
+            { sel: '#det-names > summary', open: '#det-names', title: 'Zuerst die Namen', text: 'Trage die Namen ein, ein Name pro Zeile, oder importiere eine CSV- oder TXT-Datei. Fehlende Personen tippst du in der Liste an, dann werden sie nicht eingeteilt.', csv: true },
             { sel: '#tab-gruppen', tab: '#tab-gruppen', title: 'Gruppen einteilen', text: 'Wähle, ob du eine Zahl an Gruppen oder eine Gruppengröße möchtest, und tippe auf „Einteilen“. „Neu mischen“ würfelt neu.' },
             { sel: '#g-print', title: 'Drucken', text: 'Das Ergebnis lässt sich ausdrucken.' },
             { sel: '#tab-zufall', tab: '#tab-zufall', title: 'Zufallsauswahl', text: 'Hier werden Namen gezogen. Mit dem Häkchen wird niemand doppelt gezogen, und „Zurücksetzen“ füllt die Lostrommel wieder.' },
@@ -59,11 +63,15 @@ window.PinniInhalt = {
     },
 
     notenrechner: {
+        csv: true,
         ende: 'Das war der Notenrechner. Noten sind übrigens das Einzige, was ich lieber an der Wand als im Kopf habe.',
         steps: [
             { text: 'Willkommen beim Notenrechner! Ich zeige dir, wie du Noten einträgst und Berichte als PDF bekommst. Rechnen ist nicht meine Stärke, aber ich zeige dir gern, wer es kann.' },
-            { sel: ['.plans-bar'], title: 'Lerngruppen', text: 'Jede Lerngruppe hat einen eigenen Reiter. Mit dem Plus legst du eine neue an, für Sek I oder Sek II.' },
-            { sel: ['#det-names > summary'], open: '#det-names', title: 'Namen', text: 'Hier trägst du die Namen ein oder importierst eine CSV- oder TXT-Datei.' },
+            { wenn: { sichtbar: '#empty' }, sel: ['#empty-add'], frei: true, fertig: { sichtbar: '.modal' }, title: 'Lerngruppe anlegen', text: 'Zuerst brauchen wir eine Lerngruppe. Bitte tippe auf den markierten Knopf „Lerngruppe anlegen“.' },
+            { wenn: { sichtbar: '#empty' }, sel: ['.modal'], frei: true, fertig: { sichtbar: '#main' }, abbruch: { versteckt: '.modal' }, title: 'Neue Lerngruppe', hinweis: 'Es geht weiter, sobald die Lerngruppe angelegt ist.',
+              text: 'Hier gibst du den Namen der Lerngruppe ein, zum Beispiel „8b Deutsch“. Darunter wählst du die Stufe: Sek I mit Noten von 1 bis 6 oder Sek II mit Punkten von 0 bis 15. Tippe dann auf „Anlegen“.' },
+            { sel: ['.plans-bar'], title: 'Lerngruppen', text: 'Jede Lerngruppe hat einen eigenen Reiter. Mit dem Plus legst du weitere an, für Sek I oder Sek II.' },
+            { sel: ['#det-names > summary'], open: '#det-names', title: 'Namen', text: 'Hier trägst du die Namen ein oder importierst eine CSV- oder TXT-Datei.', csv: true },
             { sel: ['#tablewrap', '#empty'], title: 'Die Notentabelle', text: 'Noten tippst du direkt in die Tabelle. Die Gesamtnote entsteht nach den Wertungen, die du festlegst. Sobald eine Lerngruppe angelegt ist, siehst du die Tabelle hier.' },
             { sel: ['#edit-rating', '#empty'], title: 'Kategorien und Wertung', text: 'Hier legst du fest, welche Kategorien es gibt und wie stark sie zählen.' },
             { sel: ['#toggle-notes', '#empty'], title: 'Bemerkungen', text: 'Zu jeder Note kannst du eine Bemerkung einblenden und schreiben. Das Datum wird automatisch gespeichert.' },
@@ -75,13 +83,17 @@ window.PinniInhalt = {
     },
 
     klassenarbeit: {
+        csv: true,
         ende: 'Das war der Arbeitenauswerter. Alle Punkte sind jetzt gut angeheftet.',
         steps: [
             { text: 'Hier wertest du Klassenarbeiten und Klausuren aus. Ich pikse niemanden, aber ich zeige dir, wo die Punkte hingehören.' },
-            { sel: '.plans-bar', title: 'Arbeiten', text: 'Jede Arbeit hat einen eigenen Reiter. Mit dem Plus legst du eine neue an. Zur Wahl stehen Klassenarbeit, Klausur und die Auswertung nach Kriterien.' },
+            { wenn: { sichtbar: '#empty' }, sel: ['#empty-add'], frei: true, fertig: { sichtbar: '.modal' }, title: 'Arbeit anlegen', text: 'Zuerst brauchen wir eine Arbeit. Bitte tippe auf den markierten Knopf „Arbeit anlegen“.' },
+            { wenn: { sichtbar: '#empty' }, sel: ['.modal'], frei: true, fertig: { sichtbar: '#main' }, abbruch: { versteckt: '.modal' }, title: 'Neue Arbeit', hinweis: 'Es geht weiter, sobald die Arbeit angelegt ist.',
+              text: 'Hier gibst du der Arbeit einen Namen und wählst die Art: Klassenarbeit (Sek I, Noten 1 bis 6), Klassenarbeit mit Kriterien (zum Beispiel für Deutsch) oder Klausur (Oberstufe, Notenpunkte). Tippe dann auf „Anlegen“.' },
+            { sel: '.plans-bar', title: 'Arbeiten', text: 'Jede Arbeit hat einen eigenen Reiter. Mit dem Plus legst du weitere an.' },
             { sel: '#det-arbeit > summary', open: '#det-arbeit', title: 'Arbeit einrichten', text: 'Hier stellst du Typ, Aufgaben und Punkte ein.' },
             { sel: '#det-key > summary', open: '#det-key', title: 'Schlüssel', text: 'Der Schlüssel legt fest, ab welchem Anteil welche Note vergeben wird. Du kannst ihn anpassen.' },
-            { sel: '#det-names > summary', open: '#det-names', title: 'Namen', text: 'Trage die Namen ein oder importiere eine CSV- oder TXT-Datei.' },
+            { sel: '#det-names > summary', open: '#det-names', title: 'Namen', text: 'Trage die Namen ein oder importiere eine CSV- oder TXT-Datei.', csv: true },
             { sel: ['#tablewrap', '#empty'], title: 'Punkte eintragen', text: 'Die Punkte kommen direkt in die Tabelle, die Noten werden berechnet. Sobald eine Arbeit angelegt ist, siehst du die Tabelle hier.' },
             { sel: ['#result', '#empty'], title: 'Ergebnis', text: 'Oben siehst du Durchschnitt, Notenspiegel und weitere Kennzahlen auf einen Blick.' },
             { sel: ['#pdf', '#empty'], title: 'PDF und Bild', text: 'Die Übersicht gibt es als PDF, den Notenspiegel als JPEG.',
@@ -104,6 +116,30 @@ window.PinniInhalt = {
             { sel: '#check', title: 'Kontrolle', text: 'Die Kontrolle weist dich auf fehlende Angaben hin, bevor du den Brief erstellst.' },
             { sel: '#btn-pdf', title: 'Word oder PDF', text: 'Den fertigen Brief gibt es als Word-Datei oder als PDF, im Briefkopf der Schule.',
               preview: { src: 'pinni/vorschau/brief-elternbrief.png', title: 'Elternbrief als PDF', cap: 'Beispiel mit erfundenen Daten.' } }
+        ]
+    },
+
+    asv: {
+        csv: true,
+        ende: 'Das war der ASV-Generierer. Jetzt sind alle Kreuze an der richtigen Stelle, ich habe extra nachgezählt.',
+        steps: [
+            { text: 'Hier entstehen die ASV-Blätter für die Zeugnisse, ein Blatt pro Kind. Ich zeige dir die beiden Modi und die Schritte. Beim Kreuzchenmachen bin ich gern dabei, das ist quasi mein Fachgebiet: Ich setze gern Punkte.' },
+            { sel: '.startcards', vor: ['asvMode', 'start'], title: 'Startbildschirm', text: 'Zuerst entscheidest du dich für einen Modus. Als Klassenleitung bereitest du alles vor und erzeugst die Blätter. Im Kollegium geben Fachlehrkräfte ihre Einschätzungen ab. Über „Modus wechseln“ kommst du jederzeit hierher zurück, deine Eingaben bleiben dabei erhalten.' },
+            { sel: '#steps', vor: ['asvShow', 1], title: 'Vier Schritte', text: 'Das sind die Schritte der Klassenleitung. Du kannst jederzeit zurückspringen und etwas ändern.' },
+            { sel: '#klasse', title: 'Klassenbezeichnung', text: 'Sie dient nur zur Benennung der Dateien für das Kollegium und steht auf keinem Blatt. Hier kannst du auch die Datei laden, die du schon einmal für das Kollegium erzeugt hast, dann musst du nichts neu eingeben.' },
+            { sel: '#paste', title: 'Namen und Geburtstage', text: 'Füge Namen ein, eine Person pro Zeile, am besten mit Geburtstag. Oder importiere eine CSV-Datei.', csv: true },
+            { sel: '#csv-order', title: 'Reihenfolge der Namen', text: 'Steht in deiner Datei der Nachname zuerst, bleibt die Einstellung so. Auf dem Blatt steht immer der Vorname zuerst.' },
+            { sel: '#i-half', vor: ['asvShow', 2], title: 'Angaben', text: 'Halbjahr, Jahrgangsstufe, Datum der Ausstellung sowie die Namen von Schul- und Klassenleitung. Diese Angaben gelten für alle Blätter.' },
+            { sel: '#dl-leer-pdf', title: 'Leere Blätter', text: 'Hier lädst du die Blätter ohne Kreuze herunter, als PDF oder als Word-Datei, zum Beispiel zum Ausdrucken und Ankreuzen von Hand.',
+              preview: { src: 'pinni/vorschau/asv-leer.png', title: 'Leeres ASV-Blatt', cap: 'Beispiel mit erfundenem Namen.' } },
+            { sel: '#dl-json', title: 'Datei für das Kollegium', text: 'Diese Datei schickst du den Kolleginnen und Kollegen. Auf Wunsch ohne Geburtstage. Du kannst dieselbe Datei in Schritt 1 wieder laden.' },
+            { sel: '#rfile-btn', vor: ['asvShow', 3], title: 'Einschätzungen sammeln', text: 'Hier lädst du alle Dateien, die du zurückbekommst. Aus allen Einschätzungen wird der Durchschnitt gebildet. Liegt er genau zwischen zwei Stufen, entscheidest du, ob die bessere oder die schlechtere Aussage gilt.' },
+            { sel: '#kids', vor: ['asvShow', 4], title: 'Ausfüllen', text: 'Tippe ein Kind an, dann erscheint der Bogen. Das Ergebnis des Kollegiums ist schon angekreuzt, und du kannst von Hand ändern. Du kannst auch ganz ohne Kollegiumsdateien von Hand ankreuzen.' },
+            { sel: '#dl-full-pdf', title: 'Ausgefüllte Blätter', text: 'Wenn du fertig bist, lädst du alle Blätter mit den Kreuzen als PDF oder Word-Datei herunter.',
+              preview: { src: 'pinni/vorschau/asv-ausgefuellt.png', title: 'Ausgefülltes ASV-Blatt', cap: 'Beispiel mit erfundenen Angaben.' } },
+            { sel: '#kg-load', vor: ['asvMode', 'kg'], title: 'Kollegiumsmodus', text: 'Hier lädst du die Datei der Klassenleitung. Bei mehreren Dateien erscheint für jede Klasse ein Reiter.' },
+            { sel: '#kg-load', title: 'Einschätzen und zurückschicken', text: 'Du tippst ein Kind an, kreuzt an, was du beurteilen kannst, und speicherst die Datei. Die schickst du der Klassenleitung zurück. Du musst nicht alle Kinder und nicht alle Bereiche ausfüllen.' },
+            { sel: '#kg-load', title: 'Eigene Datei wieder öffnen', text: 'Deine gespeicherte Datei kannst du hier jederzeit wieder laden, um deine Kreuze zu prüfen oder zu ändern. Danach speicherst du sie einfach noch einmal.' }
         ]
     },
 

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>ASV-Generierer</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="../pinni.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>ASV-Generierer</h1>
+        <p>Arbeits- und Sozialverhalten für die Zeugnisse. Alles bleibt auf Ihrem Gerät, es wird nichts gespeichert oder übertragen.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section id="start" aria-labelledby="h-start">
+        <h2 id="h-start" class="starttitle">Was möchten Sie tun?</h2>
+        <div class="startcards">
+            <button type="button" class="startcard" data-mode="kl">
+                <b>Klassenleitung</b>
+                <span>Blätter vorbereiten, Einschätzungen des Kollegiums einsammeln, Kreuze setzen und die fertigen Blätter als PDF oder Word erzeugen.</span>
+            </button>
+            <button type="button" class="startcard" data-mode="kg">
+                <b>Kollegium</b>
+                <span>Eine Datei der Klassenleitung laden, die Schülerinnen und Schüler einschätzen und die Datei zurückschicken. Auch eine eigene, schon gespeicherte Datei lässt sich wieder öffnen und ändern.</span>
+            </button>
+        </div>
+    </section>
+
+    <div id="modebar" class="modebar" hidden>
+        <span id="mode-label"></span>
+        <button type="button" id="mode-switch" class="btn small">Modus wechseln</button>
+    </div>
+
+  <div id="kl">
+    <nav class="steps" id="steps" aria-label="Schritte">
+        <button type="button" class="step" data-step="1" aria-current="step"><b>1</b> Schülerinnen und Schüler</button>
+        <button type="button" class="step" data-step="2"><b>2</b> Angaben und Dateien</button>
+        <button type="button" class="step" data-step="3"><b>3</b> Einschätzungen des Kollegiums</button>
+        <button type="button" class="step" data-step="4"><b>4</b> Ausfüllen</button>
+    </nav>
+
+    <!-- Schritt 1 -->
+    <div id="s1">
+        <section class="card" aria-labelledby="h-klasse">
+            <h2 id="h-klasse">Klasse</h2>
+            <div class="card-body">
+                <label>Klassenbezeichnung
+                    <input id="klasse" class="field" type="text" maxlength="30" autocomplete="off" placeholder="zum Beispiel 8b">
+                </label>
+                <p class="fieldhint nomargin">Sie dient nur zur Benennung der Dateien für das Kollegium und steht auf keinem Blatt.</p>
+                <div class="btn-row">
+                    <button type="button" id="kl-load" class="btn">Datei der Klassenleitung laden (JSON)</button>
+                    <input type="file" id="kl-input" accept=".json,application/json" hidden>
+                </div>
+                <p class="fieldhint nomargin">Hier lässt sich die Datei wieder laden, die Sie in Schritt 2 für das Kollegium erzeugt haben. Dann müssen Klasse, Namen und Angaben nicht noch einmal eingegeben werden.</p>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-list">
+            <h2 id="h-list">Namen und Geburtstage</h2>
+            <div class="card-body stack">
+                <label>Namen einfügen
+                    <textarea id="paste" class="field" rows="4" placeholder="Anna Müller; 12.03.2013&#10;Ben Schmidt; 05.11.2012"></textarea>
+                </label>
+                <p class="fieldhint nomargin">Eine Person pro Zeile, mit Geburtstag oder ohne. Name und Geburtstag können durch Semikolon, Komma oder Tabulator getrennt sein.</p>
+                <div class="btn-row">
+                    <button type="button" id="paste-add" class="btn primary">Hinzufügen</button>
+                    <button type="button" id="csv-btn" class="btn">CSV-Datei importieren</button>
+                    <input type="file" id="csv-input" accept=".csv,.txt,text/csv,text/plain" hidden>
+                </div>
+                <label class="nomargin">Reihenfolge der Namen in Datei und Text
+                    <select id="csv-order" class="field">
+                        <option value="nv">Nachname zuerst (auf dem Blatt steht Vorname Nachname)</option>
+                        <option value="vn">Vorname zuerst</option>
+                    </select>
+                </label>
+                <p class="fieldhint nomargin">Auf dem Blatt steht immer zuerst der Vorname. Hat die Datei eine Überschriftenzeile mit „Vorname“ und „Nachname“, wird sie erkannt. Sonst gilt diese Einstellung für zwei Namensspalten und für Schreibweisen wie „Müller, Anna“.</p>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-people">
+            <h2 id="h-people">Liste <span id="count" class="who"></span></h2>
+            <div class="card-body">
+                <p id="empty-list" class="small-text">Noch niemand eingetragen.</p>
+                <div id="people" class="people"></div>
+                <div class="btn-row">
+                    <button type="button" id="add-row" class="btn small">Zeile hinzufügen</button>
+                    <button type="button" id="clear-all" class="btn small danger" disabled>Alle entfernen</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="actions"><button type="button" id="to2" class="btn primary">Weiter zu den Angaben</button></div>
+    </div>
+
+    <!-- Schritt 2 -->
+    <div id="s2" hidden>
+        <section class="card" aria-labelledby="h-info">
+            <h2 id="h-info">Angaben für alle Blätter</h2>
+            <div class="card-body stack">
+                <div class="grid3">
+                    <label>Schulhalbjahr
+                        <select id="i-half" class="field">
+                            <option value="">bitte wählen</option>
+                            <option value="1">1. Schulhalbjahr</option>
+                            <option value="2">2. Schulhalbjahr</option>
+                        </select>
+                    </label>
+                    <label>Jahrgangsstufe
+                        <select id="i-stufe" class="field">
+                            <option value="">bitte wählen</option>
+                            <option>7</option><option>8</option><option>9</option><option>10</option>
+                        </select>
+                    </label>
+                    <label>Datum der Ausstellung
+                        <input id="i-date" class="field" type="date">
+                    </label>
+                </div>
+                <div class="grid2">
+                    <label>Schulleitung (Name)
+                        <input id="i-head" class="field" type="text" maxlength="60" autocomplete="off" placeholder="zum Beispiel Max Mustermann">
+                    </label>
+                    <label>Klassenleitung (Name)
+                        <input id="i-klass" class="field" type="text" maxlength="60" autocomplete="off" placeholder="zum Beispiel Erika Beispiel">
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-leer">
+            <h2 id="h-leer">Leere Blätter herunterladen</h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Für jedes Kind ein Blatt mit Name, Geburtstag und den Angaben, aber ohne Kreuze.</p>
+                <div class="btn-row">
+                    <button type="button" id="dl-leer-pdf" class="btn primary">Leere Blätter als PDF</button>
+                    <button type="button" id="dl-leer-docx" class="btn primary">Leere Blätter als Word-Datei</button>
+                </div>
+                <p id="status2" class="status" role="status"></p>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-json">
+            <h2 id="h-json">Datei für das Kollegium</h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Die Kolleginnen und Kollegen laden diese Datei im Kollegiumsmodus, schätzen die Kinder ein und schicken Ihnen ihre Datei zurück. Sie können dieselbe Datei in Schritt 1 wieder laden, um nichts neu eingeben zu müssen.</p>
+                <label class="check"><input type="checkbox" id="json-birth" checked> Geburtstage in die Datei aufnehmen</label>
+                <p class="fieldhint nomargin">Kollegen brauchen die Geburtstage nicht. Ohne Häkchen müssen Sie sie nach dem Laden neu eintragen.</p>
+                <div class="btn-row">
+                    <button type="button" id="dl-json" class="btn primary">Datei für das Kollegium (JSON)</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="actions">
+            <button type="button" id="back1" class="btn">Zurück</button>
+            <button type="button" id="to3" class="btn primary">Weiter</button>
+        </div>
+    </div>
+
+    <!-- Schritt 3: Einschätzungen des Kollegiums -->
+    <div id="s3" hidden>
+        <section class="card" aria-labelledby="h-rf">
+            <h2 id="h-rf">Einschätzungen des Kollegiums</h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Laden Sie alle Dateien, die Sie von den Kolleginnen und Kollegen zurückbekommen haben. Aus allen Einschätzungen wird der Durchschnitt gebildet und in die Kästchen übernommen. Ohne Dateien geht es direkt weiter zum Ankreuzen von Hand.</p>
+                <div class="btn-row">
+                    <button type="button" id="rfile-btn" class="btn primary">Dateien laden (JSON)</button>
+                    <input type="file" id="rfile-input" accept=".json,application/json" multiple hidden>
+                </div>
+                <p id="rempty" class="small-text">Noch keine Dateien geladen.</p>
+                <div id="rfiles" class="rfiles"></div>
+            </div>
+        </section>
+
+        <div id="rres" hidden>
+            <section class="card" id="rties-card" aria-labelledby="h-rt" hidden>
+                <h2 id="h-rt">Entscheidungen <span id="rties-count" class="who"></span></h2>
+                <div class="card-body">
+                    <p class="fieldhint nomargin">Hier liegt der Durchschnitt genau zwischen zwei Stufen. Bitte wählen Sie, ob die bessere oder die schlechtere Aussage angekreuzt werden soll.</p>
+                    <div class="btn-row" id="rbulk">
+                        <button type="button" id="rbulk-b" class="btn small">Alle offenen: die bessere Aussage</button>
+                        <button type="button" id="rbulk-s" class="btn small">Alle offenen: die schlechtere Aussage</button>
+                    </div>
+                    <div id="rties" class="ties"></div>
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="h-rr">
+                <h2 id="h-rr">Ergebnis</h2>
+                <div class="card-body">
+                    <p class="fieldhint nomargin">1 = sehr ausgeprägt, 2 = ausgeprägt, 3 = teilweise ausgeprägt, 4 = gering ausgeprägt. Die Spalten sind die Bereiche in der Reihenfolge des Bogens. Ein Fragezeichen heißt: Entscheidung offen. Ein Strich heißt: keine Angabe.</p>
+                    <div class="bogen-wrap"><table class="rtable" id="rtable"></table></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="actions">
+            <button type="button" id="back3b" class="btn">Zurück</button>
+            <button type="button" id="to4" class="btn primary">Weiter zum Ausfüllen</button>
+        </div>
+    </div>
+
+    <!-- Schritt 4: Übersicht -->
+    <div id="s4" hidden>
+        <section class="card" id="overview" aria-labelledby="h-over">
+            <h2 id="h-over">Übersicht <span id="over-count" class="who"></span></h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Ein Kind antippen, dann erscheint der Bogen zum Ankreuzen.</p>
+                <div id="kids" class="kids"></div>
+            </div>
+        </section>
+
+        <!-- Schritt 3: Formular -->
+        <section class="card" id="sheet" aria-labelledby="h-sheet" hidden>
+            <h2 id="h-sheet"></h2>
+            <div class="card-body">
+                <p id="sheet-sub" class="fieldhint nomargin"></p>
+                <div class="bogen-wrap"><table class="bogen" id="bogen"></table></div>
+                <div class="btn-row sheet-nav">
+                    <button type="button" id="sh-over" class="btn">Zur Übersicht</button>
+                    <button type="button" id="sh-prev" class="btn">← Vorheriges Kind</button>
+                    <button type="button" id="sh-next" class="btn primary">Nächstes Kind →</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-fertig">
+            <h2 id="h-fertig">Ausgefüllte Blätter herunterladen</h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Für alle Kinder in der Reihenfolge der Liste. Wo noch nichts angekreuzt ist, bleiben die Kästchen leer.</p>
+                <div class="btn-row">
+                    <button type="button" id="dl-full-pdf" class="btn primary">Ausgefüllte Blätter als PDF</button>
+                    <button type="button" id="dl-full-docx" class="btn primary">Ausgefüllte Blätter als Word-Datei</button>
+                </div>
+                <p id="status4" class="status" role="status"></p>
+            </div>
+        </section>
+
+        <div class="actions"><button type="button" id="back3" class="btn">Zurück</button></div>
+    </div>
+  </div>
+
+  <div id="kg" hidden>
+    <section class="card" id="kg-empty" aria-labelledby="h-kgl">
+        <h2 id="h-kgl">Datei der Klassenleitung laden</h2>
+        <div class="card-body">
+            <p class="fieldhint nomargin">Laden Sie die Datei, die Sie von der Klassenleitung bekommen haben. Sie können mehrere Dateien auf einmal laden, dann erscheint für jede Klasse ein Reiter.</p>
+            <p class="fieldhint nomargin">Eine Datei mit Ihren eigenen Einschätzungen, die Sie früher gespeichert haben, laden Sie hier genauso. Dann sehen Sie Ihre Kreuze wieder und können sie prüfen oder ändern.</p>
+            <div class="btn-row">
+                <button type="button" id="kg-load" class="btn primary">Dateien laden (JSON)</button>
+            </div>
+        </div>
+    </section>
+    <input type="file" id="kg-input" accept=".json,application/json" multiple hidden>
+
+    <div id="kg-main" hidden>
+        <div class="plans-bar" id="kg-tabbar"><div class="tabs" id="kg-tabs" role="tablist" aria-label="Klassen"></div></div>
+
+        <section class="card" id="kg-over" aria-labelledby="kg-title">
+            <h2 id="kg-title"></h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Ein Kind antippen, dann erscheint der Bogen zum Ankreuzen. Sie müssen nicht alle Kinder und nicht alle Bereiche ausfüllen. <span id="kg-count"></span></p>
+                <div id="kg-kids" class="kids"></div>
+                <div class="btn-row">
+                    <button type="button" id="kg-load2" class="btn small">Weitere Datei laden</button>
+                    <button type="button" id="kg-remove" class="btn small danger">Diese Klasse entfernen</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" id="kg-sheet" aria-labelledby="kg-h-sheet" hidden>
+            <h2 id="kg-h-sheet"></h2>
+            <div class="card-body">
+                <p class="fieldhint nomargin">Ein Kästchen erneut antippen nimmt das Kreuz zurück.</p>
+                <div class="bogen-wrap"><table class="bogen" id="kg-bogen"></table></div>
+                <div class="btn-row sheet-nav">
+                    <button type="button" id="kg-back" class="btn">Zur Übersicht</button>
+                    <button type="button" id="kg-prev" class="btn">← Vorheriges Kind</button>
+                    <button type="button" id="kg-next" class="btn primary">Nächstes Kind →</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-kgs">
+            <h2 id="h-kgs">Einschätzungen speichern</h2>
+            <div class="card-body">
+                <label>Ihr Name oder Fach (freiwillig)
+                    <input id="von" class="field" type="text" maxlength="60" autocomplete="off" placeholder="zum Beispiel Frau Beispiel, Mathematik">
+                </label>
+                <p class="fieldhint nomargin">Er steht nur in der Datei und hilft der Klassenleitung, die Dateien auseinanderzuhalten.</p>
+                <div class="btn-row">
+                    <button type="button" id="kg-save" class="btn primary">Einschätzungen dieser Klasse speichern (JSON)</button>
+                </div>
+                <p id="kg-status" class="status" role="status"></p>
+            </div>
+        </section>
+    </div>
+  </div>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="../pinni-inhalt.js"></script>
+<script src="../pinni.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v35';
+const CACHE = 'teachtools-v37';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
-  './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinni.js', './pinni-inhalt.js', './pinni.css', './pinni/vorschau/brief-elternbrief.png', './pinni/vorschau/notenrechner-pdf.png', './pinni/vorschau/klassenarbeit-uebersicht.png', './pinni/vorschau/sitzplan-druck.png', './pinni/vorschau/pdf-karten.png', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
+  './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinni.js', './pinni-inhalt.js', './pinni.css', './pinni/vorschau/brief-elternbrief.png', './pinni/vorschau/notenrechner-pdf.png', './pinni/vorschau/klassenarbeit-uebersicht.png', './pinni/vorschau/sitzplan-druck.png', './pinni/vorschau/pdf-karten.png', './pinni/vorschau/asv-leer.png', './pinni/vorschau/asv-ausgefuellt.png', './pinni/vorschau/webuntis-1.png', './pinni/vorschau/webuntis-2.png', './pinni/vorschau/webuntis-3.png', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './pdf-werkzeuge/', './pdf-werkzeuge/index.html', './pdf-werkzeuge/app.js',
   './sitzplan/', './sitzplan/index.html', './sitzplan/app.js', './sitzplan/style.css',
@@ -13,6 +13,7 @@ const START = [
   './klassenarbeit/export.js', './klassenarbeit/style.css',
   './gruppen/', './gruppen/index.html', './gruppen/app.js', './gruppen/style.css',
   './timer/', './timer/index.html', './timer/app.js', './timer/style.css',
+  './asv/', './asv/index.html', './asv/app.js', './asv/data.js', './asv/pdf.js', './asv/docx.js', './asv/style.css', './asv/vorlage.docx',
   './brief/', './brief/index.html', './brief/app.js', './brief/letter.js', './brief/layout.js', './brief/docx.js', './brief/pdf.js',
   './brief/style.css', './brief/vorlage.docx',
   './lib/fonts/Carlito-Regular.ttf', './lib/fonts/Carlito-Bold.ttf', './lib/fonts/LiberationSans-Regular.ttf',

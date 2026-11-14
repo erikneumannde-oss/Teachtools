@@ -56,7 +56,7 @@
     const fig = el('button', 'pinni-fig');
     fig.type = 'button';
     fig.setAttribute('aria-label', 'Pinni, die Assistentin: Hilfe und Führung');
-    fig.title = 'Pinni fragen';
+    fig.title = 'Pinni fragen. Du kannst mich auch verschieben.';
     fig.innerHTML = SVG;
     wurzel.appendChild(fig);
     const pointArm = () => fig.querySelector('.pinni-arm-point');
@@ -64,13 +64,28 @@
     let bubble = null;
     let aktiv = false; // Führung läuft
     let schritt = 0;
-    let sperre = null, licht = null, zeitAus = null, reden = 0;
+    let sperre = null, licht = null, zeitAus = null, reden = 0, csvOffen = false, liste = [], waechter = 0;
 
     function figGroesse() { return { w: fig.offsetWidth, h: fig.offsetHeight }; }
     function setFig(l, t) { fig.style.left = Math.round(l) + 'px'; fig.style.top = Math.round(t) + 'px'; }
+    /* Platz, den die Nutzerin oder der Nutzer Pinni gegeben hat (Anteil an der freien Fläche). Bleibt nur auf diesem Gerät. */
+    const POS = 'pinni-platz';
+    let eigen = null;
+    try {
+        const g = JSON.parse(ls('get', POS) || 'null');
+        if (g && typeof g.x === 'number' && typeof g.y === 'number') eigen = { x: Math.max(0, Math.min(1, g.x)), y: Math.max(0, Math.min(1, g.y)) };
+    } catch (e) { eigen = null; }
     function heim() {
-        const s = figGroesse();
-        return { l: window.innerWidth - s.w - 14, t: window.innerHeight - s.h - 14 };
+        const s = figGroesse(), vw = window.innerWidth, vh = window.innerHeight;
+        const maxL = Math.max(4, vw - s.w - 4), maxT = Math.max(4, vh - s.h - 4);
+        if (eigen) return { l: Math.max(4, Math.min(maxL, eigen.x * maxL)), t: Math.max(4, Math.min(maxT, eigen.y * maxT)) };
+        return { l: vw - s.w - 14, t: vh - s.h - 14 };
+    }
+    function platzMerken() {
+        const s = figGroesse(), vw = window.innerWidth, vh = window.innerHeight;
+        const maxL = Math.max(1, vw - s.w - 8), maxT = Math.max(1, vh - s.h - 8);
+        eigen = { x: Math.max(0, Math.min(1, (parseFloat(fig.style.left) - 4) / maxL)), y: Math.max(0, Math.min(1, (parseFloat(fig.style.top) - 4) / maxT)) };
+        ls('set', POS, JSON.stringify(eigen));
     }
     function zumHeim() {
         fig.classList.remove('gross', 'zeigt', 'pinni-flip');
@@ -98,11 +113,12 @@
         return b;
     }
     function bubbleAmHeim() {
-        const s = figGroesse(), h = heim();
+        const s = figGroesse(), h = heim(), vw = window.innerWidth, vh = window.innerHeight;
         const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
-        bubble.style.left = Math.round(klemme(window.innerWidth - bw - 10, 8, window.innerWidth)) + 'px';
-        bubble.style.top = Math.round(klemme(h.t - bh - 8, 8, window.innerHeight)) + 'px';
-        void s;
+        let t = h.t - bh - 8;
+        if (t < 8) t = h.t + s.h + 8;
+        bubble.style.left = Math.round(klemme(h.l + s.w - bw, 8, Math.max(8, vw - bw - 8))) + 'px';
+        bubble.style.top = Math.round(klemme(t, 8, Math.max(8, vh - bh - 8))) + 'px';
     }
 
     /* ---------- Frage und Menü ---------- */
@@ -152,8 +168,9 @@
             b.appendChild(el('p', null, zufall(Math.random() < 0.5 ? MUT : SPRUECHE)));
             b.appendChild(el('p', null, 'Brauchst du eine Führung durch dieses Werkzeug?'));
         }
+        if (TUT.csv) b.appendChild(el('p', null, 'Auch bei der CSV-Datei aus WebUntis helfe ich dir.'));
         const bt = el('div', 'pinni-btns');
-        const ja = knopf('Ja, gern', 'primaer', () => { if (erstmals) ls('set', FLAG, '1'); startFuehrung(); });
+        const ja = knopf(TUT.csv ? 'Führung' : 'Ja, gern', 'primaer', () => { if (erstmals) ls('set', FLAG, '1'); startFuehrung(); });
         const nein = knopf('Nein, danke', '', () => {
             ls('set', FLAG, '1');
             const b2 = neueBubble();
@@ -161,15 +178,56 @@
             bubbleAmHeim();
             zeitAus = setTimeout(schliesseBubble, 3200);
         });
-        bt.append(ja, nein);
+        if (TUT.csv) {
+            const c = knopf('CSV aus WebUntis', '', () => { if (erstmals) ls('set', FLAG, '1'); csvFuehrung(null); });
+            bt.append(ja, c, nein);
+        } else bt.append(ja, nein);
         b.appendChild(bt);
         bubbleAmHeim();
         ja.focus({ preventScroll: true });
         if (erstmals) zeitAus = setTimeout(schliesseBubble, 25000);
     }
 
+    let gezogen = false, griff = null;
+    fig.addEventListener('pointerdown', e => {
+        if (aktiv || csvOffen || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        griff = { x: e.clientX, y: e.clientY, l: parseFloat(fig.style.left) || 0, t: parseFloat(fig.style.top) || 0, bewegt: false, id: e.pointerId };
+        try { fig.setPointerCapture(e.pointerId); } catch (err) { /* egal */ }
+    });
+    fig.addEventListener('pointermove', e => {
+        if (!griff || e.pointerId !== griff.id) return;
+        const dx = e.clientX - griff.x, dy = e.clientY - griff.y;
+        if (!griff.bewegt && Math.hypot(dx, dy) > 6) { griff.bewegt = true; fig.classList.add('zieht'); schliesseBubble(); }
+        if (griff.bewegt) {
+            const s = figGroesse();
+            setFig(klemme(griff.l + dx, 4, window.innerWidth - s.w - 4), klemme(griff.t + dy, 4, window.innerHeight - s.h - 4));
+        }
+    });
+    function griffEnde(e) {
+        if (!griff || e.pointerId !== griff.id) return;
+        if (griff.bewegt) {
+            platzMerken();
+            gezogen = true;
+            setTimeout(() => { gezogen = false; }, 80);
+        }
+        fig.classList.remove('zieht');
+        griff = null;
+    }
+    fig.addEventListener('pointerup', griffEnde);
+    fig.addEventListener('pointercancel', griffEnde);
+    fig.addEventListener('keydown', e => {
+        if (aktiv || csvOffen) return;
+        const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        const s = figGroesse();
+        setFig(klemme((parseFloat(fig.style.left) || 0) + d[0] * 24, 4, window.innerWidth - s.w - 4), klemme((parseFloat(fig.style.top) || 0) + d[1] * 24, 4, window.innerHeight - s.h - 4));
+        platzMerken();
+        if (bubble) bubbleAmHeim();
+    });
     fig.addEventListener('click', () => {
-        if (aktiv) return;
+        if (aktiv || csvOffen) return;
+        if (gezogen) { gezogen = false; return; }
         if (bubble) { schliesseBubble(); return; }
         frage(false);
     });
@@ -179,6 +237,12 @@
         if (!e) return false;
         const r = e.getBoundingClientRect();
         return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden';
+    }
+    function bed(c) {
+        if (!c) return true;
+        if (c.sichtbar) return sichtbar(document.querySelector(c.sichtbar));
+        if (c.versteckt) return !sichtbar(document.querySelector(c.versteckt));
+        return true;
     }
     function zielFinden(s) {
         if (!s.sel) return null;
@@ -190,6 +254,7 @@
         return null;
     }
     function vorbereiten(s) {
+        if (s.vor && window.PinniHooks && window.PinniHooks[s.vor[0]]) window.PinniHooks[s.vor[0]](s.vor[1]);
         if (s.tab) { const t = document.querySelector(s.tab); if (t) t.click(); }
         if (s.open) {
             const d = document.querySelector(s.open);
@@ -201,6 +266,7 @@
         if (aktiv) return;
         aktiv = true;
         schritt = 0;
+        liste = TUT.steps.filter(s => bed(s.wenn));
         schliesseBubble();
         sperre = el('div', 'pinni-block');
         licht = el('div', 'pinni-spot leer');
@@ -213,6 +279,8 @@
     function beende(abschied) {
         if (!aktiv) return;
         aktiv = false;
+        clearInterval(waechter);
+        schliesseCsv();
         if (sperre) sperre.remove();
         if (licht) licht.remove();
         sperre = licht = null;
@@ -264,24 +332,41 @@
     }
 
     function zeige(i, erster) {
-        const s = TUT.steps[i];
+        const s = liste[i];
         if (!s) { beende(true); return; }
+        clearInterval(waechter);
         schritt = i;
         const mein = ++reden;
         vorbereiten(s);
         const b = neueBubble();
-        b.appendChild(el('p', 'pinni-schritt', 'Schritt ' + (i + 1) + ' von ' + TUT.steps.length));
+        b.appendChild(el('p', 'pinni-schritt', 'Schritt ' + (i + 1) + ' von ' + liste.length));
         if (s.title) b.appendChild(el('h3', null, s.title));
         b.appendChild(el('p', null, s.text));
         if (s.preview) b.appendChild(fenster(s.preview));
+        const tat = !!s.fertig;
+        if (tat) b.appendChild(el('p', 'pinni-hinweis', s.hinweis || 'Es geht weiter, sobald du es gemacht hast.'));
+        if (s.csv) b.appendChild(el('p', null, 'Soll ich dir erklären, wie du für Klassen der Sekundarstufe I ganz leicht eine CSV-Datei bekommst? Für die Oberstufe funktioniert das leider nicht so einfach.'));
         const bt = el('div', 'pinni-btns');
         const zurueck = knopf('Zurück', '', () => zeige(i - 1));
         zurueck.disabled = i === 0;
-        const letzter = i === TUT.steps.length - 1;
+        const letzter = i === liste.length - 1;
         const weiter = knopf(letzter ? 'Fertig' : 'Weiter', 'primaer', () => letzter ? beende(true) : zeige(i + 1));
         const ende = knopf('Beenden', '', () => beende(false));
-        bt.append(zurueck, weiter, el('span', 'pinni-spacer'), ende);
+        bt.appendChild(zurueck);
+        if (s.csv) {
+            const ja = knopf('Ja, bitte', 'primaer', () => csvFuehrung(() => { if (aktiv) zeige(i + 1); }));
+            const nein = knopf('Nein, weiter', '', () => (letzter ? beende(true) : zeige(i + 1)));
+            bt.append(ja, nein);
+        } else if (!tat) bt.appendChild(weiter);
+        bt.append(el('span', 'pinni-spacer'), ende);
         b.appendChild(bt);
+        if (tat) {
+            waechter = setInterval(() => {
+                if (!aktiv || mein !== reden) { clearInterval(waechter); return; }
+                if (bed(s.fertig)) { clearInterval(waechter); zeige(i + 1); }
+                else if (s.abbruch && bed(s.abbruch)) { clearInterval(waechter); zeige(i - 1); }
+            }, 200);
+        }
         // Layout nach kurzer Pause, damit Reiter und aufgeklappte Bereiche fertig gezeichnet sind
         setTimeout(() => {
             if (mein !== reden || !aktiv) return;
@@ -291,7 +376,7 @@
                 z.scrollIntoView({ block: r0.height > window.innerHeight * 0.5 ? 'start' : 'center', inline: 'nearest' });
             }
             requestAnimationFrame(() => { if (mein === reden && aktiv) platziere(z); });
-            weiter.focus({ preventScroll: true });
+            if (!tat) (s.csv ? bt.querySelector('.primaer') : weiter).focus({ preventScroll: true });
         }, erster ? 30 : 110);
     }
 
@@ -307,10 +392,13 @@
             const l = Math.max(2, r.left - pad), t = Math.max(2, r.top - pad);
             const rr = Math.min(vw - 2, r.right + pad), bb = Math.min(vh - 2, r.bottom + pad);
             R = { left: l, top: t, right: rr, bottom: bb, w: rr - l, h: bb - t, cx: (l + rr) / 2, cy: (t + bb) / 2 };
+            const stp = liste[schritt];
+            if (sperre) sperre.style.clipPath = stp && stp.frei ? 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ' + l + 'px ' + t + 'px, ' + l + 'px ' + bb + 'px, ' + rr + 'px ' + bb + 'px, ' + rr + 'px ' + t + 'px, ' + l + 'px ' + t + 'px)' : '';
             licht.classList.remove('leer');
             licht.style.left = l + 'px'; licht.style.top = t + 'px';
             licht.style.width = R.w + 'px'; licht.style.height = R.h + 'px';
         } else {
+            if (sperre) sperre.style.clipPath = '';
             licht.classList.add('leer');
             licht.style.left = vw / 2 + 'px'; licht.style.top = vh / 2 + 'px';
             licht.style.width = '0px'; licht.style.height = '0px';
@@ -373,9 +461,82 @@
         }
     }
 
+    /* ---------- CSV aus WebUntis: großes Vorschaufenster ---------- */
+    const CSV = [
+        { bild: 'webuntis-1.png', alt: 'WebUntis nach dem Einloggen, Menüpunkt Stammdaten markiert',
+          text: 'Dafür loggst du dich bei WebUntis ein. Danach wählst du links im Menü „Stammdaten“. Oben wählst du dann deine Klasse aus. Das geht nur für Klassen der Sekundarstufe I so einfach, für die Oberstufe leider nicht.' },
+        { bild: 'webuntis-2.png', alt: 'Liste der Schülerinnen und Schüler einer Klasse mit dem Knopf Berichte',
+          text: 'Jetzt siehst du die Liste der Klasse. Ganz unten findest du den Knopf „Berichte“. Den klickst du an.' },
+        { bild: 'webuntis-3.png', alt: 'Berichte-Menü mit dem grünen CSV-Symbol in der Zeile Schüler',
+          text: 'Es öffnet sich eine kleine Auswahl. In der Zeile „Schüler“ klickst du auf das grüne Symbol mit der Aufschrift CSV. Die Datei wird heruntergeladen.' },
+        { bild: null,
+          text: 'Die Datei solltest du noch kurz bearbeiten. Das geht mit jedem Tabellenprogramm, zum Beispiel Excel, Numbers oder LibreOffice Calc. Es stehen nämlich viel mehr Daten darin, als hier gebraucht werden. Lass nur die Spalten stehen, die du brauchst, und speichere die Datei wieder als CSV.' }
+    ];
+    let csvRoot = null, csvWeiter = null, csvZurueck = null, csvEnde = () => {}, csvDanach = null;
+    function schliesseCsv() {
+        if (csvRoot) { csvRoot.remove(); csvRoot = null; }
+        csvOffen = false; csvWeiter = csvZurueck = null;
+        fig.classList.remove('weg');
+    }
+    function csvFuehrung(danach) {
+        schliesseBubble();
+        csvOffen = true;
+        csvDanach = danach;
+        fig.classList.add('weg');
+        const bg = el('div', 'pinni-bigbg');
+        const panel = el('div', 'pinni-big');
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-label', 'CSV-Datei aus WebUntis holen');
+        const bar = el('div', 'pinni-win-bar');
+        bar.append(el('i'), el('i'), el('span', null, 'CSV-Datei aus WebUntis holen'));
+        const x = el('button', null, '×');
+        x.type = 'button'; x.setAttribute('aria-label', 'Schließen');
+        bar.appendChild(x);
+        const img = el('img', 'pinni-big-img');
+        const koerper = el('div', 'pinni-big-body');
+        const mini = el('div', 'pinni-big-pinni');
+        mini.innerHTML = SVG.replace('<svg ', '<svg class="pinni-mini" ');
+        const txt = el('div', 'pinni-big-text');
+        const nr = el('p', 'pinni-schritt');
+        const t = el('p', 'pinni-big-satz');
+        const bt = el('div', 'pinni-btns');
+        txt.append(nr, t, bt);
+        koerper.append(mini, txt);
+        panel.append(bar, img, koerper);
+        bg.appendChild(panel);
+        wurzel.appendChild(bg);
+        csvRoot = bg;
+        let k = 0;
+        csvEnde = () => { const d = csvDanach; schliesseCsv(); if (d) d(); else { zumHeim(); const b2 = neueBubble(); b2.appendChild(el('p', null, 'Viel Erfolg! Tipp mich an, wenn ich es dir noch einmal zeigen soll.')); bubbleAmHeim(); zeitAus = setTimeout(schliesseBubble, 4500); } };
+        function zeigeCsv(n) {
+            k = n;
+            const s = CSV[n];
+            nr.textContent = 'Schritt ' + (n + 1) + ' von ' + CSV.length;
+            t.textContent = s.text;
+            if (s.bild) {
+                img.hidden = false;
+                img.src = basis + 'pinni/vorschau/' + s.bild;
+                img.alt = s.alt || '';
+            } else { img.hidden = true; img.removeAttribute('src'); }
+            bt.textContent = '';
+            const zu = knopf('Zurück', '', () => zeigeCsv(k - 1));
+            zu.disabled = n === 0;
+            const letzt = n === CSV.length - 1;
+            const w = knopf(letzt ? 'Fertig' : 'Weiter', 'primaer', () => letzt ? csvEnde() : zeigeCsv(k + 1));
+            const bd = knopf('Beenden', '', () => csvEnde());
+            bt.append(zu, w, el('span', 'pinni-spacer'), bd);
+            csvZurueck = n > 0 ? () => zeigeCsv(k - 1) : null;
+            csvWeiter = letzt ? null : () => zeigeCsv(k + 1);
+            w.focus({ preventScroll: true });
+        }
+        img.addEventListener('click', () => { if (img.src) lightbox(img.src, img.alt); });
+        x.addEventListener('click', () => csvEnde());
+        zeigeCsv(0);
+    }
+
     function neuLayout() {
         if (aktiv) {
-            const s = TUT.steps[schritt];
+            const s = liste[schritt];
             if (s && bubble) platziere(zielFinden(s));
         } else {
             const h = heim();
@@ -389,9 +550,20 @@
     window.addEventListener('scroll', geplant, { passive: true });
 
     document.addEventListener('keydown', e => {
-        if (!aktiv || document.querySelector('.pinni-lightbox')) return;
+        if (document.querySelector('.pinni-lightbox')) return;
+        if (csvOffen) {
+            if (e.key === 'Escape') { e.preventDefault(); csvEnde(); }
+            else if (e.key === 'ArrowRight' && csvWeiter) { e.preventDefault(); csvWeiter(); }
+            else if (e.key === 'ArrowLeft' && csvZurueck) { e.preventDefault(); csvZurueck(); }
+            return;
+        }
+        if (!aktiv) return;
+        const s = liste[schritt];
+        if (s && (s.frei || s.fertig)) return; // hier arbeitet die Seite selbst, Tasten gehören ihr
+        const feld = e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
         if (e.key === 'Escape') { e.preventDefault(); beende(false); }
-        else if (e.key === 'ArrowRight') { e.preventDefault(); if (schritt < TUT.steps.length - 1) zeige(schritt + 1); }
+        else if (feld) return;
+        else if (e.key === 'ArrowRight') { e.preventDefault(); if (schritt < liste.length - 1 && !(s && s.csv)) zeige(schritt + 1); }
         else if (e.key === 'ArrowLeft') { e.preventDefault(); if (schritt > 0) zeige(schritt - 1); }
     });
 
@@ -402,5 +574,5 @@
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', los); else los();
 
-    window.Pinni = { start: startFuehrung, ende: () => beende(false) };
+    window.Pinni = { start: startFuehrung, ende: () => beende(false), csv: () => csvFuehrung(null) };
 })();
