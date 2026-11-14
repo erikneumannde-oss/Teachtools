@@ -36,9 +36,11 @@
             e[5] = once(e[5], '<w:tab/><w:tab/>', '<w:tab/>' + sp(st.name) + '<w:tab/>');
             e[5] = e[5].replace('<w:rPr><w:rFonts w:ascii="SenBJS" w:hAnsi="SenBJS"/><w:u w:val="single"/></w:rPr><w:tab/>', '<w:rPr><w:rFonts w:ascii="SenBJS" w:hAnsi="SenBJS"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:u w:val="single"/></w:rPr><w:tab/>');
             e[7] = once(e[7], '<w:t xml:space="preserve"> </w:t>', sp(' ' + (st.birth || '')));
-            // Halbjahr mittig auf der Linie: der linke Tabulator wird durch einen zentrierten ersetzt
-            e[8] = once(e[8], '<w:tab w:val="left" w:pos="3600"/>', '<w:tab w:val="center" w:pos="4494"/>');
-            e[8] = once(e[8], '<w:t xml:space="preserve"> 2</w:t>', '<w:tab/>' + sp(info.half || ''));
+            // Halbjahr: Die Linie bleibt genau wie im Vordruck (Tabulatoren und Tabulatorzeichen unverändert). Die Ziffer
+            // sitzt mittig auf ihr: vorn ein schmales unterstrichenes Leerzeichen, hinten bleibt der Rest der Linie.
+            const ul = sz => '<w:rPr><w:rFonts w:ascii="SenBJS" w:hAnsi="SenBJS"/><w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/><w:u w:val="single"/></w:rPr>';
+            e[8] = once(e[8], '<w:r>' + ul(20) + '<w:t xml:space="preserve"> 2</w:t></w:r>',
+                '<w:r>' + ul(14) + '<w:t xml:space="preserve"> </w:t></w:r><w:r>' + ul(20) + sp(info.half || '') + '</w:r>');
             e[8] = once(e[8], '<w:t xml:space="preserve">       </w:t>', sp('  ' + (info.stufe || '') + '  '));
             e[10] = once(e[10], '<w:t xml:space="preserve">      08. Juli 2026</w:t>', sp('      ' + dateText));
             // Die Namen stehen statt „Name“ in den Klammern unter den Linien, die Linien bleiben für die Unterschrift frei
