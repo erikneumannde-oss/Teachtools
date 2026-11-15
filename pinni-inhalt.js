@@ -159,6 +159,7 @@ window.PinniInhalt = {
             'Die Datei für das Kollegium lässt sich in Schritt 1 wieder laden.'
         ],
         csv: true,
+        nachher: ['asvMode', 'start'],
         ende: 'Das war der ASV-Generierer. Jetzt sind alle Kreuze an der richtigen Stelle, ich habe extra nachgezählt.',
         steps: [
             { text: 'Hier entstehen die ASV-Blätter für die Zeugnisse, ein Blatt pro Kind. Ich zeige dir die beiden Modi und die Schritte. Beim Kreuzchenmachen bin ich gern dabei, das ist quasi mein Fachgebiet: Ich setze gern Punkte.' },

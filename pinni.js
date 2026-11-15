@@ -642,6 +642,7 @@
         fig.tabIndex = 0;
         schliesseBubble();
         zumHeim();
+        if (TUT.nachher && window.PinniHooks && window.PinniHooks[TUT.nachher[0]]) window.PinniHooks[TUT.nachher[0]](TUT.nachher[1]);
         if (abschied) kurz([TUT.ende || 'Das war es schon. Tipp mich an, wenn du mich noch einmal brauchst.', zufall(MUT)], 8000);
         fig.focus({ preventScroll: true });
     }
