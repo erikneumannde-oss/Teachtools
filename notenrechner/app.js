@@ -361,6 +361,7 @@
             statusNote = 'Im Browser gespeichert um ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' Uhr';
             updateStatus();
             if (manual) announce('Gespeichert');
+            fileWrite(false);
             return true;
         }
         if (manual) infoDialog('Speichern nicht möglich', 'Der Browser erlaubt hier kein Speichern, zum Beispiel im privaten Modus. Bitte sichern Sie stattdessen eine Datei.');
@@ -416,6 +417,114 @@
         if (autoOn && !savedOnce) saveLocal(true);
         updateStatus();
     });
+
+
+    /* =========================================================
+       Feste Sicherungsdatei (nur Chrome, Edge, Opera am Computer)
+       Der Dateiverweis liegt in IndexedDB dieses Browsers.
+       ========================================================= */
+
+    const FL = { handle: null, ok: false, busy: false, again: false };
+    const flSupported = !!window.showSaveFilePicker && !isCoarse();
+
+    function idb(mode, fn) {
+        return new Promise(res => {
+            try {
+                const rq = indexedDB.open('notenrechner-datei', 1);
+                rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+                rq.onerror = () => res(null);
+                rq.onsuccess = () => {
+                    const db = rq.result;
+                    const tx = db.transaction('kv', mode);
+                    const r = fn(tx.objectStore('kv'));
+                    tx.oncomplete = () => { db.close(); res(r && r.result !== undefined ? r.result : null); };
+                    tx.onerror = tx.onabort = () => { db.close(); res(null); };
+                };
+            } catch (e) { res(null); }
+        });
+    }
+
+    async function flPerm(ask) {
+        if (!FL.handle) return false;
+        try {
+            const o = { mode: 'readwrite' };
+            let p = await FL.handle.queryPermission(o);
+            if (p !== 'granted' && ask) p = await FL.handle.requestPermission(o);
+            return p === 'granted';
+        } catch (e) { return false; }
+    }
+
+    function flUi() {
+        const box = $('filelink');
+        if (!box) return;
+        box.hidden = !flSupported;
+        if (!flSupported) return;
+        const linked = !!FL.handle;
+        $('file-pick').textContent = linked ? 'Andere Datei wählen …' : 'Sicherungsdatei wählen …';
+        $('file-allow').hidden = !(linked && !FL.ok);
+        $('file-now').hidden = !(linked && FL.ok);
+        $('file-unlink').hidden = !linked;
+        $('filelink-text').textContent = linked
+            ? 'Verknüpfte Datei: ' + FL.handle.name + (FL.ok ? '. Sie wird bei jedem Speichern im Browser überschrieben.' : '. Nach dem Neuöffnen der Seite fragt der Browser einmal nach: bitte „Zugriff erlauben“ wählen.') + ' Die Datei enthält Namen und Noten.'
+            : 'Sie wählen einmal eine Datei aus. Danach wird immer genau diese Datei überschrieben, jedes Mal, wenn im Browser gespeichert wird. So sammeln sich keine Kopien im Download-Ordner. Die Datei enthält Namen und Noten. Der Browser merkt sich auf diesem Gerät, welche Datei gemeint ist.';
+    }
+
+    async function fileWrite(manual) {
+        if (!FL.handle || !FL.ok) return false;
+        if (FL.busy) { FL.again = true; return false; }
+        FL.busy = true;
+        try {
+            const w = await FL.handle.createWritable();
+            await w.write(serialize());
+            await w.close();
+            const t = new Date();
+            statusNote = 'Gespeichert um ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' Uhr, auch in „' + FL.handle.name + '“';
+            if (!dirty) updateStatus();
+            if (manual) announce('Datei gesichert');
+            return true;
+        } catch (e) {
+            FL.ok = false;
+            flUi();
+            if (manual) infoDialog('Datei nicht beschrieben', 'Die Datei konnte nicht beschrieben werden. Bitte „Zugriff erlauben“ wählen oder die Datei neu auswählen.');
+            return false;
+        } finally {
+            FL.busy = false;
+            if (FL.again) { FL.again = false; fileWrite(false); }
+        }
+    }
+
+    if (flSupported) {
+        $('file-pick').addEventListener('click', async () => {
+            let h;
+            try {
+                h = await window.showSaveFilePicker({
+                    suggestedName: 'Notenrechner-Sicherung.json',
+                    types: [{ description: 'Notenrechner-Datei', accept: { 'application/json': ['.json'] } }]
+                });
+            } catch (e) { return; }
+            FL.handle = h;
+            FL.ok = await flPerm(true);
+            await idb('readwrite', s => s.put(h, 'handle'));
+            flUi();
+            if (FL.ok) await fileWrite(true);
+        });
+        $('file-allow').addEventListener('click', async () => {
+            FL.ok = await flPerm(true);
+            flUi();
+            if (FL.ok) await fileWrite(true);
+        });
+        $('file-now').addEventListener('click', () => fileWrite(true));
+        $('file-unlink').addEventListener('click', async () => {
+            FL.handle = null;
+            FL.ok = false;
+            await idb('readwrite', s => s.delete('handle'));
+            flUi();
+        });
+        idb('readonly', s => s.get('handle')).then(async h => {
+            if (h && h.kind === 'file') { FL.handle = h; FL.ok = await flPerm(false); }
+            flUi();
+        });
+    }
 
     $('save-json').addEventListener('click', () => {
         saveBytes(serialize(), 'Notenrechner-' + today() + '.json', 'application/json');
@@ -1226,7 +1335,7 @@
             const sel = selId && $('tablewrap').querySelector('tr[data-sid="' + selId + '"]');
             const row = sel || $('tablewrap').querySelector('tbody tr[data-sid]');
             const cell = row && row.querySelector('input.gi[data-cat="' + catId + '"][data-i="' + (n - 1) + '"]');
-            if (cell && !isCoarse()) cell.focus();
+            if (cell) { cell.focus(); if (isCoarse()) cell.scrollIntoView({ block: 'center', inline: 'nearest' }); }
         }
     }
 
@@ -1286,6 +1395,8 @@
         if (target) { target.focus(); if (!isCoarse()) target.select(); }
         return !!target;
     }
+
+    if (window.matchMedia('(max-width: 640px)').matches) $('advice-card').open = false;
 
     const tw = $('tablewrap');
     tw.addEventListener('input', e => { if (e.target.classList.contains('gi') && !e.target.hasAttribute('readonly')) applyInput(e.target, false); });
@@ -1382,6 +1493,7 @@
         kpInput = null;
         $('keypad').hidden = true;
         document.documentElement.style.removeProperty('--kp');
+        document.documentElement.classList.remove('kp-open');
         document.body.style.paddingBottom = '';
     }
 
@@ -1436,6 +1548,7 @@
         kp.hidden = false;
         const h = kp.offsetHeight;
         document.documentElement.style.setProperty('--kp', h + 'px');
+        document.documentElement.classList.add('kp-open');
         document.body.style.paddingBottom = h + 'px';
         inp.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }

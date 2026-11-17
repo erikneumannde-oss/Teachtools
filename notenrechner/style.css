@@ -434,3 +434,67 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
 /* Automatisch erfasste Einträge im Bemerkungsfenster */
 .eintrag-log { margin-top: 8px; padding: 8px 10px; background: #f4efe4; border-radius: 8px; font-size: 0.9rem; }
 .eintrag-log strong { display: block; margin-bottom: 2px; }
+
+/* ===== Handy-Ansicht (Hoch- und Querformat) ===== */
+@media (max-width: 640px), (max-height: 520px) {
+    .app-head { padding-top: 8px; padding-bottom: 8px; }
+    .app-head h1 { font-size: 1.35rem; margin: 2px 0; }
+    .app-head p { display: none; }
+    .layout { padding: 8px; }
+
+    /* Reihenfolge: Reiter, Beratung, Tabelle, Hinweis, danach die Knöpfe */
+    #main { display: flex; flex-direction: column; }
+    #main > .advice { order: 1; margin-bottom: 8px; }
+    #main > .tablewrap { order: 2; }
+    #main > .hint { order: 3; margin: 6px 2px; font-size: 0.82rem; }
+    #main > .gridtools { order: 4; display: block; margin: 8px 0 0; }
+    .gridtools .status { display: block; margin-bottom: 6px; }
+    .gridtools .btn-row.inline { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .gridtools .btn-row.inline .btn { width: 100%; min-height: 44px; font-size: 0.9rem; padding: 6px 8px; margin: 0; }
+    #save-local { grid-column: 1 / -1; }
+
+    .tablewrap { max-height: calc(100svh - 120px - var(--kp, 0px)); min-height: 200px; padding: 4px; }
+    table.nt { border-spacing: 2px; font-size: 0.86rem; }
+
+    /* Namen schmal, Symbole nur in der markierten Zeile */
+    .nt .name { min-width: 108px; max-width: 130px; }
+    .nt .name button.nb-name, .nt .name button.nmb { font-size: 0.84rem; overflow-wrap: break-word; word-break: normal; hyphens: none; line-height: 1.15; padding: 3px 4px 3px 6px; }
+    .nt .name .nm-wrap { flex-wrap: wrap; }
+    .nt .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-bem { display: none; }
+    .nt tr.sel .name .nm-wrap button.nm-edit, .nt tr.sel .name .nm-wrap button.nm-bem,
+    .nt .name .nm-wrap button.nm-bem.has { display: block; }
+    .nt .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-bem { width: 34px; min-height: 30px; }
+    .nt thead th.name { padding-left: 6px; min-width: 108px; }
+
+    .nt thead th.fehl { min-width: 54px; width: 54px; }
+    .nt thead th.fehl small { display: none; }
+    .nt td.fehl { min-width: 54px; width: 54px; }
+    .nt .fz-wrap { gap: 0; padding: 1px; }
+    .nt .fz-wrap .fz-plus { min-width: 32px; }
+    .nt .fz-wrap .fz-minus { width: 18px; font-size: 14px; }
+
+    .nt td.g { width: 40px; min-width: 40px; }
+    .nt td.calc { padding: 0 4px; min-width: 44px; }
+    .nt thead th { padding: 0 3px; font-size: 0.8rem; }
+    .nt thead th.collapsed { padding: 0 4px; }
+    .nt .ctl button { min-width: 30px; min-height: 28px; }
+    .nt .bem-box { width: calc(100vw - 56px); }
+}
+
+/* Querformat am Handy: flache Tastatur, damit die Tabelle sichtbar bleibt */
+@media (max-height: 520px) {
+    .keypad { padding: 4px 8px max(4px, env(safe-area-inset-bottom)); }
+    .keypad .kp-who { margin-bottom: 3px; font-size: 0.78rem; }
+    .keypad .kp-grid { gap: 4px; }
+    .keypad button { min-height: 34px; font-size: 1rem; }
+    .tablewrap { max-height: calc(100svh - 70px - var(--kp, 0px)); }
+}
+
+/* Querformat: Bei offener Zahlentastatur alles außer der Tabelle ausblenden */
+@media (max-height: 520px) {
+  html.kp-open header, html.kp-open #advice-card, html.kp-open .tabs, html.kp-open #main > *:not(.tablewrap):not(#tablewrap) { display: none; }
+  html.kp-open .tablewrap { max-height: calc(100svh - 12px - var(--kp,0px)); }
+}
+
+.filelink { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line, #d8d0c0); }
+.filelink h3 { margin: 0 0 4px; font-size: 1rem; }

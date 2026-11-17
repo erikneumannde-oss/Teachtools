@@ -162,3 +162,6 @@
     .pinni-body, .pinni-eyes, .pinni-traene, .pinni-arm-wave, .pinni-bubble, .pinni-win { animation: none; }
 }
 @media print { .pinni-root, .pinni-block, .pinni-spot, .pinni-fig, .pinni-bubble, .pinni-lightbox, .pinni-bigbg, .pinni-back { display: none !important; } }
+
+/* Eingebaute Notentastatur (Notenrechner): Pinni macht Platz, damit nichts verdeckt wird */
+html.kp-open .pinni-fig, html.kp-open .pinni-back { visibility: hidden; }
