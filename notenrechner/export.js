@@ -56,6 +56,7 @@
         const cl = catList(g);
 
         function addCat(c, label, withMean, meanGet) {
+            if (!c.slots) return;
             const start = cols.length;
             for (let i = 0; i < c.slots; i++) {
                 cols.push({ head: String(i + 1), weight: 1, get: st => ((st.grades && st.grades[c.id]) || [])[i] || '' });
@@ -293,7 +294,9 @@
                     const gr = ((st.grades && st.grades[c.id]) || [])[i] || '';
                     const nobj = (st.notes && st.notes[c.id] && st.notes[c.id][i]) || null;
                     const nt = nobj ? nobj.t : '';
-                    const dd = nobj && /^\d{4}-\d{2}-\d{2}$/.test(nobj.d || '') ? nobj.d.slice(8) + '.' + nobj.d.slice(5, 7) + '.' + nobj.d.slice(0, 4) : '';
+                    const lgl = (st.log && st.log[c.id] && Array.isArray(st.log[c.id][i])) ? st.log[c.id][i] : [];
+                    const dsrc = nobj && /^\d{4}-\d{2}-\d{2}$/.test(nobj.d || '') ? nobj.d : (lgl.length ? lgl[lgl.length - 1].d : '');
+                    const dd = /^\d{4}-\d{2}-\d{2}$/.test(dsrc) ? dsrc.slice(8) + '.' + dsrc.slice(5, 7) + '.' + dsrc.slice(0, 4) : '';
                     if (gr || nt) items.push({ area: nameOf(c.id), nr: String(i + 1), grade: gr, note: nt, date: dd });
                 }
             });
@@ -351,7 +354,7 @@
                 areaLines.forEach((t, k) => text(t, colX[0] + PAD, y - PAD - 8 - k * LH + 1, FS, font, ink));
                 text(it.nr, colX[1] + (colX[2] - colX[1]) / 2, y - PAD - 7, FS, font, ink, 'center');
                 text(it.grade, colX[2] + (colX[3] - colX[2]) / 2, y - PAD - 7, FS, bold, ink, 'center');
-                if (it.note) text(it.date, colX[3] + PAD, y - PAD - 7, FS - 1, font, grey);
+                if (it.date) text(it.date, colX[3] + PAD, y - PAD - 7, FS - 1, font, grey);
                 noteLines.forEach((t, k) => text(t, colX[4] + PAD, y - PAD - 8 - k * LH + 1, FS, font, ink));
                 y -= h;
                 page.drawLine({ start: { x: M, y: y }, end: { x: right, y: y }, thickness: 0.4, color: line });

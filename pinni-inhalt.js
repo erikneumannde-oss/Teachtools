@@ -81,7 +81,7 @@ window.PinniInhalt = {
     notenrechner: {
         tipps: [
             'Die Beratung zeigt, welche Note möglich ist. Die Entscheidung bleibt bei dir.',
-            'Zu jeder Note kannst du eine Bemerkung schreiben, das Datum wird automatisch gespeichert.',
+            'Zu jeder Note kannst du eine Bemerkung schreiben. Wann du die Note eingetragen hast, merkt sich der Notenrechner von selbst.',
             'Beim Namen blendet die Sprechblase ein Bemerkungsfeld ein, und in der Spalte „Fehlt“ zählst du vergessene Hausaufgaben mit einem Klick.'
         ],
         csv: true,
@@ -94,11 +94,11 @@ window.PinniInhalt = {
             { sel: ['.plans-bar'], title: 'Lerngruppen', text: 'Jede Lerngruppe hat einen eigenen Reiter. Mit dem Plus legst du weitere an, für Sek I oder Sek II.' },
             { sel: ['#det-names > summary'], open: '#det-names', title: 'Namen', text: 'Hier trägst du die Namen ein oder importierst eine CSV- oder TXT-Datei.', csv: true },
             { sel: ['#tablewrap', '#empty'], title: 'Die Notentabelle', text: 'Noten tippst du direkt in die Tabelle. Die Gesamtnote entsteht nach den Wertungen, die du festlegst. Sobald eine Lerngruppe angelegt ist, siehst du die Tabelle hier.' },
-            { sel: ['.nt thead .ctl', '#empty'], title: 'Neue Spalte für die nächste Note', text: 'Am Anfang hat jede Kategorie nur eine Spalte. Gibt es eine neue Note, tippst du in der Kategorie auf das Plus, und es erscheint eine weitere Spalte. Mit dem Minus nimmst du die letzte wieder weg.' },
+            { sel: ['.nt thead .ctl', '#empty'], title: 'Neue Spalte für die nächste Note', text: 'Am Anfang ist die Tabelle ganz schlank: Jede Kategorie ist eingeklappt und zeigt nur eine Abkürzung mit einem Plus. Bei jeder neuen Note tippst du auf das Plus, dann erscheint ein Kästchen dafür, und die Überschrift wächst mit. Mit dem Minus nimmst du die letzte Spalte wieder weg.' },
             { sel: ['.nt thead th.fehl', '#empty'], title: 'Hausaufgabe oder Material fehlt', text: 'Hier zählst du mit, wie oft eine Hausaufgabe oder ein Arbeitsmaterial gefehlt hat. Ein Klick auf die Zahl zählt eins hoch. Hast du dich vertippt, nimmst du mit dem Minus eins wieder weg. Im PDF je Person steht die Zahl mit drin.' },
             { wenn: { sichtbar: '.nt td.name .nm-bem' }, sel: ['.nt td.name .nm-wrap'], title: 'Bemerkung und Name ändern', text: 'Das Sprechblasen-Symbol hinter dem Namen blendet ein Bemerkungsfeld für diese Person ein, zum Beispiel für Eindrücke aus dem Unterricht. Ein roter Punkt zeigt, dass schon etwas darin steht. Mit dem Stift änderst du den Namen nachträglich. Die Bemerkung bleibt auf deinem Gerät und steht nicht im PDF.' },
             { sel: ['#edit-rating', '#empty'], title: 'Kategorien und Wertung', text: 'Hier legst du fest, welche Kategorien es gibt und wie stark sie zählen.' },
-            { sel: ['#toggle-notes', '#empty'], title: 'Bemerkungen zu Noten', text: 'Zu jeder Note kannst du eine Bemerkung einblenden und schreiben. Das Datum wird automatisch gespeichert.' },
+            { sel: ['#toggle-notes', '#empty'], title: 'Bemerkungen zu Noten', text: 'Zu jeder Note kannst du eine Bemerkung einblenden und schreiben. Das Datum wird automatisch gespeichert. Außerdem merkt sich der Notenrechner von selbst, wann du eine Note eingetragen oder geändert hast. Das siehst du in der Bemerkung zur Note und im PDF je Person.' },
             { sel: ['#advice-card', '#empty'], title: 'Beratung', text: 'Die Beratung zeigt, welche Note bei einer Person möglich ist. Sie ist nur eine Hilfe, die Entscheidung bleibt bei dir.' },
             { sel: ['#pdf-students', '#empty'], title: 'PDF je Person', text: 'Für jede Person entsteht ein eigenes PDF mit allen Noten und Bemerkungen in einer Tabelle.',
               preview: { src: 'pinni/vorschau/notenrechner-pdf.png', title: 'PDF je Person', cap: 'Beispiel mit erfundenen Daten.' } },

@@ -395,3 +395,42 @@ table.nt { border-spacing: 4px; }
 .nt .fz-wrap .fz-minus:hover:not(:disabled) { background: #f3dede; color: #7f1d1d; }
 .nt .fz-wrap .fz-minus:disabled { opacity: 0.3; cursor: default; }
 .nt .fz-wrap button:focus-visible { outline: 3px solid var(--blue); outline-offset: -2px; }
+
+/* ===== Kompakte Tabelle, wächst mit den Noten ===== */
+.tablewrap { padding: 6px; }
+table.nt { border-spacing: 3px; font-size: 0.9rem; }
+.nt thead th { height: 30px; padding: 0 5px; font-size: 0.86rem; }
+.nt thead tr:nth-child(2) th { top: 30px; font-size: 0.76rem; }
+.nt thead tr:nth-child(3) th { top: 60px; font-size: 0.76rem; }
+.nt .ctl button { min-width: 24px; min-height: 22px; font-size: 0.9rem; line-height: 1; }
+.nt thead th.cat .ctl { margin-left: 3px; white-space: nowrap; }
+.nt thead th.collapsed { padding: 0 6px; font-size: 0.82rem; background: #4b5565; }
+.nt thead th.collapsed .abk { font-weight: 700; margin-right: 2px; }
+.nt td.stub { width: 8px; min-width: 8px; padding: 0; background: rgba(255, 255, 255, 0.38); border-radius: 6px; }
+.nt td.g { width: 42px; min-width: 42px; }
+.nt td.g input { height: 32px; font-size: 15px; }
+.nt td.calc { padding: 0 6px; min-width: 48px; }
+.nt .name { min-width: 150px; max-width: 200px; }
+.nt .name button { min-height: 32px; padding: 2px 6px 2px 8px; font-size: 0.9rem; }
+.nt thead th.name { padding-left: 8px; }
+.nt thead th.fehl { min-width: 70px; width: 70px; }
+.nt td.fehl { min-width: 70px; width: 70px; }
+.nt .fz-wrap { padding: 1px 2px; gap: 2px; }
+.nt .fz-wrap .fz-plus { min-width: 34px; min-height: 32px; font-size: 15px; }
+.nt .fz-wrap .fz-minus { width: 22px; min-height: 32px; }
+.nt td.g button.nb { transform: scale(0.85); }
+@media (pointer: coarse) {
+    .nt td.g input { height: 40px; }
+    .nt .name button, .nt .fz-wrap .fz-plus, .nt .fz-wrap .fz-minus { min-height: 40px; }
+    .nt .ctl button { min-width: 30px; min-height: 28px; }
+}
+
+/* Symbole beim Namen: Stift in Rot, immer sichtbar */
+.nt .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-bem { width: 24px; min-height: 26px; opacity: 1; }
+.nt .name .nm-wrap button.nm-edit { color: #ff5d78; font-size: 17px; font-weight: 700; }
+.nt tr.sel .name .nm-wrap button.nm-edit { color: #c4102c; }
+.nt .name .nm-wrap button.nm-edit:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* Automatisch erfasste Einträge im Bemerkungsfenster */
+.eintrag-log { margin-top: 8px; padding: 8px 10px; background: #f4efe4; border-radius: 8px; font-size: 0.9rem; }
+.eintrag-log strong { display: block; margin-bottom: 2px; }

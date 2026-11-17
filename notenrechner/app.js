@@ -108,14 +108,14 @@
         if (stufe === 'sek2') {
             return {
                 id: uid(), name: name, stufe: 'sek2', course: 'gk13',
-                atWeights: { m: 50, s: 50 }, slots: { m: 1, s: 1, k: 1 }, adviceTarget: 'punkt', students: []
+                atWeights: { m: 50, s: 50 }, slots: { m: 0, s: 0, k: 0 }, adviceTarget: 'punkt', students: []
             };
         }
         return {
             id: uid(), name: name, stufe: 'sek1', tendency: true, grenze: 0.5,
             categories: [
-                { id: 'c' + uid().slice(1, 7), name: 'Schriftlich', weight: 50, slots: 1 },
-                { id: 'c' + uid().slice(1, 7), name: 'Mündlich', weight: 50, slots: 1 }
+                { id: 'c' + uid().slice(1, 7), name: 'Schriftlich', weight: 50, slots: 0 },
+                { id: 'c' + uid().slice(1, 7), name: 'Mündlich', weight: 50, slots: 0 }
             ],
             students: []
         };
@@ -190,7 +190,30 @@
             if (!Object.keys(st.notes).length) delete st.notes;
         }
     }
+    // Automatischer Eintragsverlauf: st.log[Spalten-ID][Platz] = [{ g: Note, d: 'JJJJ-MM-TT' }]
+    const MAX_LOG = 6;
+    const getLog = (st, cat, i) => (st.log && st.log[cat] && Array.isArray(st.log[cat][i]) ? st.log[cat][i] : []);
+    function logEntry(st, cat, i, grade) {
+        const list = getLog(st, cat, i).slice();
+        const last = list[list.length - 1];
+        if (last && last.g === grade) return false;
+        if (!last && !grade) return false;
+        const d = isoToday();
+        if (last && last.d === d) last.g = grade; else list.push({ g: grade, d: d });
+        if (list.length > 1 && list[list.length - 1].g === list[list.length - 2].g) list.pop();
+        if (!st.log) st.log = {};
+        if (!st.log[cat]) st.log[cat] = {};
+        st.log[cat][i] = list.slice(-MAX_LOG);
+        return true;
+    }
+    function cutLog(st, cat, n) {
+        if (!st.log || !st.log[cat]) return;
+        Object.keys(st.log[cat]).forEach(k => { if (parseInt(k, 10) >= n) delete st.log[cat][k]; });
+        if (!Object.keys(st.log[cat]).length) delete st.log[cat];
+        if (!Object.keys(st.log).length) delete st.log;
+    }
     function cutNotes(st, cat, n) {
+        cutLog(st, cat, n);
         if (!st.notes || !st.notes[cat]) return;
         Object.keys(st.notes[cat]).forEach(k => { if (parseInt(k, 10) >= n) delete st.notes[cat][k]; });
         if (!Object.keys(st.notes[cat]).length) delete st.notes[cat];
@@ -207,6 +230,18 @@
     /* =========================================================
        Speichern, Laden, Prüfen
        ========================================================= */
+
+    // Die Tabelle wächst mit den Noten: leere Spalten am Ende werden nicht angezeigt
+    function trimSlots(g) {
+        catList(g).forEach(c => {
+            if (g.stufe === 'sek2' && c.id === 'k' && kFixedSlots(g.course)) return;
+            let n = c.slots;
+            while (n > 0 && !g.students.some(st => ((st.grades && st.grades[c.id]) || [])[n - 1] || getNote(st, c.id, n - 1))) n--;
+            if (n === c.slots) return;
+            if (g.stufe === 'sek1') c.slots = n; else g.slots[c.id] = n;
+            g.students.forEach(st => { if (st.grades && st.grades[c.id]) st.grades[c.id].length = n; cutNotes(st, c.id, n); });
+        });
+    }
 
     function sanitizeGroups(raw) {
         let list = null;
@@ -231,7 +266,7 @@
                             id: id,
                             name: cleanStr(c.name, 30) || fallback + ' ' + (i + 1),
                             weight: typeof c.weight === 'number' && isFinite(c.weight) ? clamp(Math.round(c.weight * 10) / 10, 0, 100) : 0,
-                            slots: clamp(isInt(c.slots) ? c.slots : 3, 1, MAX_SLOTS)
+                            slots: clamp(isInt(c.slots) ? c.slots : 3, 0, MAX_SLOTS)
                         };
                     };
                     g.categories = src.categories.slice(0, MAX_CATS).map((c, i) => {
@@ -246,9 +281,9 @@
                 g.atWeights = { m: m, s: 100 - m };
                 const sl = src.slots && typeof src.slots === 'object' ? src.slots : {};
                 g.slots = {
-                    m: clamp(isInt(sl.m) ? sl.m : 3, 1, MAX_SLOTS),
-                    s: clamp(isInt(sl.s) ? sl.s : 3, 1, MAX_SLOTS),
-                    k: kFixedSlots(g.course) || clamp(isInt(sl.k) ? sl.k : 1, 1, MAX_SLOTS)
+                    m: clamp(isInt(sl.m) ? sl.m : 3, 0, MAX_SLOTS),
+                    s: clamp(isInt(sl.s) ? sl.s : 3, 0, MAX_SLOTS),
+                    k: kFixedSlots(g.course) || clamp(isInt(sl.k) ? sl.k : 1, 0, MAX_SLOTS)
                 };
                 g.adviceTarget = src.adviceTarget === 'note' ? 'note' : 'punkt';
             }
@@ -279,6 +314,19 @@
                         }
                     });
                 }
+                if (s.log && typeof s.log === 'object') {
+                    catList(g).forEach(c => {
+                        const src3 = s.log[c.id];
+                        if (!src3 || typeof src3 !== 'object') return;
+                        for (let i = 0; i < c.slots; i++) {
+                            const v = src3[i];
+                            if (!Array.isArray(v)) continue;
+                            const list = v.filter(x => x && typeof x === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(x.d || '') && typeof x.g === 'string').slice(-MAX_LOG)
+                                .map(x => ({ g: NR.normalizeGrade(mode, x.g) || '', d: x.d }));
+                            if (list.length) { if (!st.log) st.log = {}; if (!st.log[c.id]) st.log[c.id] = {}; st.log[c.id][i] = list; }
+                        }
+                    });
+                }
                 if (isInt(s.fehlt) && s.fehlt > 0) st.fehlt = Math.min(s.fehlt, MAX_FEHLT);
                 if (typeof s.bem === 'string') { const b = s.bem.replace(/\r/g, '').trim().slice(0, MAX_BEM); if (b) st.bem = b; }
                 if (stufe === 'sek1') {
@@ -293,6 +341,7 @@
                 }
                 g.students.push(st);
             });
+            trimSlots(g);
             out.push(g);
         });
         return out.length ? out : null;
@@ -567,7 +616,7 @@
                 g.students.forEach(st => doomed.forEach(id => { delete st.grades[id]; if (st.notes) { delete st.notes[id]; if (!Object.keys(st.notes).length) delete st.notes; } }));
                 const idx = list.indexOf(c);
                 list.splice(idx, 1);
-                if (isSub && !list.length) { delete parent.subs; parent.slots = 3; }
+                if (isSub && !list.length) { delete parent.subs; parent.slots = 0; }
                 markDirty();
                 renderAll();
             });
@@ -585,9 +634,9 @@
                     const first = { id: 'c' + uid().slice(1, 8), name: 'Teil 1', weight: 50, slots: c.slots };
                     g.students.forEach(st => { if (st.grades[c.id]) { st.grades[first.id] = st.grades[c.id]; delete st.grades[c.id]; } if (st.notes && st.notes[c.id]) { st.notes[first.id] = st.notes[c.id]; delete st.notes[c.id]; } });
                     c.subs = [first];
-                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 1 });
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 0 });
                 } else {
-                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), weight: 0, slots: 1 });
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), weight: 0, slots: 0 });
                 }
                 markDirty();
                 renderAll();
@@ -599,7 +648,7 @@
         const add = el('button', { type: 'button', class: 'btn small', text: 'Kategorie hinzufügen' });
         add.addEventListener('click', () => {
             if (g.categories.length >= MAX_CATS) return;
-            g.categories.push({ id: 'c' + uid().slice(1, 8), name: 'Kategorie ' + (g.categories.length + 1), weight: 0, slots: 1 });
+            g.categories.push({ id: 'c' + uid().slice(1, 8), name: 'Kategorie ' + (g.categories.length + 1), weight: 0, slots: 0 });
             markDirty();
             renderAll();
         });
@@ -821,6 +870,7 @@
             const arr = ensureGrades(g, t.st, c.id);
             if (arr[slot]) overwritten++;
             arr[slot] = convertNote(g, t.note);
+            logEntry(t.st, c.id, slot, arr[slot]);
             delete t.st.dec;
         });
         markDirty();
@@ -860,6 +910,13 @@
         return segs;
     }
 
+    function abbr(name) {
+        const w = String(name).replace(/[·%\d]/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (!w.length) return '?';
+        if (w.length > 1) return w.map(x => x[0]).join('').toUpperCase().slice(0, 4);
+        return w[0].length <= 4 ? w[0] : w[0].slice(0, 3);
+    }
+
     function catHeadLabel(g, c) {
         if (g.stufe === 'sek1') {
             const sum = g.categories.reduce((a, x) => a + (x.weight > 0 ? x.weight : 0), 0);
@@ -897,12 +954,21 @@
         };
         const slotCtl = c => {
             const ctl = el('span', { class: 'ctl' });
-            const minus = el('button', { type: 'button', 'aria-label': 'Eine Spalte weniger in ' + c.name, text: '−' });
-            const plus = el('button', { type: 'button', 'aria-label': 'Eine Spalte mehr in ' + c.name, text: '+' });
-            minus.addEventListener('click', () => changeSlots(c.id, -1));
+            const plus = el('button', { type: 'button', 'aria-label': 'Neue Notenspalte in ' + c.name, title: 'Neue Spalte für die nächste Note', text: '+' });
             plus.addEventListener('click', () => changeSlots(c.id, 1));
-            ctl.append(minus, ' ', plus);
+            if (c.slots > 0) {
+                const minus = el('button', { type: 'button', 'aria-label': 'Letzte Spalte in ' + c.name + ' entfernen', title: 'Letzte Spalte entfernen', text: '−' });
+                minus.addEventListener('click', () => changeSlots(c.id, -1));
+                ctl.append(minus, ' ');
+            }
+            ctl.append(plus);
             return ctl;
+        };
+        const collapsedHead = (c, th) => {
+            th.classList.add('collapsed');
+            th.title = c.name;
+            th.append(el('span', { class: 'abk', text: abbr(c.name) }), slotCtl(c));
+            return th;
         };
         const numbers = (c, row, withMean) => {
             for (let k = 1; k <= c.slots; k++) row.append(el('th', { text: String(k) }));
@@ -919,15 +985,18 @@
         if (sek1) {
             g.categories.forEach(c => {
                 if (c.subs && c.subs.length) {
-                    const width = c.subs.reduce((a, s) => a + s.slots + 1, 0) + 1;
+                    const width = c.subs.reduce((a, s) => a + (s.slots > 0 ? s.slots + 1 : 1), 0) + 1;
                     rows[0].append(el('th', { class: 'cat main', colspan: String(width), text: c.name + ' · ' + pctOf(g.categories, c) + ' %' }));
                     c.subs.forEach(s => {
+                        if (s.slots === 0) { rows[1].append(collapsedHead(s, el('th', { class: 'cat sub', rowspan: '2' }))); return; }
                         const th = el('th', { class: 'cat sub', colspan: String(s.slots + 1) });
                         th.append(document.createTextNode(s.name + ' · ' + pctOf(c.subs, s) + ' %'), slotCtl(s));
                         rows[1].append(th);
                         numbers(s, rows[2], true);
                     });
                     rows[1].append(el('th', { class: 'cat main', rowspan: '2', text: 'Ø' }));
+                } else if (c.slots === 0) {
+                    rows[0].append(collapsedHead(c, el('th', { class: 'cat', rowspan: String(nRows) })));
                 } else {
                     const th = el('th', { class: 'cat', colspan: String(c.slots + 1), rowspan: String(nRows - 1) });
                     th.append(document.createTextNode(c.name + ' · ' + pctOf(g.categories, c) + ' %'), slotCtl(c));
@@ -938,7 +1007,9 @@
             segs.forEach(s => { if (s.t !== 'cat' && s.t !== 'mean') calcHead(s); });
         } else {
             segs.forEach((s, i) => {
-                if (s.t === 'cat') {
+                if (s.t === 'cat' && s.cat.slots === 0) {
+                    rows[0].append(collapsedHead(s.cat, el('th', { class: 'cat', rowspan: '2' })));
+                } else if (s.t === 'cat') {
                     const hasMean = segs[i + 1] && segs[i + 1].t === 'mean';
                     const th = el('th', { class: 'cat', colspan: String(s.cat.slots + (hasMean ? 1 : 0)) });
                     th.append(document.createTextNode(catHeadLabel(g, s.cat)));
@@ -961,7 +1032,7 @@
         const hint = g.stufe === 'sek2'
             ? 'Punkte von 0 bis 15 eintragen. Bei genau x,5 im AT, im Klausurteil oder in der Gesamtnote wird die Entscheidung per Knopf getroffen.'
             : (g.tendency ? 'Noten mit Tendenz eintragen, zum Beispiel 2+, 3 oder 4-.' : 'Noten von 1 bis 6 eintragen.');
-        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person. Neue Spalte für die nächste Note: Plus in der Kategorie. In „Fehlt“ zählt ein Klick eins hoch.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
+        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person. Für jede neue Note mit dem Plus in der Kategorie ein Kästchen einfügen. In „Fehlt“ zählt ein Klick eins hoch.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
     }
 
     async function renameStudent(st) {
@@ -1013,6 +1084,8 @@
         if (!st.fehlt) fzMinus.disabled = true;
         tr.append(el('td', { class: 'fehl' }, [el('div', { class: 'fz-wrap' }, [fzMinus, fz])]));
         segs.forEach(s => {
+            if (s.t === 'mean' && !s.main && s.cat.slots === 0) return;
+            if (s.t === 'cat' && s.cat.slots === 0) { tr.append(el('td', { class: 'stub', 'aria-hidden': 'true' })); return; }
             if (s.t === 'cat') {
                 const arr = ensureGrades(g, st, s.cat.id);
                 for (let i = 0; i < s.cat.slots; i++) {
@@ -1024,6 +1097,7 @@
                     if (coarse) { inp.setAttribute('readonly', ''); inp.setAttribute('inputmode', 'none'); }
                     else inp.setAttribute('inputmode', mode === 'points' ? 'numeric' : 'text');
                     inp.value = arr[i] || '';
+                    { const lg = getLog(st, s.cat.id, i); if (lg.length) inp.title = 'Eingetragen am ' + isoDe(lg[lg.length - 1].d); }
                     const td = el('td', { class: 'g' }, [inp]);
                     const has = !!getNote(st, s.cat.id, i);
                     if (has || showNotes) {
@@ -1138,7 +1212,7 @@
         const g = G();
         const c = catList(g).find(x => x.id === catId);
         const n = c.slots + d;
-        if (n < 1 || n > MAX_SLOTS) return;
+        if (n < 0 || n > MAX_SLOTS) return;
         if (d < 0) {
             const used = g.students.some(st => (st.grades[catId] || [])[c.slots - 1] || getNote(st, catId, c.slots - 1));
             if (used && !(await confirmDialog('Spalte entfernen?', 'Die letzte Spalte von „' + c.name + '“ enthält Noten. Sie gehen verloren.', 'Entfernen'))) return;
@@ -1148,6 +1222,12 @@
         markDirty();
         renderTable();
         renderAdvice();
+        if (d > 0) {
+            const sel = selId && $('tablewrap').querySelector('tr[data-sid="' + selId + '"]');
+            const row = sel || $('tablewrap').querySelector('tbody tr[data-sid]');
+            const cell = row && row.querySelector('input.gi[data-cat="' + catId + '"][data-i="' + (n - 1) + '"]');
+            if (cell && !isCoarse()) cell.focus();
+        }
     }
 
     function selectStudent(id) {
@@ -1177,6 +1257,7 @@
             return;
         }
         if (final) inp.value = norm;
+        if (final && logEntry(st, inp.dataset.cat, i, norm)) markDirty();
         if (arr[i] !== norm) {
             arr[i] = norm;
             markDirty();
@@ -1266,6 +1347,12 @@
             const di = el('input', { type: 'date', class: 'field', 'aria-label': 'Datum der Bemerkung' });
             di.value = getNoteDate(st, cat, i) || isoToday();
             const body = el('div', { class: 'import-box' }, [el('label', {}, ['Bemerkung', ta]), el('label', {}, ['Datum der Bemerkung', di])]);
+            const lg = getLog(st, cat, i);
+            if (lg.length) {
+                const box = el('div', { class: 'eintrag-log' }, [el('strong', { text: 'Automatisch erfasst' })]);
+                lg.forEach(x => box.append(el('div', { text: isoDe(x.d) + ' · ' + (x.g ? 'Note ' + x.g : 'Note gelöscht') })));
+                body.append(box);
+            }
             const grade = ((st.grades && st.grades[cat]) || [])[i];
             const r = await modal({
                 title: 'Bemerkung zur Note', ok: 'Speichern',
