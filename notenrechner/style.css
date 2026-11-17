@@ -436,7 +436,7 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
 .eintrag-log strong { display: block; margin-bottom: 2px; }
 
 /* ===== Handy-Ansicht (Hoch- und Querformat) ===== */
-@media (max-width: 640px), (max-height: 520px) {
+@media (max-width: 640px), (max-height: 520px), (pointer: coarse) and (max-device-width: 600px), (pointer: coarse) and (max-device-height: 600px) {
     .app-head { padding-top: 8px; padding-bottom: 8px; }
     .app-head h1 { font-size: 1.35rem; margin: 2px 0; }
     .app-head p { display: none; }
@@ -482,7 +482,7 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
 }
 
 /* Querformat am Handy: flache Tastatur, damit die Tabelle sichtbar bleibt */
-@media (max-height: 520px) {
+@media (max-height: 520px), (pointer: coarse) and (max-device-height: 600px) {
     .keypad { padding: 4px 8px max(4px, env(safe-area-inset-bottom)); }
     .keypad .kp-who { margin-bottom: 3px; font-size: 0.78rem; }
     .keypad .kp-grid { gap: 4px; }
@@ -491,7 +491,7 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
 }
 
 /* Querformat: Bei offener Zahlentastatur alles außer der Tabelle ausblenden */
-@media (max-height: 520px) {
+@media (max-height: 520px), (pointer: coarse) and (max-device-height: 600px) {
   html.kp-open header, html.kp-open #advice-card, html.kp-open .tabs, html.kp-open #main > *:not(.tablewrap):not(#tablewrap) { display: none; }
   html.kp-open .tablewrap { max-height: calc(100svh - 12px - var(--kp,0px)); }
 }

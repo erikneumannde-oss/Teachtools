@@ -1399,7 +1399,7 @@
         return !!target;
     }
 
-    if (window.matchMedia('(max-width: 640px)').matches) $('advice-card').open = false;
+    if (window.matchMedia('(max-width: 640px), (pointer: coarse) and (max-device-width: 600px)').matches) $('advice-card').open = false;
 
     const tw = $('tablewrap');
     tw.addEventListener('input', e => { if (e.target.classList.contains('gi') && !e.target.hasAttribute('readonly')) applyInput(e.target, false); });
