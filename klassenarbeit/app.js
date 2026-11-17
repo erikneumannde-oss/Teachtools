@@ -203,6 +203,7 @@
             statusNote = 'Im Browser gespeichert um ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' Uhr';
             updateStatus();
             if (manual) announce('Gespeichert');
+            fileWrite(false);
             return true;
         }
         if (manual) infoDialog('Speichern nicht möglich', 'Der Browser erlaubt hier kein Speichern, zum Beispiel im privaten Modus. Bitte sichern Sie stattdessen eine Datei.');
@@ -249,6 +250,21 @@
         if (autoOn && !savedOnce) saveLocal(true);
         updateStatus();
     });
+    /* Feste Sicherungsdatei (Chrome, Edge, Opera am Computer), siehe lib/dateilink.js */
+    const fileLink = window.DateiLink ? window.DateiLink.init({
+        box: $('filelink'),
+        dbName: 'klassenarbeit-datei',
+        suggestedName: 'Klassenarbeiten-Sicherung.json',
+        serialize: serialize,
+        onWritten: name => {
+            const t = new Date();
+            statusNote = 'Gespeichert um ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' Uhr, auch in „' + name + '“';
+            if (!dirty) updateStatus();
+        },
+        onError: msg => infoDialog('Datei nicht beschrieben', msg)
+    }) : { write: async () => false };
+    const fileWrite = m => fileLink.write(m);
+
     $('save-json').addEventListener('click', () => {
         saveBytes(serialize(), 'Klassenarbeiten-' + today() + '.json', 'application/json');
         dirty = false;

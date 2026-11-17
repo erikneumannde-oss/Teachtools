@@ -33,3 +33,20 @@ body > header:not(.app-head) h1::after { margin-left: auto; margin-right: auto; 
 .panel { border-top: 3px solid #e00427 !important; }
 .btn.primary, button.primary { background: #c70a24; border-color: #c70a24; color: #fff; }
 .btn.primary:hover:not(:disabled), button.primary:hover:not(:disabled) { background: #a3081d; border-color: #a3081d; }
+
+/* ===== Handy: kompaktere Kopfzeile in allen Werkzeugen ===== */
+@media (max-width: 640px) {
+    html .app-head { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+    html .app-head h1, html body > header:not(.app-head) h1 { font-size: 1.3rem; margin: 2px 0; }
+    html .app-head h1::after, html body > header:not(.app-head) h1::after { margin-top: 3px; height: 2px; }
+    html .app-head p, html body > header:not(.app-head) p { font-size: 0.8rem; line-height: 1.3; margin-top: 2px; }
+    html body > header:not(.app-head) { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+}
+@media (max-height: 520px) {
+    html .app-head { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+    html .app-head h1, html body > header:not(.app-head) h1 { font-size: 1.15rem; margin: 0; }
+    html .app-head h1::after, html body > header:not(.app-head) h1::after { display: none; }
+    html .app-head p, html body > header:not(.app-head) p { display: none; }
+    html body > header:not(.app-head) { padding-top: 4px; padding-bottom: 4px; }
+    html .app-head .back { font-size: 0.8rem; }
+}

@@ -109,16 +109,7 @@
                     <button type="button" id="load-json" class="btn">Datei laden</button>
                     <input type="file" id="load-json-input" accept=".json,application/json" hidden>
                 </div>
-                <div id="filelink" class="filelink" hidden>
-                    <h3>Feste Sicherungsdatei (Computer)</h3>
-                    <p class="small-text" id="filelink-text">Sie wählen einmal eine Datei aus. Danach wird immer genau diese Datei überschrieben, jedes Mal, wenn im Browser gespeichert wird. So sammeln sich keine Kopien im Download-Ordner. Die Datei enthält Namen und Noten. Der Browser merkt sich auf diesem Gerät, welche Datei gemeint ist.</p>
-                    <div class="btn-row">
-                        <button type="button" id="file-pick" class="btn">Sicherungsdatei wählen …</button>
-                        <button type="button" id="file-allow" class="btn primary" hidden>Zugriff erlauben</button>
-                        <button type="button" id="file-now" class="btn" hidden>Jetzt in Datei sichern</button>
-                        <button type="button" id="file-unlink" class="btn danger" hidden>Verknüpfung lösen</button>
-                    </div>
-                </div>
+                <div id="filelink" class="filelink" hidden></div>
             </div>
         </details>
     </aside>
@@ -133,6 +124,7 @@
 <div id="modal-root" class="modal-root" hidden></div>
 <div id="live" class="sr-only" aria-live="polite"></div>
 
+<script src="../lib/dateilink.js"></script>
 <script src="calc.js"></script>
 <script src="app.js"></script>
 <script src="../pinni-inhalt.js"></script>

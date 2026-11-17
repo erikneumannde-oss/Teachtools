@@ -1,6 +1,6 @@
 // Service Worker: Netzwerk zuerst, damit Änderungen sofort ankommen.
 // Ohne Netz kommt die zuletzt geladene Fassung aus dem Zwischenspeicher.
-const CACHE = 'teachtools-v53';
+const CACHE = 'teachtools-v54';
 const START = [
   './', './index.html', './impressum.html', './manifest.webmanifest',
   './pinnwand.css', './theme.css', './schule-hell.png', './pinnwand.js', './pinni.js', './pinni-inhalt.js', './pinni.css', './pinni/vorschau/brief-elternbrief.png', './pinni/vorschau/notenrechner-pdf.png', './pinni/vorschau/klassenarbeit-uebersicht.png', './pinni/vorschau/sitzplan-druck.png', './pinni/vorschau/pdf-karten.png', './pinni/vorschau/asv-leer.png', './pinni/vorschau/asv-ausgefuellt.png', './pinni/vorschau/webuntis-1.png', './pinni/vorschau/webuntis-2.png', './pinni/vorschau/webuntis-3.png', './pinnwand.jpg', './logo-start.svg', './install.js', './sw-register.js',
@@ -17,7 +17,7 @@ const START = [
   './brief/', './brief/index.html', './brief/app.js', './brief/letter.js', './brief/layout.js', './brief/docx.js', './brief/pdf.js',
   './brief/style.css', './brief/vorlage.docx',
   './lib/fonts/Carlito-Regular.ttf', './lib/fonts/Carlito-Bold.ttf', './lib/fonts/LiberationSans-Regular.ttf',
-  './lib/pdf-lib.min.js', './lib/pdf.min.js', './lib/pdf.worker.min.js', './lib/fflate.js',
+  './lib/dateilink.js', './lib/pdf-lib.min.js', './lib/pdf.min.js', './lib/pdf.worker.min.js', './lib/fflate.js',
   './lib/fontkit.umd.min.js', './lib/fonts/DejaVuSans.ttf', './lib/fonts/DejaVuSans-Bold.ttf'
 ];
 
