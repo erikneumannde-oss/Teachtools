@@ -360,7 +360,10 @@
             const t = new Date();
             statusNote = 'Im Browser gespeichert um ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' Uhr';
             updateStatus();
-            if (manual) announce('Gespeichert');
+            if (manual) {
+                announce('Gespeichert');
+                try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* nichts */ }
+            }
             fileWrite(false);
             return true;
         }
