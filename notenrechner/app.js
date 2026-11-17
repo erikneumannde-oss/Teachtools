@@ -44,8 +44,6 @@
         const root = document.documentElement;
         root.classList.toggle('phone', ph);
         root.classList.toggle('phone-land', ph && window.matchMedia('(orientation: landscape)').matches);
-        const d = document.getElementById('diag');
-        if (d) d.textContent = 'Anzeige: Seitenbreite ' + window.innerWidth + ' px, Bildschirm ' + screen.width + ' × ' + screen.height + ' px, Touch ' + (isCoarse() ? 'ja' : 'nein') + ', Handy-Ansicht ' + (ph ? 'ja' : 'nein') + '.';
     }
     setPhoneClass();
     window.addEventListener('resize', setPhoneClass);
