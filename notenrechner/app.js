@@ -955,12 +955,25 @@
         $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
     }
 
+    async function renameStudent(st) {
+        const v = await promptDialog('Name ändern', st.name);
+        const n = v ? v.replace(/\s+/g, ' ').trim() : '';
+        if (!n) return;
+        st.name = n.slice(0, MAX_NAME);
+        markDirty();
+        renderTable();
+        renderAdvice();
+    }
+
     function buildRow(g, st, segs, coarse, mode) {
         const tr = el('tr', { 'data-sid': st.id });
         if (st.id === selId) tr.className = 'sel';
         const nb = el('button', { type: 'button', class: 'nmb', text: st.name });
         nb.addEventListener('click', () => selectStudent(st.id));
-        tr.append(el('td', { class: 'name' }, [nb]));
+        const stift = el('button', { type: 'button', class: 'nm-edit', 'aria-label': 'Name ändern: ' + st.name, title: 'Name ändern', text: '✎' });
+        stift.addEventListener('click', e => { e.stopPropagation(); renameStudent(st); });
+        nb.addEventListener('dblclick', () => renameStudent(st));
+        tr.append(el('td', { class: 'name' }, [el('div', { class: 'nm-wrap' }, [nb, stift])]));
         segs.forEach(s => {
             if (s.t === 'cat') {
                 const arr = ensureGrades(g, st, s.cat.id);
@@ -1290,14 +1303,7 @@
 
         const ren = el('button', { type: 'button', class: 'btn small', text: 'Umbenennen' });
         const del = el('button', { type: 'button', class: 'btn small danger', text: 'Entfernen' });
-        ren.addEventListener('click', async () => {
-            const v = await promptDialog('Name ändern', st.name);
-            if (!v) return;
-            st.name = v.slice(0, MAX_NAME);
-            markDirty();
-            renderTable();
-            renderAdvice();
-        });
+        ren.addEventListener('click', () => renameStudent(st));
         del.addEventListener('click', async () => {
             if (!(await confirmDialog('Entfernen?', '„' + st.name + '“ wird mit allen Noten aus dieser Lerngruppe entfernt.', 'Entfernen'))) return;
             g.students = g.students.filter(x => x !== st);

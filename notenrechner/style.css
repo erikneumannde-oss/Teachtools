@@ -359,3 +359,12 @@ table.nt { border-spacing: 4px; }
 }
 .nt td.g button.nb.has { background: var(--blue); border-color: var(--blue); color: #fff; }
 #toggle-notes[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* Stift zum Umbenennen neben dem Namen */
+.nt .nm-wrap { display: flex; align-items: center; gap: 2px; }
+.nt .name .nm-wrap button.nmb { flex: 1 1 auto; width: auto; min-width: 0; }
+.nt .name .nm-wrap button.nm-edit { flex: 0 0 auto; display: block; width: 30px; min-height: 30px; padding: 0; border-radius: 6px; background: transparent; color: inherit; text-align: center; font-size: 15px; line-height: 1; opacity: 0; }
+.nt tr:hover .name .nm-wrap button.nm-edit, .nt tr.sel .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-edit:focus-visible { opacity: 0.85; }
+.nt .name .nm-wrap button.nm-edit:hover { background: rgba(255, 255, 255, 0.25); opacity: 1 !important; }
+.nt tr.sel .name .nm-wrap button.nm-edit:hover { background: rgba(0, 0, 0, 0.1); }
+.nt .nm-edit:focus-visible { outline: 3px solid #f1b400; outline-offset: 1px; }
