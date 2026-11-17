@@ -36,7 +36,20 @@
     const fmt2 = x => x.toFixed(2).replace('.', ',');
     const fmtT = x => String(Math.round(x * 100) / 100).replace('.', ',');
     const G = () => groups[cur];
-    const isCoarse = () => window.matchMedia('(pointer: coarse)').matches;
+    const minScreen = () => Math.min(screen.width || 9999, screen.height || 9999);
+    const isCoarse = () => (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 0) && minScreen() <= 1100;
+    const isPhone = () => (isCoarse() && minScreen() <= 600) || window.matchMedia('(max-width: 640px)').matches;
+    function setPhoneClass() {
+        const ph = isPhone();
+        const root = document.documentElement;
+        root.classList.toggle('phone', ph);
+        root.classList.toggle('phone-land', ph && window.matchMedia('(orientation: landscape)').matches);
+        const d = document.getElementById('diag');
+        if (d) d.textContent = 'Anzeige: Seitenbreite ' + window.innerWidth + ' px, Bildschirm ' + screen.width + ' × ' + screen.height + ' px, Touch ' + (isCoarse() ? 'ja' : 'nein') + ', Handy-Ansicht ' + (ph ? 'ja' : 'nein') + '.';
+    }
+    setPhoneClass();
+    window.addEventListener('resize', setPhoneClass);
+    window.addEventListener('orientationchange', setPhoneClass);
 
     function announce(msg) {
         const live = $('live');
@@ -1399,7 +1412,7 @@
         return !!target;
     }
 
-    if (window.matchMedia('(max-width: 640px), (pointer: coarse) and (max-device-width: 600px)').matches) $('advice-card').open = false;
+    if (isPhone()) $('advice-card').open = false;
 
     const tw = $('tablewrap');
     tw.addEventListener('input', e => { if (e.target.classList.contains('gi') && !e.target.hasAttribute('readonly')) applyInput(e.target, false); });
@@ -1506,6 +1519,18 @@
         applyInput(kpInput, true);
     }
 
+    function placeKeypad() {
+        const kp = $('keypad');
+        const vv = window.visualViewport;
+        if (!kp || kp.hidden || !vv) return;
+        const off = Math.round(window.innerHeight - (vv.offsetTop + vv.height));
+        kp.style.bottom = (off > 2 ? off : 0) + 'px';
+    }
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', placeKeypad);
+        window.visualViewport.addEventListener('scroll', placeKeypad);
+    }
+
     function openKeypad(inp) {
         kpInput = inp;
         const g = G();
@@ -1552,6 +1577,7 @@
         const h = kp.offsetHeight;
         document.documentElement.style.setProperty('--kp', h + 'px');
         document.documentElement.classList.add('kp-open');
+        placeKeypad();
         document.body.style.paddingBottom = h + 'px';
         inp.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }

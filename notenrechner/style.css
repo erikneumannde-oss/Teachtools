@@ -496,5 +496,49 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
   html.kp-open .tablewrap { max-height: calc(100svh - 12px - var(--kp,0px)); }
 }
 
+
+/* Handy-Erkennung per Skript (greift auch, wenn der Browser die Seite breit rechnet) */
+html.phone .app-head { padding-top: 8px; padding-bottom: 8px; }
+html.phone .app-head h1 { font-size: 1.35rem; margin: 2px 0; }
+html.phone .app-head p { display: none; }
+html.phone .layout { padding: 8px; }
+html.phone #main { display: flex; flex-direction: column; }
+html.phone #main > .advice { order: 1; margin-bottom: 8px; }
+html.phone #main > .tablewrap { order: 2; }
+html.phone #main > .hint { order: 3; margin: 6px 2px; font-size: 0.82rem; }
+html.phone #main > .gridtools { order: 4; display: block; margin: 8px 0 0; }
+html.phone .gridtools .status { display: block; margin-bottom: 6px; }
+html.phone .gridtools .btn-row.inline { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+html.phone .gridtools .btn-row.inline .btn { width: 100%; min-height: 44px; font-size: 0.9rem; padding: 6px 8px; margin: 0; }
+html.phone #save-local { grid-column: 1 / -1; }
+html.phone .tablewrap { max-height: calc(100svh - 120px - var(--kp, 0px)); min-height: 200px; padding: 4px; }
+html.phone table.nt { border-spacing: 2px; font-size: 0.86rem; }
+html.phone .nt .name { min-width: 108px; max-width: 130px; }
+html.phone .nt .name button.nb-name, html.phone .nt .name button.nmb { font-size: 0.84rem; overflow-wrap: break-word; word-break: normal; hyphens: none; line-height: 1.15; padding: 3px 4px 3px 6px; }
+html.phone .nt .name .nm-wrap { flex-wrap: wrap; }
+html.phone .nt .name .nm-wrap button.nm-edit, html.phone .nt .name .nm-wrap button.nm-bem { display: none; }
+html.phone .nt tr.sel .name .nm-wrap button.nm-edit, html.phone .nt tr.sel .name .nm-wrap button.nm-bem, html.phone .nt .name .nm-wrap button.nm-bem.has { display: block; }
+html.phone .nt .name .nm-wrap button.nm-edit, html.phone .nt .name .nm-wrap button.nm-bem { width: 34px; min-height: 30px; }
+html.phone .nt thead th.name { padding-left: 6px; min-width: 108px; }
+html.phone .nt thead th.fehl { min-width: 54px; width: 54px; }
+html.phone .nt thead th.fehl small { display: none; }
+html.phone .nt td.fehl { min-width: 54px; width: 54px; }
+html.phone .nt .fz-wrap { gap: 0; padding: 1px; }
+html.phone .nt .fz-wrap .fz-plus { min-width: 32px; }
+html.phone .nt .fz-wrap .fz-minus { width: 18px; font-size: 14px; }
+html.phone .nt td.g { width: 40px; min-width: 40px; }
+html.phone .nt td.calc { padding: 0 4px; min-width: 44px; }
+html.phone .nt thead th { padding: 0 3px; font-size: 0.8rem; }
+html.phone .nt thead th.collapsed { padding: 0 4px; }
+html.phone .nt .ctl button { min-width: 30px; min-height: 28px; }
+html.phone .nt .bem-box { width: calc(100vw - 56px); }
+html.phone-land .keypad { padding: 4px 8px max(4px, env(safe-area-inset-bottom)); }
+html.phone-land .keypad .kp-who { margin-bottom: 3px; font-size: 0.78rem; }
+html.phone-land .keypad .kp-grid { gap: 4px; }
+html.phone-land .keypad button { min-height: 34px; font-size: 1rem; }
+html.phone-land .tablewrap { max-height: calc(100svh - 70px - var(--kp, 0px)); }
+html.phone-land.kp-open header, html.phone-land.kp-open #advice-card, html.phone-land.kp-open .tabs, html.phone-land.kp-open #main > *:not(.tablewrap):not(#tablewrap) { display: none; }
+html.phone-land.kp-open .tablewrap { max-height: calc(100svh - 12px - var(--kp,0px)); }
+
 .filelink { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line, #d8d0c0); }
 .filelink h3 { margin: 0 0 4px; font-size: 1rem; }
