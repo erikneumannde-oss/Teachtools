@@ -227,7 +227,7 @@ table.nt { border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
     min-width: 28px; min-height: 28px; border: 1px solid var(--line); background: #fff; border-radius: 6px;
     font-weight: 700; color: var(--navy); cursor: pointer; padding: 0; touch-action: manipulation;
 }
-.nt .name { position: sticky; left: 0; z-index: 2; min-width: 150px; max-width: 190px; text-align: left; background: #fff; }
+.nt .name { position: sticky; left: 0; z-index: 2; min-width: 172px; max-width: 210px; text-align: left; background: #fff; }
 .nt thead th.name { z-index: 5; text-align: left; padding-left: 10px; background: #f1ece2; }
 .nt .name button {
     display: block; width: 100%; min-height: 44px; padding: 4px 8px 4px 10px; border: 0; background: transparent;
@@ -363,8 +363,35 @@ table.nt { border-spacing: 4px; }
 /* Stift zum Umbenennen neben dem Namen */
 .nt .nm-wrap { display: flex; align-items: center; gap: 2px; }
 .nt .name .nm-wrap button.nmb { flex: 1 1 auto; width: auto; min-width: 0; }
-.nt .name .nm-wrap button.nm-edit { flex: 0 0 auto; display: block; width: 30px; min-height: 30px; padding: 0; border-radius: 6px; background: transparent; color: inherit; text-align: center; font-size: 15px; line-height: 1; opacity: 0; }
-.nt tr:hover .name .nm-wrap button.nm-edit, .nt tr.sel .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-edit:focus-visible { opacity: 0.85; }
-.nt .name .nm-wrap button.nm-edit:hover { background: rgba(255, 255, 255, 0.25); opacity: 1 !important; }
-.nt tr.sel .name .nm-wrap button.nm-edit:hover { background: rgba(0, 0, 0, 0.1); }
-.nt .nm-edit:focus-visible { outline: 3px solid #f1b400; outline-offset: 1px; }
+.nt .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-bem { flex: 0 0 auto; display: block; width: 28px; min-height: 30px; padding: 0; border-radius: 6px; background: transparent; color: inherit; text-align: center; font-size: 15px; line-height: 1; opacity: 0; }
+.nt tr:hover .name .nm-wrap button.nm-edit, .nt tr.sel .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-edit:focus-visible,
+.nt tr:hover .name .nm-wrap button.nm-bem, .nt tr.sel .name .nm-wrap button.nm-bem, .nt .name .nm-wrap button.nm-bem:focus-visible, .nt .name .nm-wrap button.nm-bem.has { opacity: 0.9; }
+@media (hover: none) { .nt .name .nm-wrap button.nm-edit, .nt .name .nm-wrap button.nm-bem { opacity: 0.6; } }
+.nt .name .nm-wrap button.nm-edit:hover, .nt .name .nm-wrap button.nm-bem:hover { background: rgba(255, 255, 255, 0.25); opacity: 1 !important; }
+.nt tr.sel .name .nm-wrap button.nm-edit:hover, .nt tr.sel .name .nm-wrap button.nm-bem:hover { background: rgba(0, 0, 0, 0.1); }
+.nt .nm-edit:focus-visible, .nt .nm-bem:focus-visible { outline: 3px solid #f1b400; outline-offset: 1px; }
+
+/* Bemerkung zur Person */
+.nt .name .nm-wrap button.nm-bem { font-size: 13px; position: relative; }
+.nt .name .nm-wrap button.nm-bem.has::after { content: ''; position: absolute; right: 3px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #e03a52; border: 1.5px solid #fff; }
+.nt .name .nm-wrap button.nm-bem[aria-expanded="true"] { background: rgba(255, 255, 255, 0.28); }
+.nt tr.sel .name .nm-wrap button.nm-bem[aria-expanded="true"] { background: rgba(0, 0, 0, 0.12); }
+.nt tr.bemrow td { background: #fff8dc; border-radius: 8px; padding: 6px 8px; text-align: left; }
+.nt .bem-box { position: sticky; left: 8px; width: min(560px, calc(100vw - 80px)); }
+.nt .bem-ta { width: 100%; min-height: 64px; resize: vertical; font-size: 14px; }
+
+/* Zähler: Hausaufgabe oder Material fehlt */
+.nt thead th.fehl { min-width: 86px; width: 86px; line-height: 1.15; padding: 4px 6px; }
+.nt thead th.fehl span { display: block; font-weight: 700; }
+.nt thead th.fehl small { display: block; font-weight: 400; font-size: 11px; opacity: 0.85; }
+.nt td.fehl { min-width: 86px; width: 86px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.nt tr.sel td.fehl { background: #fff8dc; }
+.nt .fz-wrap { display: flex; align-items: stretch; justify-content: center; gap: 4px; padding: 3px; }
+.nt .fz-wrap button { border: 0; border-radius: 6px; font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; touch-action: manipulation; }
+.nt .fz-wrap .fz-plus { flex: 1 1 auto; min-width: 40px; min-height: 40px; background: #e9eef5; font-size: 17px; }
+.nt .fz-wrap .fz-plus:hover { background: #dbe5f1; }
+.nt .fz-wrap .fz-plus:active { background: #c8d7ea; }
+.nt .fz-wrap .fz-minus { flex: 0 0 auto; width: 26px; min-height: 40px; background: transparent; color: #6b6478; font-size: 16px; }
+.nt .fz-wrap .fz-minus:hover:not(:disabled) { background: #f3dede; color: #7f1d1d; }
+.nt .fz-wrap .fz-minus:disabled { opacity: 0.3; cursor: default; }
+.nt .fz-wrap button:focus-visible { outline: 3px solid var(--blue); outline-offset: -2px; }

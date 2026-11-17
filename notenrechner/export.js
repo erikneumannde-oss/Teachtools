@@ -357,6 +357,11 @@
                 page.drawLine({ start: { x: M, y: y }, end: { x: right, y: y }, thickness: 0.4, color: line });
             });
             y -= 22;
+            if (st.fehlt) {
+                if (y - 30 < M + 20) newPage();
+                text('Hausaufgabe oder Arbeitsmaterial fehlte: ' + st.fehlt + ' Mal', M, y, 10, bold, ink);
+                y -= 24;
+            }
             // Ergebnisse
             if (results.length) {
                 if (y - (results.length * 16 + 20) < M + 20) newPage();

@@ -108,14 +108,14 @@
         if (stufe === 'sek2') {
             return {
                 id: uid(), name: name, stufe: 'sek2', course: 'gk13',
-                atWeights: { m: 50, s: 50 }, slots: { m: 3, s: 3, k: 1 }, adviceTarget: 'punkt', students: []
+                atWeights: { m: 50, s: 50 }, slots: { m: 1, s: 1, k: 1 }, adviceTarget: 'punkt', students: []
             };
         }
         return {
             id: uid(), name: name, stufe: 'sek1', tendency: true, grenze: 0.5,
             categories: [
-                { id: 'c' + uid().slice(1, 7), name: 'Schriftlich', weight: 50, slots: 3 },
-                { id: 'c' + uid().slice(1, 7), name: 'Mündlich', weight: 50, slots: 3 }
+                { id: 'c' + uid().slice(1, 7), name: 'Schriftlich', weight: 50, slots: 1 },
+                { id: 'c' + uid().slice(1, 7), name: 'Mündlich', weight: 50, slots: 1 }
             ],
             students: []
         };
@@ -171,6 +171,8 @@
 
     // Bemerkungen zu einzelnen Noten: st.notes[Spalten-ID][Platz] = Text
     const MAX_NOTE = 300;
+    const MAX_FEHLT = 999, MAX_BEM = 1000;
+    const bemOffen = new Set();
     // gespeichert als { t: Text, d: 'JJJJ-MM-TT' } (Datum, an dem die Bemerkung gemacht wurde)
     const getNote = (st, cat, i) => (st.notes && st.notes[cat] && st.notes[cat][i] && st.notes[cat][i].t) || '';
     const getNoteDate = (st, cat, i) => (st.notes && st.notes[cat] && st.notes[cat][i] && st.notes[cat][i].d) || '';
@@ -277,6 +279,8 @@
                         }
                     });
                 }
+                if (isInt(s.fehlt) && s.fehlt > 0) st.fehlt = Math.min(s.fehlt, MAX_FEHLT);
+                if (typeof s.bem === 'string') { const b = s.bem.replace(/\r/g, '').trim().slice(0, MAX_BEM); if (b) st.bem = b; }
                 if (stufe === 'sek1') {
                     const f = g.tendency
                         ? (typeof s.final === 'string' && NR.TEND.indexOf(s.final) !== -1 ? s.final : null)
@@ -581,9 +585,9 @@
                     const first = { id: 'c' + uid().slice(1, 8), name: 'Teil 1', weight: 50, slots: c.slots };
                     g.students.forEach(st => { if (st.grades[c.id]) { st.grades[first.id] = st.grades[c.id]; delete st.grades[c.id]; } if (st.notes && st.notes[c.id]) { st.notes[first.id] = st.notes[c.id]; delete st.notes[c.id]; } });
                     c.subs = [first];
-                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 3 });
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil 2', weight: 50, slots: 1 });
                 } else {
-                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), weight: 0, slots: 3 });
+                    c.subs.push({ id: 'c' + uid().slice(1, 8), name: 'Teil ' + (c.subs.length + 1), weight: 0, slots: 1 });
                 }
                 markDirty();
                 renderAll();
@@ -595,7 +599,7 @@
         const add = el('button', { type: 'button', class: 'btn small', text: 'Kategorie hinzufügen' });
         add.addEventListener('click', () => {
             if (g.categories.length >= MAX_CATS) return;
-            g.categories.push({ id: 'c' + uid().slice(1, 8), name: 'Kategorie ' + (g.categories.length + 1), weight: 0, slots: 3 });
+            g.categories.push({ id: 'c' + uid().slice(1, 8), name: 'Kategorie ' + (g.categories.length + 1), weight: 0, slots: 1 });
             markDirty();
             renderAll();
         });
@@ -885,6 +889,7 @@
         const rows = [];
         for (let i = 0; i < nRows; i++) rows.push(el('tr'));
         rows[0].append(el('th', { class: 'name', rowspan: String(nRows), text: 'Name' }));
+        rows[0].append(el('th', { class: 'fehl', rowspan: String(nRows), title: 'Hausaufgabe oder Arbeitsmaterial fehlt: ein Klick zählt eins hoch' }, [el('span', { text: 'Fehlt' }), el('small', { text: 'HA / Material' })]));
 
         const pctOf = (list, c) => {
             const sum = list.reduce((a, x) => a + (x.weight > 0 ? x.weight : 0), 0);
@@ -945,14 +950,18 @@
         }
         const table = el('table', { class: 'nt' }, [el('thead', {}, rows)]);
         const tb = el('tbody');
-        g.students.forEach(st => tb.append(buildRow(g, st, segs, coarse, mode)));
+        g.students.forEach(st => {
+            const row = buildRow(g, st, segs, coarse, mode);
+            tb.append(row);
+            if (bemOffen.has(st.id)) tb.append(bemRow(st, row.children.length));
+        });
         table.append(tb);
         wrap.append(table);
 
         const hint = g.stufe === 'sek2'
             ? 'Punkte von 0 bis 15 eintragen. Bei genau x,5 im AT, im Klausurteil oder in der Gesamtnote wird die Entscheidung per Knopf getroffen.'
             : (g.tendency ? 'Noten mit Tendenz eintragen, zum Beispiel 2+, 3 oder 4-.' : 'Noten von 1 bis 6 eintragen.');
-        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
+        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person. Neue Spalte für die nächste Note: Plus in der Kategorie. In „Fehlt“ zählt ein Klick eins hoch.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
     }
 
     async function renameStudent(st) {
@@ -965,6 +974,22 @@
         renderAdvice();
     }
 
+    function bemRow(st, cols) {
+        const ta = el('textarea', {
+            class: 'field bem-ta', rows: '3', maxlength: String(MAX_BEM), 'aria-label': 'Bemerkung zu ' + st.name,
+            placeholder: 'Bemerkung zu ' + st.name + ' (bleibt auf diesem Gerät)'
+        });
+        ta.value = st.bem || '';
+        ta.addEventListener('input', () => {
+            const v = ta.value.replace(/\r/g, '');
+            if (v.trim()) st.bem = v.slice(0, MAX_BEM); else delete st.bem;
+            markDirty();
+            const b = $('tablewrap').querySelector('button.nm-bem[data-sid="' + st.id + '"]');
+            if (b) b.classList.toggle('has', !!st.bem);
+        });
+        return el('tr', { class: 'bemrow', 'data-bsid': st.id }, [el('td', { colspan: String(cols) }, [el('div', { class: 'bem-box' }, [ta])])]);
+    }
+
     function buildRow(g, st, segs, coarse, mode) {
         const tr = el('tr', { 'data-sid': st.id });
         if (st.id === selId) tr.className = 'sel';
@@ -973,7 +998,20 @@
         const stift = el('button', { type: 'button', class: 'nm-edit', 'aria-label': 'Name ändern: ' + st.name, title: 'Name ändern', text: '✎' });
         stift.addEventListener('click', e => { e.stopPropagation(); renameStudent(st); });
         nb.addEventListener('dblclick', () => renameStudent(st));
-        tr.append(el('td', { class: 'name' }, [el('div', { class: 'nm-wrap' }, [nb, stift])]));
+        const bemBtn = el('button', {
+            type: 'button', class: 'nm-bem' + (st.bem ? ' has' : ''), 'data-sid': st.id, 'aria-expanded': String(bemOffen.has(st.id)),
+            'aria-label': 'Bemerkung zu ' + st.name + (st.bem ? ' (vorhanden)' : ''), title: 'Bemerkung zur Person ein- oder ausblenden', text: '💬'
+        });
+        tr.append(el('td', { class: 'name' }, [el('div', { class: 'nm-wrap' }, [nb, bemBtn, stift])]));
+        const fz = el('button', {
+            type: 'button', class: 'fz-plus', 'data-sid': st.id,
+            'aria-label': 'Hausaufgabe oder Material fehlt, ' + st.name + ': ' + (st.fehlt || 0) + '. Klicken zählt eins hoch', text: String(st.fehlt || 0)
+        });
+        const fzMinus = el('button', {
+            type: 'button', class: 'fz-minus', 'data-sid': st.id, 'aria-label': 'Eins runter bei ' + st.name, title: 'Eins runter', text: '−'
+        });
+        if (!st.fehlt) fzMinus.disabled = true;
+        tr.append(el('td', { class: 'fehl' }, [el('div', { class: 'fz-wrap' }, [fzMinus, fz])]));
         segs.forEach(s => {
             if (s.t === 'cat') {
                 const arr = ensureGrades(g, st, s.cat.id);
@@ -1153,12 +1191,14 @@
         const idx = row.indexOf(inp);
         let target = null;
         if (dr) {
-            const nb = dr > 0 ? tr.nextElementSibling : tr.previousElementSibling;
+            let nb = dr > 0 ? tr.nextElementSibling : tr.previousElementSibling;
+            while (nb && nb.classList.contains('bemrow')) nb = dr > 0 ? nb.nextElementSibling : nb.previousElementSibling;
             if (nb) target = nb.querySelectorAll('input.gi')[idx];
         } else if (dc) {
             target = row[idx + dc];
             if (!target) {
-                const nb = dc > 0 ? tr.nextElementSibling : tr.previousElementSibling;
+                let nb = dc > 0 ? tr.nextElementSibling : tr.previousElementSibling;
+                while (nb && nb.classList.contains('bemrow')) nb = dc > 0 ? nb.nextElementSibling : nb.previousElementSibling;
                 if (nb) { const r2 = nb.querySelectorAll('input.gi'); target = dc > 0 ? r2[0] : r2[r2.length - 1]; }
             }
         }
@@ -1182,6 +1222,40 @@
         else if (e.key === 'ArrowUp') { e.preventDefault(); applyInput(t, true); moveFocus(t, -1, 0); }
     });
     tw.addEventListener('click', async e => {
+        const fzb = e.target.closest('button.fz-plus, button.fz-minus');
+        if (fzb) {
+            const st = findStudent(fzb.dataset.sid);
+            if (!st) return;
+            const n = Math.max(0, Math.min(MAX_FEHLT, (st.fehlt || 0) + (fzb.classList.contains('fz-plus') ? 1 : -1)));
+            if (n) st.fehlt = n; else delete st.fehlt;
+            markDirty();
+            const td = fzb.closest('td');
+            const plus = td.querySelector('.fz-plus'), minus = td.querySelector('.fz-minus');
+            plus.textContent = String(n);
+            plus.setAttribute('aria-label', 'Hausaufgabe oder Material fehlt, ' + st.name + ': ' + n + '. Klicken zählt eins hoch');
+            minus.disabled = n === 0;
+            announce(st.name + ': ' + n);
+            return;
+        }
+        const bb = e.target.closest('button.nm-bem');
+        if (bb) {
+            const st = findStudent(bb.dataset.sid);
+            if (!st) return;
+            const tr = bb.closest('tr');
+            if (bemOffen.has(st.id)) {
+                bemOffen.delete(st.id);
+                const nx = tr.nextElementSibling;
+                if (nx && nx.classList.contains('bemrow')) nx.remove();
+            } else {
+                bemOffen.add(st.id);
+                const r = bemRow(st, tr.children.length);
+                tr.after(r);
+                const ta = r.querySelector('textarea');
+                if (!isCoarse()) ta.focus();
+            }
+            bb.setAttribute('aria-expanded', String(bemOffen.has(st.id)));
+            return;
+        }
         const nbtn = e.target.closest('button.nb');
         if (nbtn) {
             const st = findStudent(nbtn.dataset.sid), cat = nbtn.dataset.cat, i = parseInt(nbtn.dataset.i, 10);
