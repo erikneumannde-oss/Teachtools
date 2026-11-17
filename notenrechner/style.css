@@ -382,7 +382,7 @@ table.nt { border-spacing: 4px; }
 
 /* Zähler: Hausaufgabe oder Material fehlt */
 .nt thead th.fehl { min-width: 86px; width: 86px; line-height: 1.15; padding: 4px 6px; }
-.nt thead th.fehl span { display: block; font-weight: 700; }
+.nt thead th.fehl span { display: block; font-weight: 700; font-size: 0.78rem; white-space: normal; }
 .nt thead th.fehl small { display: block; font-weight: 400; font-size: 11px; opacity: 0.85; }
 .nt td.fehl { min-width: 86px; width: 86px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
 .nt tr.sel td.fehl { background: #fff8dc; }
@@ -467,7 +467,13 @@ table.nt { border-spacing: 3px; font-size: 0.9rem; }
     .nt thead th.name { padding-left: 6px; min-width: 108px; }
 
     .nt thead th.fehl { min-width: 54px; width: 54px; }
-    .nt thead th.fehl small { display: none; }
+    .nt thead th.fehl { white-space: normal; padding: 2px 2px; }
+    .nt thead th.fehl span { font-size: 0.7rem; line-height: 1.1; }
+    .nt thead th.cat:not(.main) { white-space: normal; line-height: 1.1; font-size: 0.72rem; height: 54px; }
+    .nt thead th.cat:not(.main) .ctl { display: block; margin: 3px 0 0; }
+    .nt thead tr:nth-child(2) th { top: 56px; }
+    .nt.rows3 thead tr:nth-child(2) th { top: 32px; }
+    .nt.rows3 thead tr:nth-child(3) th { top: 88px; }
     .nt td.fehl { min-width: 54px; width: 54px; }
     .nt .fz-wrap { gap: 0; padding: 1px; }
     .nt .fz-wrap .fz-plus { min-width: 32px; }
@@ -521,7 +527,13 @@ html.phone .nt tr.sel .name .nm-wrap button.nm-edit, html.phone .nt tr.sel .name
 html.phone .nt .name .nm-wrap button.nm-edit, html.phone .nt .name .nm-wrap button.nm-bem { width: 34px; min-height: 30px; }
 html.phone .nt thead th.name { padding-left: 6px; min-width: 108px; }
 html.phone .nt thead th.fehl { min-width: 54px; width: 54px; }
-html.phone .nt thead th.fehl small { display: none; }
+html.phone .nt thead th.fehl { white-space: normal; padding: 2px 2px; }
+html.phone .nt thead th.fehl span { font-size: 0.7rem; line-height: 1.1; }
+html.phone .nt thead th.cat:not(.main) { white-space: normal; line-height: 1.1; font-size: 0.72rem; height: 54px; }
+html.phone .nt thead th.cat:not(.main) .ctl { display: block; margin: 3px 0 0; }
+html.phone .nt thead tr:nth-child(2) th { top: 56px; }
+html.phone .nt.rows3 thead tr:nth-child(2) th { top: 32px; }
+html.phone .nt.rows3 thead tr:nth-child(3) th { top: 88px; }
 html.phone .nt td.fehl { min-width: 54px; width: 54px; }
 html.phone .nt .fz-wrap { gap: 0; padding: 1px; }
 html.phone .nt .fz-wrap .fz-plus { min-width: 32px; }

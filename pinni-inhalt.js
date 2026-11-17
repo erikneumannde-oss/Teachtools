@@ -82,7 +82,7 @@ window.PinniInhalt = {
         tipps: [
             'Die Beratung zeigt, welche Note möglich ist. Die Entscheidung bleibt bei dir.',
             'Zu jeder Note kannst du eine Bemerkung schreiben. Wann du die Note eingetragen hast, merkt sich der Notenrechner von selbst.',
-            'Beim Namen blendet die Sprechblase ein Bemerkungsfeld ein, und in der Spalte „Fehlt“ zählst du vergessene Hausaufgaben mit einem Klick.'
+            'Beim Namen blendet die Sprechblase ein Bemerkungsfeld ein, und in der Spalte „HA / Material fehlt“ zählst du vergessene Hausaufgaben mit einem Klick.'
         ],
         csv: true,
         ende: 'Das war der Notenrechner. Noten sind übrigens das Einzige, was ich lieber an der Wand als im Kopf habe.',

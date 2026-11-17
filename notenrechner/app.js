@@ -1069,7 +1069,7 @@
         const rows = [];
         for (let i = 0; i < nRows; i++) rows.push(el('tr'));
         rows[0].append(el('th', { class: 'name', rowspan: String(nRows), text: 'Name' }));
-        rows[0].append(el('th', { class: 'fehl', rowspan: String(nRows), title: 'Hausaufgabe oder Arbeitsmaterial fehlt: ein Klick zählt eins hoch' }, [el('span', { text: 'Fehlt' }), el('small', { text: 'HA / Material' })]));
+        rows[0].append(el('th', { class: 'fehl', rowspan: String(nRows), title: 'Hausaufgabe oder Arbeitsmaterial fehlt: ein Klick zählt eins hoch' }, [el('span', { text: 'HA / Material fehlt' })]));
 
         const pctOf = (list, c) => {
             const sum = list.reduce((a, x) => a + (x.weight > 0 ? x.weight : 0), 0);
@@ -1142,7 +1142,7 @@
                 } else if (s.t !== 'mean') calcHead(s);
             });
         }
-        const table = el('table', { class: 'nt' }, [el('thead', {}, rows)]);
+        const table = el('table', { class: 'nt' + (nRows === 3 ? ' rows3' : '') }, [el('thead', {}, rows)]);
         const tb = el('tbody');
         g.students.forEach(st => {
             const row = buildRow(g, st, segs, coarse, mode);
@@ -1155,7 +1155,7 @@
         const hint = g.stufe === 'sek2'
             ? 'Punkte von 0 bis 15 eintragen. Bei genau x,5 im AT, im Klausurteil oder in der Gesamtnote wird die Entscheidung per Knopf getroffen.'
             : (g.tendency ? 'Noten mit Tendenz eintragen, zum Beispiel 2+, 3 oder 4-.' : 'Noten von 1 bis 6 eintragen.');
-        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person. Für jede neue Note mit dem Plus in der Kategorie ein Kästchen einfügen. In „Fehlt“ zählt ein Klick eins hoch.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
+        $('hint').textContent = g.students.length ? hint + ' Auf einen Namen tippen zeigt die Beratung für diese Person. Für jede neue Note mit dem Plus in der Kategorie ein Kästchen einfügen. Bei „HA / Material fehlt“ zählt ein Klick eins hoch.' : 'Noch keine Namen. Rechts unter „Namen hinzufügen“ Namen eintragen oder eine CSV- oder TXT-Datei importieren.';
     }
 
     async function renameStudent(st) {
