@@ -284,3 +284,12 @@ input[type="date"].field, input[type="time"].field { min-width: 0; width: 100%; 
     .stu td:nth-child(4) { grid-column: 1 / span 2; }
     .stu .field { padding: 4px 8px; font-size: 1rem; }
 }
+
+.checks { display: grid; gap: 14px; }
+.chk-group { border: 1px solid #e6dfd1; border-radius: 10px; padding: 8px 12px 10px; margin: 0; min-width: 0; }
+.chk-group legend { font-weight: 700; padding: 0 6px; font-size: .95rem; }
+.chk-group .check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-weight: 400; }
+.chk-group .check input { margin-top: 3px; flex: none; }
+.chk-l1 { margin-left: 22px !important; }
+.chk-l2 { margin-left: 44px !important; }
+textarea.field { resize: vertical; }

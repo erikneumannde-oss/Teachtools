@@ -165,6 +165,7 @@ window.PinniInhalt = {
         ende: 'Das war der Antragsgenerator. Jetzt fehlt nur noch die Unterschrift, und da bin ich leider keine Hilfe.',
         steps: [
             { text: 'Hier entsteht der Antrag auf Exkursion oder Sportwettkampf im Formular der Schule. Ich zeige dir kurz, wie es geht.' },
+            { sel: '#h-mode', title: 'Welcher Antrag?', text: 'Oben wählst du zwischen dem Antrag auf Exkursion oder Sportwettkampf und dem Antrag auf Freistellung, zum Beispiel für eine Fortbildung. Bei der Freistellung trägst du Name, Zeitraum und deine Kreuze ein.' },
             { sel: '#h-art', title: 'Antrag auf', text: 'Zuerst kreuzt du an, worum es geht: Exkursion, Sportwettkampf oder beides.' },
             { sel: '#h-ang', title: 'Angaben', text: 'Hier kommen Stunde, Datum, Uhrzeiten, Klasse, Zielort und die Namen hinein. Was du leer lässt, bleibt zum Ausfüllen von Hand stehen.' },
             { sel: '#stu-file', title: 'Namensliste', text: 'Lade Name, Vorname und Klasse/Tutor als CSV- oder TXT-Datei, oder füge sie aus einer Tabelle ein. Du kannst die Liste hier auch von Hand ändern.' },

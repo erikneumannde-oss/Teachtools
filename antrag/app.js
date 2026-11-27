@@ -277,7 +277,102 @@
         setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
+    /* Kreuze des Vordrucks (Seite 1): Schlüssel, Beschriftung, Einrückung */
+    const CHECKS = [
+        ['Anlass', [
+            ['fort', 'für eine Fortbildungsveranstaltung der SenBJF', 0],
+            ['gruende', 'aus folgenden Gründen', 0]]],
+        ['Beigefügte Unterlagen', [
+            ['u-programm', 'Programm', 0], ['u-einladung', 'Einladung', 0],
+            ['u-nachweis', 'Nachweis der Förderungswürdigkeit (des Veranstalters bzw. der Veranstaltung)', 0],
+            ['u-mitglied', 'Erklärung über Mitgliedschaft', 0],
+            ['u-nachgereicht', 'Folgende Unterlagen werden nachgereicht', 0],
+            ['u-sonst', 'Eigene Unterlage (leeres Kästchen)', 0]]],
+        ['A  Grundlage eines Urlaubs nach der SUrlVO', [
+            ['a2', '§ 2 Urlaub zur Wahrnehmung staatsbürgerlicher Pflichten und Rechte', 0],
+            ['a3a', '§ 3 a Urlaub für Zwecke der militärischen und zivilen Verteidigung', 0],
+            ['a4', '§ 4 Absatz 1', 0],
+            ['a4n1', 'Nr. 1 Bildungsveranstaltungen, die staatspolitischen Zwecken dienen (Förderungswürdigkeit)', 1],
+            ['a4n2', 'Nr. 2 Kirchliche Zwecke', 1],
+            ['a4n3', 'Nr. 3 Veranstaltungen, die von Nutzen für die dienstliche Tätigkeit sind', 1],
+            ['a4n4', 'Nr. 4 gewerkschaftliche Zwecke / Veranstaltungen von Berufsverbänden (Mitgliedschaft)', 1],
+            ['a4n5', 'Nr. 5 Sportveranstaltungen (besonderes Interesse des Landes Berlin muss anerkannt sein)', 1],
+            ['a4n6', 'Nr. 6 Olympisches Komitee, nationale / internationale Dachorganisationen von Sportverbänden', 1],
+            ['a4n7', 'Nr. 7 Ablegen von Prüfungen im Rahmen einer Fortbildung', 1],
+            ['a5', '§ 5 Urlaub für ehrenamtliche Jugendarbeit', 0]]],
+        ['B  Grundlage eines Sonderurlaubs (Ausführungsvorschriften zu § 7 SUrlVO)', [
+            ['b1', '§ 1 Absatz 1 – Persönliche Gründe', 0],
+            ['b1n1', 'Nr. 1 Niederkunft der Ehefrau oder der eingetragenen Lebenspartnerin (1 Tag)', 1],
+            ['b1n2', 'Nr. 2 Tod der Ehefrau, des Ehemannes, der eingetragenen Lebenspartnerin oder des Lebenspartners, eines Kindes oder Elternteils (2 Tage)', 1],
+            ['b1n3', 'Nr. 3 Umzug aus dienstlichen Gründen an einen anderen Ort (1 Tag)', 1],
+            ['b1n4', 'Nr. 4 Schwere Erkrankung', 1],
+            ['b1n4a', 'eines Angehörigen, soweit er in dem selben Haushalt lebt (1 Tag im Kalenderjahr)', 2],
+            ['b2', '§ 2 Sonstige dringende Fälle (bis zu 3 Tage)', 0]]],
+        ['C  Grundlage eines Sonderurlaubs, zur weiteren Veranlassung an Personalstelle', [
+            ['c7', '§ 7 Nr. 5 Schwere Erkrankung', 0],
+            ['c7a', 'eines Kindes, das das 12. Lebensjahr noch nicht vollendet hat', 1],
+            ['c7b', 'einer Betreuungsperson (Kind unter 8 Jahren)', 1],
+            ['c8', '§ 8 Urlaub zur Durchführung einer Heilkur', 0],
+            ['c9', '§ 9 Urlaub zur Wahrnehmung besonderer Aufgaben und für eine fremdsprachliche Aus- oder Fortbildung', 0],
+            ['c10', '§ 10 Urlaub aus sonstigen Anlässen', 0]]],
+        ['D  Bildungsurlaub', [['d', 'Bildungsurlaub (Berliner Bildungsurlaubsgesetz)', 0]]],
+        ['Erklärungen', [
+            ['e-merk', 'Von dem „Merkblatt zum Antrag auf Freistellung“ habe ich Kenntnis genommen.', 0],
+            ['e-angest', 'Ich bin im Angestelltenverhältnis beschäftigt; mir ist bekannt, dass die genannten Vorschriften sinngemäß auch für Angestellte gelten. (…)', 0]]]
+    ];
+    function buildChecks() {
+        const root = $('fr-checks');
+        CHECKS.forEach(g => {
+            const fs = document.createElement('fieldset');
+            fs.className = 'chk-group';
+            const lg = document.createElement('legend');
+            lg.textContent = g[0];
+            fs.append(lg);
+            g[1].forEach(it => {
+                const lb = document.createElement('label');
+                lb.className = 'check chk-l' + it[2];
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.dataset.k = it[0];
+                lb.append(cb, ' ' + it[1]);
+                fs.append(lb);
+            });
+            root.append(fs);
+        });
+    }
+    buildChecks();
+
+    function isFrei() { return $('m-frei').checked; }
+    function fmtShort(iso) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+        return m ? m[3] + '.' + m[2] + '.' + m[1] : '';
+    }
+    function readFrei() {
+        const v = (id, max) => clean($(id).value, max);
+        const nach = v('fr-name', 60), vor = v('fr-vorname', 60);
+        const d1 = $('fr-von').value, d2 = $('fr-bis').value;
+        const mehr = d1 && d2 && d2 > d1;
+        return {
+            nameErst: nach && vor ? nach + ', ' + vor : nach || vor,
+            nameZweit: [vor, nach].filter(Boolean).join(' '),
+            modus: d1 ? (mehr ? 'bis' : 'am') : '',
+            von: fmtShort(d1), bis: mehr ? fmtShort(d2) : '',
+            von2: fmtShort(d1), bis2: fmtShort(mehr ? d2 : d1),
+            telefon: v('fr-tel', 30), personalnr: v('fr-pnr', 30), anschrift: v('fr-anschrift', 90),
+            nach: nach,
+            checks: Array.from(document.querySelectorAll('#fr-checks input[data-k]:checked')).map(c => c.dataset.k),
+            grund: String($('fr-grund').value || '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]+/g, ' ').slice(0, 500),
+            usonst: v('fr-usonst', 60), tage1: v('fr-tage1', 6), tage2: v('fr-tage2', 6)
+        };
+    }
+
     async function build() {
+        if (isFrei()) {
+            await need('pdflib', '../lib/pdf-lib.min.js', () => !!window.PDFLib);
+            await need('fontkit', '../lib/fontkit.umd.min.js', () => !!window.fontkit);
+            await need('pdf2', 'pdf2.js', () => !!window.FreistellungPdf);
+            return window.FreistellungPdf.build(readFrei());
+        }
         await need('pdflib', '../lib/pdf-lib.min.js', () => !!window.PDFLib);
         await need('fontkit', '../lib/fontkit.umd.min.js', () => !!window.fontkit);
         await need('pdf', 'pdf.js', () => !!window.AntragPdf);
@@ -286,6 +381,10 @@
 
     const safe = s => s.replace(/[^\w\-äöüÄÖÜß]+/g, '_').replace(/^_+|_+$/g, '');
     function baseName() {
+        if (isFrei()) {
+            const n = safe(readFrei().nach);
+            return 'Freistellung' + (n ? '-' + n : '') + '-' + new Date().toLocaleDateString('sv-SE');
+        }
         const f = readForm();
         const art = f.exkursion && !f.sport ? 'Exkursion' : f.sport && !f.exkursion ? 'Sportwettkampf' : 'Antrag';
         const kl = safe(f.klasse);
@@ -347,14 +446,28 @@
         btn.disabled = true;
         try {
             await need('fflate', '../lib/fflate.js', () => !!window.fflate);
-            await need('docx', 'docx.js', () => !!window.AntragDocx);
-            const bytes = await window.AntragDocx.build(readForm());
+            let bytes;
+            if (isFrei()) {
+                await need('docx2', 'docx2.js', () => !!window.FreistellungDocx);
+                bytes = await window.FreistellungDocx.build(readFrei());
+            } else {
+                await need('docx', 'docx.js', () => !!window.AntragDocx);
+                bytes = await window.AntragDocx.build(readForm());
+            }
             saveBytes(bytes, baseName() + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         } catch (err) {
             await infoDialog('Datei nicht erstellt', 'Beim Erstellen ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.');
         }
         btn.disabled = false;
     }
+    function applyMode() {
+        const frei = isFrei();
+        $('mode-antrag').hidden = frei;
+        $('mode-frei').hidden = !frei;
+        $('preview-card').hidden = true;
+    }
+    $('m-antrag').addEventListener('change', applyMode);
+    $('m-frei').addEventListener('change', applyMode);
     $('btn-pdf').addEventListener('click', makePdf);
     $('btn-docx').addEventListener('click', makeDocx);
 

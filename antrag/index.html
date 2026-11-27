@@ -22,12 +22,23 @@
     <div class="wrap">
         <a class="back" href="../">← Übersicht</a>
         <h1>Antragsformular</h1>
-        <p>Antrag auf Exkursion oder Sportwettkampf im Formular der Schule. Alles bleibt auf Ihrem Gerät, es wird nichts gespeichert oder übertragen.</p>
+        <p>Antrag auf Exkursion, Sportwettkampf oder Freistellung im Formular der Schule. Alles bleibt auf Ihrem Gerät, es wird nichts gespeichert oder übertragen.</p>
     </div>
 </header>
 
 <div class="layout">
 
+    <section class="card" aria-labelledby="h-mode">
+        <h2 id="h-mode">Welcher Antrag?</h2>
+        <div class="card-body">
+            <div class="types">
+                <label class="opt"><input type="radio" name="mode" id="m-antrag" value="antrag" checked> Exkursion oder Sportwettkampf</label>
+                <label class="opt"><input type="radio" name="mode" id="m-frei" value="frei"> Freistellung (z. B. Fortbildung)</label>
+            </div>
+        </div>
+    </section>
+
+    <div id="mode-antrag">
     <section class="card" aria-labelledby="h-art">
         <h2 id="h-art">Antrag auf</h2>
         <div class="card-body">
@@ -112,6 +123,65 @@
             </div>
         </div>
     </section>
+    </div>
+
+    <div id="mode-frei" hidden>
+        <section class="card" aria-labelledby="h-fr">
+            <h2 id="h-fr">Antrag auf Freistellung</h2>
+            <div class="card-body stack">
+                <div class="grid2">
+                    <label>Name
+                        <input class="field" type="text" id="fr-name" maxlength="60" autocomplete="off" placeholder="z. B. Mustermann">
+                    </label>
+                    <label>Vorname
+                        <input class="field" type="text" id="fr-vorname" maxlength="60" autocomplete="off" placeholder="z. B. Max">
+                    </label>
+                    <label>Zeitraum: vom bzw. am
+                        <input class="field" type="date" id="fr-von">
+                    </label>
+                    <label>bis (nur mehrtägig)
+                        <input class="field" type="date" id="fr-bis">
+                    </label>
+                </div>
+                <p class="fieldhint nomargin">Seite 1: „Mustermann, Max“, Seite 2: „Max Mustermann“, der Zeitraum steht auf beiden Seiten. Die Zeile „An die Schulleitung des Lily-Braun-Gymnasiums 05Y05“ ist eingetragen. Die durchgestrichene Zeile des Vordrucks entfällt.</p>
+                <details class="paste-box">
+                    <summary class="small-text">Weitere Angaben (freiwillig)</summary>
+                    <div class="grid2">
+                        <label>Telefon
+                            <input class="field" type="text" id="fr-tel" maxlength="30" autocomplete="off">
+                        </label>
+                        <label>Personalnummer
+                            <input class="field" type="text" id="fr-pnr" maxlength="30" autocomplete="off">
+                        </label>
+                        <label>Privatanschrift
+                            <input class="field" type="text" id="fr-anschrift" maxlength="90" autocomplete="off">
+                        </label>
+                    </div>
+                </details>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="h-kreuz">
+            <h2 id="h-kreuz">Kreuze und Begründung</h2>
+            <div class="card-body stack">
+                <p class="fieldhint nomargin">Was Sie hier ankreuzen, wird im Antrag gesetzt. Alles andere bleibt leer.</p>
+                <div id="fr-checks" class="checks"></div>
+                <label>Begründung (Platz unter „aus folgenden Gründen“)
+                    <textarea class="field" id="fr-grund" maxlength="500" rows="4" spellcheck="true"></textarea>
+                </label>
+                <label>Eigene Unterlage (Zeile neben dem leeren Kästchen)
+                    <input class="field" type="text" id="fr-usonst" maxlength="60" autocomplete="off">
+                </label>
+                <div class="grid2">
+                    <label>Im laufenden Jahr bereits gewährt (Tage)
+                        <input class="field" type="text" id="fr-tage1" maxlength="6" autocomplete="off" inputmode="numeric">
+                    </label>
+                    <label>Im vorhergehenden Jahr gewährt (Tage)
+                        <input class="field" type="text" id="fr-tage2" maxlength="6" autocomplete="off" inputmode="numeric">
+                    </label>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <div class="actions">
         <button type="button" id="btn-preview" class="btn">Vorschau</button>
