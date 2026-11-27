@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+    <title>Antragsformular</title>
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lehrkräfte-Tools">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="../pinni.css">
+</head>
+<body>
+
+<header class="app-head">
+    <div class="wrap">
+        <a class="back" href="../">← Übersicht</a>
+        <h1>Antragsformular</h1>
+        <p>Antrag auf Exkursion oder Sportwettkampf im Formular der Schule. Alles bleibt auf Ihrem Gerät, es wird nichts gespeichert oder übertragen.</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="card" aria-labelledby="h-art">
+        <h2 id="h-art">Antrag auf</h2>
+        <div class="card-body">
+            <div class="types">
+                <label class="opt"><input type="checkbox" id="t-exk"> Durchführung einer Exkursion</label>
+                <label class="opt"><input type="checkbox" id="t-sport"> Teilnahme an einem Sportwettkampf</label>
+            </div>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-ang">
+        <h2 id="h-ang">Angaben</h2>
+        <div class="card-body stack">
+            <div class="grid-time">
+                <label>ab der (Stunde)
+                    <input class="field" type="text" id="f-std" maxlength="12" autocomplete="off" placeholder="z. B. 3.">
+                </label>
+                <label>am (Datum)
+                    <input class="field" type="date" id="f-datum">
+                </label>
+                <label>bis Datum (nur mehrtägig)
+                    <input class="field" type="date" id="f-datum2">
+                </label>
+                <span></span>
+                <label>von (Uhrzeit)
+                    <input class="field" type="time" id="f-von">
+                </label>
+                <label>bis (Uhrzeit)
+                    <input class="field" type="time" id="f-bis">
+                </label>
+            </div>
+            <div class="grid2">
+                <label>Klasse/Kurs
+                    <input class="field" type="text" id="f-klasse" maxlength="40" autocomplete="off">
+                </label>
+                <label>Zielort/Thema
+                    <input class="field" type="text" id="f-ziel" maxlength="140" autocomplete="off">
+                </label>
+                <label>verantwortliche Lehrkraft
+                    <input class="field" type="text" id="f-lehrer" maxlength="60" autocomplete="off">
+                </label>
+                <label>Begleitung
+                    <input class="field" type="text" id="f-begl" maxlength="80" autocomplete="off">
+                </label>
+                <label>Treffpunkt
+                    <input class="field" type="text" id="f-treff" maxlength="60" autocomplete="off">
+                </label>
+                <label>Treffpunkt um (Uhrzeit)
+                    <input class="field" type="time" id="f-treffzeit">
+                </label>
+            </div>
+            <p class="fieldhint nomargin">Felder, die Sie leer lassen, bleiben als gepunktete Linie zum Ausfüllen von Hand stehen.</p>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-stu">
+        <h2 id="h-stu">Schülerinnen und Schüler</h2>
+        <div class="card-body">
+            <label class="check"><input type="checkbox" id="f-ganz"> Die gesamte Klasse beziehungsweise der gesamte Kurs nimmt teil (die Liste entfällt)</label>
+            <div id="stu-area">
+                <div class="stu-tools">
+                    <button type="button" id="stu-file" class="btn small">CSV/TXT-Datei laden</button>
+                    <input type="file" id="stu-file-input" accept=".csv,.txt,.tsv,text/csv,text/plain" hidden>
+                    <button type="button" id="stu-add" class="btn small">+ Zeile</button>
+                    <button type="button" id="stu-sort" class="btn small">A–Z sortieren</button>
+                    <button type="button" id="stu-clear" class="btn small danger">Liste leeren</button>
+                </div>
+                <details class="paste-box">
+                    <summary class="small-text">Namen einfügen (aus Tabelle oder Text)</summary>
+                    <p class="fieldhint">Eine Person pro Zeile: Name, Vorname, Klasse/Tutor, getrennt durch Semikolon, Komma oder Tabulator. Beim Kopieren aus einer Tabelle passt das von selbst.</p>
+                    <textarea id="stu-paste" class="field" placeholder="Müller;Anna;7a&#10;Schmidt;Ben;7a" spellcheck="false"></textarea>
+                    <div class="btn-row"><button type="button" id="stu-paste-btn" class="btn small">Übernehmen</button></div>
+                </details>
+                <p id="stu-count" class="stu-count" aria-live="polite"></p>
+                <div class="stu-wrap">
+                    <table class="stu" aria-label="Schülerliste">
+                        <thead><tr><th>Nr.</th><th>Name</th><th>Vorname</th><th>Klasse/Tutor</th><th></th></tr></thead>
+                        <tbody id="stu-body"></tbody>
+                    </table>
+                </div>
+                <p class="fieldhint">Auf der ersten Seite stehen 18 Zeilen wie im Formular. Weitere Personen kommen auf Folgeseiten mit Überschrift und fortlaufender Nummerierung.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="actions">
+        <button type="button" id="btn-preview" class="btn">Vorschau</button>
+        <button type="button" id="btn-pdf" class="btn primary">Als PDF</button>
+    </div>
+
+    <section class="card" id="preview-card" aria-labelledby="h-prev" hidden>
+        <h2 id="h-prev">Vorschau</h2>
+        <div class="card-body">
+            <div id="warn" class="check-box" hidden></div>
+            <p class="fieldhint nomargin">So sieht der Antrag aus. Nach Änderungen „Vorschau“ erneut wählen. Datum und Unterschriften setzen Sie nach dem Ausdruck von Hand.</p>
+            <div id="preview" class="preview"></div>
+        </div>
+    </section>
+</div>
+
+<footer class="app-foot">
+    <a href="../">← Zur Übersicht</a>
+    <a href="../impressum.html">Impressum und Datenschutz</a>
+</footer>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="app.js"></script>
+<script src="../pinni-inhalt.js"></script>
+<script src="../pinni.js"></script>
+<script src="../sw-register.js"></script>
+</body>
+</html>

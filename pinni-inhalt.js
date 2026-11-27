@@ -157,6 +157,22 @@ window.PinniInhalt = {
         ]
     },
 
+    antrag: {
+        tipps: [
+            'Felder, die du leer lässt, bleiben als gepunktete Linie zum Ausfüllen von Hand stehen.',
+            'Namen kannst du als CSV- oder TXT-Datei laden oder aus einer Tabelle einfügen.'
+        ],
+        ende: 'Das war der Antragsgenerator. Jetzt fehlt nur noch die Unterschrift, und da bin ich leider keine Hilfe.',
+        steps: [
+            { text: 'Hier entsteht der Antrag auf Exkursion oder Sportwettkampf im Formular der Schule. Ich zeige dir kurz, wie es geht.' },
+            { sel: '#h-art', title: 'Antrag auf', text: 'Zuerst kreuzt du an, worum es geht: Exkursion, Sportwettkampf oder beides.' },
+            { sel: '#h-ang', title: 'Angaben', text: 'Hier kommen Stunde, Datum, Uhrzeiten, Klasse, Zielort und die Namen hinein. Was du leer lässt, bleibt zum Ausfüllen von Hand stehen.' },
+            { sel: '#stu-file', title: 'Namensliste', text: 'Lade Name, Vorname und Klasse/Tutor als CSV- oder TXT-Datei, oder füge sie aus einer Tabelle ein. Du kannst die Liste hier auch von Hand ändern.' },
+            { sel: '#f-ganz', title: 'Ganze Klasse', text: 'Nimmt die gesamte Klasse teil, entfällt die Liste.' },
+            { sel: '#btn-preview', title: 'Vorschau und PDF', text: 'In der Vorschau siehst du den Antrag. Ab 19 Personen geht die Tabelle auf der nächsten Seite mit Überschrift und fortlaufender Nummerierung weiter.' }
+        ]
+    },
+
     asv: {
         tipps: [
             'Du kannst jederzeit in einen früheren Schritt zurückspringen und etwas ändern.',
