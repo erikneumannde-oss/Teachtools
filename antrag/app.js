@@ -342,7 +342,21 @@
     }
 
     $('btn-preview').addEventListener('click', preview);
+    async function makeDocx() {
+        const btn = $('btn-docx');
+        btn.disabled = true;
+        try {
+            await need('fflate', '../lib/fflate.js', () => !!window.fflate);
+            await need('docx', 'docx.js', () => !!window.AntragDocx);
+            const bytes = await window.AntragDocx.build(readForm());
+            saveBytes(bytes, baseName() + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        } catch (err) {
+            await infoDialog('Datei nicht erstellt', 'Beim Erstellen ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.');
+        }
+        btn.disabled = false;
+    }
     $('btn-pdf').addEventListener('click', makePdf);
+    $('btn-docx').addEventListener('click', makeDocx);
 
     renderRows();
 })();

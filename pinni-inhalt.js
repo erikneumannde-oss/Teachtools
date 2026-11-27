@@ -169,7 +169,7 @@ window.PinniInhalt = {
             { sel: '#h-ang', title: 'Angaben', text: 'Hier kommen Stunde, Datum, Uhrzeiten, Klasse, Zielort und die Namen hinein. Was du leer lässt, bleibt zum Ausfüllen von Hand stehen.' },
             { sel: '#stu-file', title: 'Namensliste', text: 'Lade Name, Vorname und Klasse/Tutor als CSV- oder TXT-Datei, oder füge sie aus einer Tabelle ein. Du kannst die Liste hier auch von Hand ändern.' },
             { sel: '#f-ganz', title: 'Ganze Klasse', text: 'Nimmt die gesamte Klasse teil, entfällt die Liste.' },
-            { sel: '#btn-preview', title: 'Vorschau und PDF', text: 'In der Vorschau siehst du den Antrag. Ab 19 Personen geht die Tabelle auf der nächsten Seite mit Überschrift und fortlaufender Nummerierung weiter.' }
+            { sel: '#btn-preview', title: 'Vorschau, PDF und Word', text: 'In der Vorschau siehst du den Antrag. Du kannst ihn als PDF oder als Word-Datei speichern. Ab 19 Personen geht die Tabelle auf der nächsten Seite mit Überschrift und fortlaufender Nummerierung weiter.' }
         ]
     },
 
