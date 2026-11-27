@@ -151,7 +151,8 @@
 
         let F = para(cb(has('e-merk')) + tab() + run('Von dem „Merkblatt zum Antrag auf Freistellung“ habe ich Kenntnis genommen.'), { tabs: [240], ind: 240 });
         F += para(cb(has('e-angest')) + tab() + run('Ich bin im Angestelltenverhältnis beschäftigt; mir ist bekannt, dass die genannten Vorschriften sinngemäß auch für Angestellte gelten. Ich bitte daher, nach den entsprechenden tarifrechtlichen Regelungen zu entscheiden (Richtlinien über den Urlaub der Arbeitnehmer aus besonderen Anlässen, § 52 BAT und § 45 SGB V).'), { tabs: [240], ind: 240 });
-        F += para(run('Datum / Unterschrift Antragsteller/in'), { top: true, before: 420 });
+        F += para(run(f.heute || '', { sz: 20 }), { top: true, before: 200, line: 300 });
+        F += para(run('Datum / Unterschrift Antragsteller/in'), { before: 20 });
         b += gap(100) + box(F);
         b += para(run('*) SUrlVO', { b: true }) + run(' (Verordnung über den Urlaub der Beamten und Richter aus besonderen Anlässen –Sonderurlaubsverordnung)'), { before: 60 });
 

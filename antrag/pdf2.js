@@ -230,6 +230,7 @@
         text(p1, 'Angestellte gelten. Ich bitte daher, nach den entsprechenden tarifrechtlichen Regelungen zu entscheiden (Richtlinien über', c2.x(97), c2.b(432));
         text(p1, 'den Urlaub der Arbeitnehmer aus besonderen Anlässen, § 52 BAT und § 45 SGB V).', c2.x(97), c2.b(460));
         line(p1, L, 748.8, R, 748.8);
+        if (f.heute) text(p1, f.heute, L + 6, 762, 'r', 10);
         text(p1, 'Datum / Unterschrift Antragsteller/in', c2.x(62), c2.b(530));
         const fw = text(p1, '*) SUrlVO', c2.x(50), c2.b(589), 'b');
         text(p1, ' (Verordnung über den Urlaub der Beamten und Richter aus besonderen Anlässen –Sonderurlaubsverordnung)', c2.x(50) + fw, c2.b(589));

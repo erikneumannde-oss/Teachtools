@@ -360,6 +360,7 @@
             von2: fmtShort(d1), bis2: fmtShort(mehr ? d2 : d1),
             telefon: v('fr-tel', 30), personalnr: v('fr-pnr', 30), anschrift: v('fr-anschrift', 90),
             nach: nach,
+            heute: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             checks: Array.from(document.querySelectorAll('#fr-checks input[data-k]:checked')).map(c => c.dataset.k),
             grund: String($('fr-grund').value || '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]+/g, ' ').slice(0, 500),
             usonst: v('fr-usonst', 60), tage1: v('fr-tage1', 6), tage2: v('fr-tage2', 6)
