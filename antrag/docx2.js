@@ -166,10 +166,10 @@
         P += para(tab(), { tabs: [{ p: 4400, u: true }], before: 1000, line: 240 });
         P += para(run('Entscheidungsträger', { sz: 15 }), { line: 190 });
         P += para(run('Stempel / Stellenzeichen', { sz: 15 }), { line: 190 });
-        P += P2(run('Herrn / Frau', { b: true, sz: S2 }) + tab() + run(f.nameZweit || '', { sz: S2 }) + tab(), { tabs: [1450, { p: 5400, u: true }], before: 1250 });
+        P += P2(run('Herrn / Frau', { b: true, sz: S2 }) + tab() + tab(), { tabs: [1450, { p: 5400, u: true }], before: 1250 });
         P += P2(run('Ihr Antrag auf Freistellung', { b: true, sz: S2 }) + run(' für die Zeit vom', { sz: S2 }) + tab() + run(f.von2 || '', { sz: S2 }) + tab(), { tabs: [4700, { p: 8200, u: true }], before: 500 });
         P += P2(tab() + run('bis', { sz: S2 }) + tab() + run(f.bis2 || '', { sz: S2 }) + tab(), { tabs: [4200, 4700, { p: 8200, u: true }], before: 80 });
-        P += P2(run('Sehr geehrter Herr / Sehr geehrte Frau', { sz: S2 }) + tab() + tab() + run('!', { sz: S2 }), { tabs: [4150, { p: 7800, u: true }, 8000], before: 640 });
+        P += P2(run('Sehr geehrter Herr / Sehr geehrte Frau', { sz: S2 }) + tab() + run(f.nameZweit || '', { sz: S2 }) + tab() + tab() + run('!', { sz: S2 }), { tabs: [4150, { p: 7800, u: true }, 8000], before: 640 });
         const c2 = (t, extra) => P2(cb(false, 20) + tab() + run(t, { sz: 21 }), Object.assign({ tabs: [360] }, extra));
         P += c2('Ihrem o.a. Antrag wird entsprochen.', { before: 420 });
         P += c2('Die nicht mehr benötigten Unterlagen erhalten Sie nach Einsicht anliegend', { before: 340 });

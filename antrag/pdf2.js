@@ -248,13 +248,13 @@
         text(p2, 'Stempel / Stellenzeichen', 81.7, 284, 'r', S);
         const BS = 11.6, X0 = 81.4;
         text(p2, 'Herrn / Frau', X0, 349.5, 'b', BS); line(p2, 156, 351.7, 337, 351.7);
-        if (f.nameZweit) { const r = fit(f.nameZweit, 'r', 337 - 158 - 4, 11.6, 'Der Name'); text(p2, r.s, 159, 349.3, 'r', r.size); }
         const aw2 = text(p2, 'Ihr Antrag auf Freistellung', X0, 395, 'b', BS); text(p2, ' für die Zeit vom', X0 + aw2, 395, 'r', BS);
         line(p2, 311, 396.8, 469, 396.8);
         text(p2, 'bis', 291.6, 414.3, 'r', BS); line(p2, 311, 415.8, 469, 415.8);
         const von2 = f.von2, bis2 = f.bis2;
         value(p2, von2, 318, 394.6, 148, 11.6, 'Das Datum'); value(p2, bis2, 318, 414, 148, 11.6, 'Das Datum');
         text(p2, 'Sehr geehrter Herr / Sehr geehrte Frau', X0, 459, 'r', BS); line(p2, 285, 460.4, 462, 460.4); text(p2, '!', 465, 459, 'r', BS);
+        if (f.nameZweit) { const r = fit(f.nameZweit, 'r', 462 - 288 - 4, 11.6, 'Der Name'); text(p2, r.s, 288, 458.8, 'r', r.size); }
         const CB = 10.7;
         box(p2, 82, 481.5, false, 5.6); text(p2, 'Ihrem o.a. Antrag wird entsprochen.', 103, 485, 'r', CB);
         box(p2, 82, 509, false, 5.6); text(p2, 'Die nicht mehr benötigten Unterlagen erhalten Sie nach Einsicht anliegend', 103, 512.5, 'r', CB);
